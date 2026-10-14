@@ -384,14 +384,6 @@ function Step({
     <section className={cn('py-3.5 first:pt-1', !last && 'border-b border-dashed')}>
       <div className="mb-2.5 flex items-center justify-between gap-2">
         <span className="flex items-center gap-2 text-[13.5px] font-semibold">
-          <span
-            className={cn(
-              'flex size-6 items-center justify-center rounded-full text-[11.5px] font-bold transition-colors',
-              done ? 'bg-success text-white' : 'bg-navy text-navy-foreground dark:bg-primary dark:text-primary-foreground'
-            )}
-          >
-            {done ? <Check className="size-3.5" strokeWidth={3} /> : n}
-          </span>
           <span className="flex items-center gap-1.5 text-foreground/85 [&_svg]:size-4 [&_svg]:text-muted-foreground">
             {icon}
             {label}
