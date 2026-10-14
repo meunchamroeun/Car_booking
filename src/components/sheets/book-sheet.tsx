@@ -135,7 +135,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
       <Step n={1} icon={<CarFront />} label={t('choose_vehicle')} done>
         {car && (
           <div className="flex items-center gap-3 rounded-2xl bg-muted p-2.5">
-            <CarPhoto car={car} className="h-[62px] w-[92px] shrink-0 rounded-xl" />
+            <CarPhoto car={car} zoomable className="h-[62px] w-[92px] shrink-0 rounded-xl" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[14.5px] font-semibold">{car.name}</p>
               <p className="flex items-center gap-2 text-[12px] text-muted-foreground">

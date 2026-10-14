@@ -193,7 +193,7 @@ function VehicleCard({ car }: { car: Car }) {
       })}
     >
       <div className="flex gap-3 p-4">
-        <CarPhoto car={car} className="h-[78px] w-[112px] shrink-0 rounded-2xl" />
+        <CarPhoto car={car} zoomable className="h-[78px] w-[112px] shrink-0 rounded-2xl" />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <p className="truncate text-[15px] font-semibold leading-snug">{car.name}</p>

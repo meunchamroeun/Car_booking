@@ -83,7 +83,7 @@ export function ReviewSheet({ open, id }: { open: boolean; id?: string }) {
         </div>
         <p className="mt-3 rounded-xl bg-muted/70 px-3 py-2 text-[13.5px]">{b.purpose}</p>
         <div className="mt-3 flex items-center gap-3">
-          <CarPhoto car={car} className="h-[54px] w-20 shrink-0 rounded-lg" />
+          <CarPhoto car={car} zoomable className="h-[54px] w-20 shrink-0 rounded-lg" />
           <div className="min-w-0 flex-1 space-y-0.5 text-[13px]">
             <p className="truncate font-semibold">
               {car.name} <span className="font-mono text-[11.5px] font-normal text-muted-foreground">{car.plate}</span>

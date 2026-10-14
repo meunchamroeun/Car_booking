@@ -80,7 +80,7 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
       }
     >
       <div className="flex items-center gap-3 rounded-2xl bg-muted p-3">
-        <CarPhoto car={car} className="h-16 w-24 shrink-0 rounded-xl" />
+        <CarPhoto car={car} zoomable className="h-16 w-24 shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{car.name}</p>
           <p className="font-mono text-[12px] text-muted-foreground">{car.plate}</p>

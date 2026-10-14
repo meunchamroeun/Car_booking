@@ -78,7 +78,7 @@ function TripHero({ b, mode }: { b: Booking; mode: 'requester' | 'driver' }) {
             {b.endTime}
           </p>
         </div>
-        <CarPhoto car={car} className="h-[80px] w-[124px] shrink-0 rounded-2xl ring-1 ring-white/15" />
+        <CarPhoto car={car} zoomable className="h-[80px] w-[124px] shrink-0 rounded-2xl ring-1 ring-white/15" />
       </div>
 
       {live && (
