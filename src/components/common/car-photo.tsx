@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { CarFront, Fuel, Maximize2, Users, X } from 'lucide-react';
+import { Camera, CarFront, Fuel, Maximize2, Users, X } from 'lucide-react';
 import { Car } from '@/types';
 import { useApp } from '@/lib/store';
 import { CarArt } from '@/components/common/car-art';
@@ -110,7 +110,11 @@ function PhotoViewer({ car, open, onOpenChange }: { car: Car; open: boolean; onO
                   </span>
                 )}
               </div>
-              {car.imageCredit && <p className="mt-3 text-[11px] text-muted-foreground">📷 {car.imageCredit}</p>}
+              {car.imageCredit && (
+                <p className="mt-3 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                  <Camera className="mt-px size-3 shrink-0" /> {car.imageCredit}
+                </p>
+              )}
             </div>
           </div>
         </Dialog.Content>

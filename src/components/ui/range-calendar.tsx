@@ -34,7 +34,7 @@ export function RangeCalendar({
   onDone?: () => void;
   labels?: { pickStart: string; pickEnd: string; booked: string; unavailable: string };
 }) {
-  const L = labels ?? { pickStart: '① Tap start date', pickEnd: '② Tap end date', booked: 'Car partly booked', unavailable: 'Unavailable' };
+  const L = labels ?? { pickStart: 'Tap the start date', pickEnd: 'Tap the end date', booked: 'Car partly booked', unavailable: 'Unavailable' };
   const [picking, setPicking] = React.useState<'start' | 'end'>('start');
   const [month, setMonth] = React.useState(() => start.slice(0, 7));
   const [hover, setHover] = React.useState<string | null>(null);
