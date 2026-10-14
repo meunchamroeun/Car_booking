@@ -48,3 +48,22 @@ legacy/                     previous UI, kept for reference (excluded from the b
 - Brand colours from oone.bz: plum `#875A7B` (primary), mauve `#B26EA0` (accent), navy `#162447` (hero surfaces), slate `#5B657E` (secondary text). Tokens in `src/app/globals.css`, light + dark.
 - shadcn/ui conventions (CSS variables, `cva` variants, `cn()`), Radix Dialog for accessible bottom sheets.
 - Inter + Kantumruy Pro (Khmer).
+
+## Vehicle photos
+
+Each car has an `imageUrl` (and optional `imageCredit`). The demo uses Creative Commons photos
+from Wikimedia Commons, credited in **Profile → Vehicle photo credits**:
+
+| Vehicle | Credit / licence |
+|---|---|
+| Toyota Camry | EurovisionNim, CC BY-SA 4.0 |
+| Toyota Fortuner | NZ Car Freak, CC BY-SA 4.0 |
+| Ford Ranger | M 93, CC BY-SA 3.0 de |
+| Toyota HiAce | User3204, CC BY 4.0 |
+| Mazda CX-5 | Mr.choppers, CC BY-SA 3.0 |
+| Ford Everest | M 93, CC BY-SA 3.0 de |
+| Toyota Hilux | Vauxford, CC BY-SA 4.0 |
+| Hyundai Staria | Alexander Migl, CC BY-SA 4.0 |
+
+For production, upload photos of the company's own vehicles and store their URLs in `imageUrl`.
+If a photo is missing or fails to load, the app falls back to a drawn illustration.

@@ -14,7 +14,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Chips, Segmented } from '@/components/ui/segmented';
 import { EmptyState } from '@/components/ui/empty';
-import { CarArt } from '@/components/common/car-art';
+import { CarPhoto } from '@/components/common/car-photo';
 import { DAY_END, DAY_START, DayBar } from '@/components/common/day-bar';
 import { cn } from '@/lib/utils';
 import { BOOKING_SLOTS, SLOT_ORDER } from '@/lib/slots';
@@ -193,9 +193,7 @@ function VehicleCard({ car }: { car: Car }) {
       })}
     >
       <div className="flex gap-3 p-4">
-        <div className="flex h-[74px] w-[112px] shrink-0 items-center justify-center rounded-2xl bg-gradient-to-b from-muted to-muted/40 px-2 text-foreground">
-          <CarArt type={car.type} color={car.color} />
-        </div>
+        <CarPhoto car={car} className="h-[78px] w-[112px] shrink-0 rounded-2xl" />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <p className="truncate text-[15px] font-semibold leading-snug">{car.name}</p>

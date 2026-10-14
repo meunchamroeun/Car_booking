@@ -7,7 +7,7 @@ import { DateUtil } from '@/lib/date-utils';
 import { Card } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { BookingStatusBadge } from '@/components/common/status';
-import { CarArt } from '@/components/common/car-art';
+import { CarPhoto } from '@/components/common/car-photo';
 import { Clock, MapPin, UserRound, Users } from 'lucide-react';
 
 /**
@@ -37,9 +37,7 @@ export function TripCard({
       <button type="button" onClick={open} className="block w-full p-4 text-left transition-colors hover:bg-muted/40">
         <div className="flex items-start gap-3">
           {perspective === 'requester' ? (
-            <div className="flex h-11 w-16 shrink-0 items-center justify-center rounded-xl bg-muted px-1">
-              {car && <CarArt type={car.type} color={car.color} />}
-            </div>
+            <CarPhoto car={car} className="h-11 w-16 shrink-0 rounded-xl" />
           ) : (
             <Avatar initials={requester?.initials ?? '?'} seed={requester?.id} className="size-11" />
           )}

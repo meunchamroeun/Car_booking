@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 const ROLE_ORDER: UserRole[] = ['Employee', 'Approver', 'Driver', 'Admin'];
 
 export function ProfileScreen() {
-  const { currentUser, users, bookings, t, theme, setTheme, lang, setLang, switchUser, resetDemoData } = useApp();
+  const { currentUser, users, cars, bookings, t, theme, setTheme, lang, setLang, switchUser, resetDemoData } = useApp();
   const mine = currentUser.role === 'Driver' ? bookings.filter(b => b.driverId === currentUser.driverId) : bookings.filter(b => b.requesterId === currentUser.id);
 
   return (
@@ -109,6 +109,18 @@ export function ProfileScreen() {
       >
         <RotateCcw /> {t('reset_data')}
       </Button>
+      <details className="mt-4 rounded-xl border bg-card px-3.5 py-3 text-[12px] text-muted-foreground">
+        <summary className="cursor-pointer text-[13px] font-semibold text-foreground">{t('photo_credits')}</summary>
+        <ul className="mt-2 space-y-1">
+          {cars
+            .filter(c => c.imageCredit)
+            .map(c => (
+              <li key={c.id}>
+                <span className="font-medium text-foreground/80">{c.name}</span> — {c.imageCredit}
+              </li>
+            ))}
+        </ul>
+      </details>
       <p className="mt-6 text-center text-[11.5px] text-muted-foreground">OONE Power Technology · Fleet v3 (demo data)</p>
     </div>
   );

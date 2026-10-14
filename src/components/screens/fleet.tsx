@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Segmented } from '@/components/ui/segmented';
-import { CarArt } from '@/components/common/car-art';
+import { CarPhoto } from '@/components/common/car-photo';
 
 export function FleetScreen() {
   const { t } = useApp();
@@ -39,9 +39,7 @@ function VehicleList() {
         const scheduled = !service && c.maintenance?.mode === 'scheduled';
         return (
           <button key={c.id} type="button" onClick={() => openSheet({ type: 'maintenance', carId: c.id })} className="flex w-full items-center gap-3 p-3.5 text-left transition-colors hover:bg-muted/40">
-            <div className="flex h-11 w-16 shrink-0 items-center justify-center rounded-xl bg-muted px-1">
-              <CarArt type={c.type} color={c.color} />
-            </div>
+            <CarPhoto car={c} className="h-11 w-16 shrink-0 rounded-xl" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[14px] font-semibold">{c.name}</p>
               <p className="flex items-center gap-2 text-[12px] text-muted-foreground">

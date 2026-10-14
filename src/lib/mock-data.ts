@@ -36,14 +36,18 @@ export function getDefaultMockData(): FleetData {
     { id: 'd4', name: 'Dara Heng', phone: '011 223 344', status: 'OffDuty', licenseNo: 'B-44120' },
   ];
 
+  // Photos: Creative Commons images from Wikimedia Commons (credits shown in Profile → Photo credits).
+  // Replace with the company's own vehicle photos in production.
+  const photo = (path: string) => `https://upload.wikimedia.org/wikipedia/commons/thumb/${path}/960px-${path.split('/').pop()}`;
+
   const cars: FleetData['cars'] = [
-    { id: 'c1', name: 'Toyota Camry Hybrid', plate: '2AB-1228', type: 'Sedan', seats: 4, status: 'Active', color: '#E9E4EA', fuel: 'Hybrid', odometer: 42180 },
-    { id: 'c2', name: 'Toyota Fortuner 4x4', plate: '2AC-2441', type: 'SUV', seats: 7, status: 'Active', color: '#162447', fuel: 'Diesel', odometer: 68510 },
-    { id: 'c3', name: 'Ford Ranger XLT', plate: '3AE-3889', type: 'Pickup', seats: 5, status: 'Active', color: '#5B657E', fuel: 'Diesel', odometer: 91240 },
-    { id: 'c4', name: 'Toyota Hiace Commuter', plate: '2BA-4102', type: 'Van', seats: 12, status: 'Active', color: '#F4F2F5', fuel: 'Diesel', odometer: 120330 },
-    { id: 'c5', name: 'Mazda CX-5 GT', plate: '2AF-5553', type: 'SUV', seats: 5, status: 'Active', color: '#875A7B', fuel: 'Petrol', odometer: 23800 },
-    { id: 'c6', name: 'Ford Everest Titanium', plate: '2AG-6778', type: 'SUV', seats: 7, status: 'Active', color: '#2B2F3A', fuel: 'Diesel', odometer: 55120 },
-    { id: 'c7', name: 'Toyota Hilux Revo', plate: '3AB-7331', type: 'Pickup', seats: 5, status: 'Active', color: '#C9CDD6', fuel: 'Diesel', odometer: 77410 },
+    { id: 'c1', name: 'Toyota Camry Hybrid', plate: '2AB-1228', type: 'Sedan', seats: 4, status: 'Active', color: '#E9E4EA', fuel: 'Hybrid', odometer: 42180, imageUrl: photo('a/ac/2018_Toyota_Camry_%28ASV70R%29_Ascent_sedan_%282018-08-27%29_01.jpg'), imageCredit: 'EurovisionNim, CC BY-SA 4.0, via Wikimedia Commons' },
+    { id: 'c2', name: 'Toyota Fortuner 4x4', plate: '2AC-2441', type: 'SUV', seats: 7, status: 'Active', color: '#162447', fuel: 'Diesel', odometer: 68510, imageUrl: photo('6/66/2015_Toyota_Fortuner_%28New_Zealand%29.jpg'), imageCredit: 'NZ Car Freak, CC BY-SA 4.0, via Wikimedia Commons' },
+    { id: 'c3', name: 'Ford Ranger XLT', plate: '3AE-3889', type: 'Pickup', seats: 5, status: 'Active', color: '#5B657E', fuel: 'Diesel', odometer: 91240, imageUrl: photo('3/3d/Ford_Ranger_2.0_EcoBlue_4WD_Wildtrak_X_%28IV%29_%E2%80%93_f_12102024.jpg'), imageCredit: 'M 93, CC BY-SA 3.0 de, via Wikimedia Commons' },
+    { id: 'c4', name: 'Toyota Hiace Commuter', plate: '2BA-4102', type: 'Van', seats: 12, status: 'Active', color: '#F4F2F5', fuel: 'Diesel', odometer: 120330, imageUrl: photo('8/80/2020_Toyota_HiAce_%28front%29.jpg'), imageCredit: 'User3204, CC BY 4.0, via Wikimedia Commons' },
+    { id: 'c5', name: 'Mazda CX-5 GT', plate: '2AF-5553', type: 'SUV', seats: 5, status: 'Active', color: '#875A7B', fuel: 'Petrol', odometer: 23800, imageUrl: photo('a/a5/2024_Mazda_CX-5_2.5_S_Select_in_Platinum_Quartz_Metallic%2C_front_right.jpg'), imageCredit: 'Mr.choppers, CC BY-SA 3.0, via Wikimedia Commons' },
+    { id: 'c6', name: 'Ford Everest Titanium', plate: '2AG-6778', type: 'SUV', seats: 7, status: 'Active', color: '#2B2F3A', fuel: 'Diesel', odometer: 55120, imageUrl: photo('a/ab/Ford_Everest_3.0_V6_Turbo_Diesel_4WD_Platinum_%28III%29_%E2%80%93_f_02012026.jpg'), imageCredit: 'M 93, CC BY-SA 3.0 de, via Wikimedia Commons' },
+    { id: 'c7', name: 'Toyota Hilux Revo', plate: '3AB-7331', type: 'Pickup', seats: 5, status: 'Active', color: '#C9CDD6', fuel: 'Diesel', odometer: 77410, imageUrl: photo('1/1b/2016_Toyota_HiLux_Invincible_D-4D_4WD_2.4_Front.jpg'), imageCredit: 'Vauxford, CC BY-SA 4.0, via Wikimedia Commons' },
     {
       id: 'c8',
       name: 'Hyundai Staria VIP',
@@ -54,6 +58,8 @@ export function getDefaultMockData(): FleetData {
       color: '#B26EA0',
       fuel: 'Diesel',
       odometer: 30060,
+      imageUrl: photo('7/75/Hyundai_Staria_1X7A0321.jpg'),
+      imageCredit: 'Alexander Migl, CC BY-SA 4.0, via Wikimedia Commons',
       maintenance: {
         mode: 'manual',
         reason: 'Suspension check & 30,000 km brake inspection',

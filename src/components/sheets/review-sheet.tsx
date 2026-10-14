@@ -9,7 +9,7 @@ import { Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Field, Textarea } from '@/components/ui/input';
-import { CarArt } from '@/components/common/car-art';
+import { CarPhoto } from '@/components/common/car-photo';
 import { cn } from '@/lib/utils';
 
 export function ReviewSheet({ open, id }: { open: boolean; id?: string }) {
@@ -83,9 +83,7 @@ export function ReviewSheet({ open, id }: { open: boolean; id?: string }) {
         </div>
         <p className="mt-3 rounded-xl bg-muted/70 px-3 py-2 text-[13.5px]">{b.purpose}</p>
         <div className="mt-3 flex items-center gap-3">
-          <div className="w-20 shrink-0">
-            <CarArt type={car.type} color={car.color} />
-          </div>
+          <CarPhoto car={car} className="h-[54px] w-20 shrink-0 rounded-lg" />
           <div className="min-w-0 flex-1 space-y-0.5 text-[13px]">
             <p className="truncate font-semibold">
               {car.name} <span className="font-mono text-[11.5px] font-normal text-muted-foreground">{car.plate}</span>

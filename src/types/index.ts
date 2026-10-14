@@ -51,6 +51,10 @@ export interface Car {
   color?: string;
   fuel?: 'Petrol' | 'Diesel' | 'Hybrid' | 'EV';
   odometer?: number;
+  /** Vehicle photo. Backend: store the company's own photo URL here. */
+  imageUrl?: string;
+  /** Attribution for third-party (e.g. Creative Commons) photos. */
+  imageCredit?: string;
   maintenance?: MaintenanceInfo | null;
 }
 

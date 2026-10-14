@@ -9,7 +9,7 @@ import { Booking } from '@/types';
 import { InfoRow, Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { BookingStatusBadge } from '@/components/common/status';
-import { CarArt } from '@/components/common/car-art';
+import { CarPhoto } from '@/components/common/car-photo';
 import { cn } from '@/lib/utils';
 
 export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
@@ -90,9 +90,7 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
 
       {canShowPass(currentUser, b) ? <Pass b={b} /> : (
         <div className="flex items-center gap-3 rounded-2xl bg-muted p-3">
-          <div className="w-24 shrink-0">
-            <CarArt type={car.type} color={car.color} />
-          </div>
+          <CarPhoto car={car} className="h-16 w-24 shrink-0 rounded-xl" />
           <div className="min-w-0">
             <p className="truncate font-semibold">{car.name}</p>
             <p className="font-mono text-[12px] text-muted-foreground">{car.plate}</p>
@@ -209,9 +207,7 @@ function Pass({ b }: { b: Booking }) {
           <p className="text-[17px] font-bold">{car.name}</p>
           <p className="font-mono text-[12.5px] text-white/70">{car.plate}</p>
         </div>
-        <div className="w-24 text-black">
-          <CarArt type={car.type} color={car.color} />
-        </div>
+        <CarPhoto car={car} className="h-16 w-24 shrink-0 rounded-xl ring-1 ring-white/20" />
       </div>
       <div className="relative mx-4 mt-3 flex items-center justify-center rounded-2xl bg-white p-3">
         <QrCode value={`${b.id}|${car.plate}|${b.startDate}`} />

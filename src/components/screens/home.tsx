@@ -12,7 +12,7 @@ import { Card, SectionHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty';
-import { CarArt } from '@/components/common/car-art';
+import { CarPhoto } from '@/components/common/car-photo';
 import { TripCard } from '@/components/common/trip-card';
 import { DayBar } from '@/components/common/day-bar';
 import { cn } from '@/lib/utils';
@@ -78,9 +78,7 @@ function TripHero({ b, mode }: { b: Booking; mode: 'requester' | 'driver' }) {
             {b.endTime}
           </p>
         </div>
-        <div className="-mb-1 -mr-2 w-[132px] shrink-0 text-black">
-          <CarArt type={car.type} color={car.color} />
-        </div>
+        <CarPhoto car={car} className="h-[80px] w-[124px] shrink-0 rounded-2xl ring-1 ring-white/15" />
       </div>
 
       {live && (

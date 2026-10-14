@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Segmented } from '@/components/ui/segmented';
 import { Field, Input, Textarea } from '@/components/ui/input';
-import { CarArt } from '@/components/common/car-art';
+import { CarPhoto } from '@/components/common/car-photo';
 
 export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; carId?: string; defaultMode?: 'manual' | 'scheduled' }) {
   const { cars, bookings, t, lang, closeSheet, setMaintenance, clearMaintenance, isCarInMaintenance } = useApp();
@@ -80,9 +80,7 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
       }
     >
       <div className="flex items-center gap-3 rounded-2xl bg-muted p-3">
-        <div className="w-24 shrink-0">
-          <CarArt type={car.type} color={car.color} />
-        </div>
+        <CarPhoto car={car} className="h-16 w-24 shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{car.name}</p>
           <p className="font-mono text-[12px] text-muted-foreground">{car.plate}</p>

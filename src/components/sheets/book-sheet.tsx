@@ -9,7 +9,7 @@ import { Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
-import { CarArt } from '@/components/common/car-art';
+import { CarPhoto } from '@/components/common/car-photo';
 import { DayBar } from '@/components/common/day-bar';
 import { cn } from '@/lib/utils';
 import { TimeField } from '@/components/ui/time-field';
@@ -135,9 +135,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
       <Step n={1} icon={<CarFront />} label={t('choose_vehicle')} done>
         {car && (
           <div className="flex items-center gap-3 rounded-2xl bg-muted p-2.5">
-            <div className="w-[92px] shrink-0">
-              <CarArt type={car.type} color={car.color} />
-            </div>
+            <CarPhoto car={car} className="h-[62px] w-[92px] shrink-0 rounded-xl" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[14.5px] font-semibold">{car.name}</p>
               <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
@@ -171,9 +169,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                     active ? 'border-primary' : 'border-transparent ring-1 ring-border'
                   )}
                 >
-                  <div className="rounded-lg bg-muted px-1.5 py-1">
-                    <CarArt type={c.type} color={c.color} />
-                  </div>
+                  <CarPhoto car={c} className="h-[64px] w-full rounded-lg" />
                   <p className="mt-1 truncate text-[12px] font-semibold">{c.name}</p>
                   <p className="text-[11px] text-muted-foreground">{service ? t('st_service') : t('seats', { n: c.seats })}</p>
                 </button>
