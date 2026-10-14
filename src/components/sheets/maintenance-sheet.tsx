@@ -10,6 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Segmented } from '@/components/ui/segmented';
 import { Field, Input, Textarea } from '@/components/ui/input';
 import { CarPhoto } from '@/components/common/car-photo';
+import { DateBox } from '@/components/ui/date-box';
+import { RangeCalendar } from '@/components/ui/range-calendar';
+import { TimeField } from '@/components/ui/time-field';
 
 export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; carId?: string; defaultMode?: 'manual' | 'scheduled' }) {
   const { cars, bookings, t, lang, closeSheet, setMaintenance, clearMaintenance, isCarInMaintenance } = useApp();
@@ -24,6 +27,8 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
   const [to, setTo] = React.useState(DateUtil.tomorrowStr());
   const [fromTime, setFromTime] = React.useState('08:00');
   const [toTime, setToTime] = React.useState('17:30');
+  const [picker, setPicker] = React.useState<'dates' | 'from' | 'to' | null>(null);
+  const togglePicker = (p: 'dates') => setPicker(cur => (cur === p ? null : p));
 
   React.useEffect(() => {
     if (!open || !car) return;
@@ -37,12 +42,17 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
     setTo(m?.endDate ?? DateUtil.tomorrowStr());
     setFromTime(m?.startTime ?? '08:00');
     setToTime(m?.endTime ?? '17:30');
+    setPicker(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, carId]);
 
   if (!car) return null;
   const m = car.maintenance;
   const inService = isCarInMaintenance(car.id, DateUtil.todayStr());
+
+  // Dot days that already have bookings for this car, so the impact of the service window is visible
+  const markDay = (d: string) =>
+    bookings.some(b => b.carId === car.id && (b.status === 'Approved' || b.status === 'Pending') && b.startDate <= d && d <= (b.endDate || b.startDate)) ? ('booked' as const) : undefined;
 
   const range = mode === 'manual' ? [DateUtil.todayStr(), estimated || DateUtil.todayStr()] : [from, to];
   const affected = bookings.filter(b => b.carId === car.id && (b.status === 'Approved' || b.status === 'Pending') && b.startDate >= range[0] && b.startDate <= range[1]);
@@ -111,7 +121,7 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
         <div className="mt-4 space-y-3.5">
           <Segmented
             value={mode}
-            onChange={setMode}
+            onChange={m => (setMode(m), setPicker(null))}
             options={[
               { value: 'manual', label: t('mode_manual') },
               { value: 'scheduled', label: t('mode_scheduled') },
@@ -125,19 +135,53 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
             <Input id="mt-ws" value={workshop} onChange={e => setWorkshop(e.target.value)} />
           </Field>
           {mode === 'manual' ? (
-            <Field label={t('est_return')} htmlFor="mt-est">
-              <Input id="mt-est" type="date" min={DateUtil.todayStr()} value={estimated} onChange={e => setEstimated(e.target.value)} />
-            </Field>
+            <div className="space-y-2">
+              <DateBox label={t('est_return')} value={estimated} lang={lang} active={picker === 'dates'} onClick={() => togglePicker('dates')} />
+              {picker === 'dates' && (
+                <RangeCalendar
+                  mode="single"
+                  start={estimated}
+                  end={estimated}
+                  min={DateUtil.todayStr()}
+                  maxDays={90}
+                  lang={lang}
+                  markDay={markDay}
+                  onChange={d => setEstimated(d)}
+                  onDone={() => setPicker(null)}
+                  labels={{ pickStart: t('cal_pick_start'), pickEnd: t('cal_pick_end'), pickSingle: t('cal_pick_single'), booked: t('cal_has_booking'), unavailable: t('unavailable') }}
+                />
+              )}
+            </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2.5">
-              <Field label={t('from_date')} htmlFor="mt-from">
-                <Input id="mt-from" type="date" min={DateUtil.todayStr()} value={from} onChange={e => (setFrom(e.target.value), e.target.value > to && setTo(e.target.value))} />
-              </Field>
-              <Field label={t('to_date')} htmlFor="mt-to">
-                <Input id="mt-to" type="date" min={from} value={to} onChange={e => setTo(e.target.value)} />
-              </Field>
-              <Input type="time" step={1800} value={fromTime} onChange={e => setFromTime(e.target.value)} aria-label={t('start_time')} />
-              <Input type="time" step={1800} value={toTime} onChange={e => setToTime(e.target.value)} aria-label={t('end_time')} />
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <DateBox label={t('from_date')} value={from} lang={lang} active={picker === 'dates'} onClick={() => togglePicker('dates')} />
+                <DateBox label={t('to_date')} value={to} lang={lang} active={picker === 'dates'} onClick={() => togglePicker('dates')} />
+              </div>
+              {picker === 'dates' && (
+                <RangeCalendar
+                  start={from}
+                  end={to}
+                  min={DateUtil.todayStr()}
+                  maxDays={60}
+                  lang={lang}
+                  markDay={markDay}
+                  onChange={(s, e) => (setFrom(s), setTo(e))}
+                  onDone={() => setPicker(null)}
+                  labels={{ pickStart: t('cal_pick_start'), pickEnd: t('cal_pick_end'), booked: t('cal_has_booking'), unavailable: t('unavailable') }}
+                />
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                <TimeField label={t('start_time')} value={fromTime} onChange={setFromTime} open={picker === 'from'} onOpenChange={o => setPicker(o ? 'from' : null)} />
+                <TimeField
+                  label={t('end_time')}
+                  value={toTime}
+                  onChange={setToTime}
+                  open={picker === 'to'}
+                  onOpenChange={o => setPicker(o ? 'to' : null)}
+                  invalid={DateUtil.stamp(to, toTime) <= DateUtil.stamp(from, fromTime)}
+                />
+              </div>
             </div>
           )}
           {affected.length > 0 && (

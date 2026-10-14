@@ -17,6 +17,7 @@ export function RangeCalendar({
   onChange,
   min,
   maxDays = 14,
+  mode = 'range',
   markDay,
   lang = 'en',
   onDone,
@@ -27,12 +28,14 @@ export function RangeCalendar({
   onChange: (start: string, end: string) => void;
   min: string;
   maxDays?: number;
+  /** 'single' picks one day (start = end) and closes on the first tap. */
+  mode?: 'range' | 'single';
   /** Optional per-day hint: a dot for "booked", disabled for "service". */
   markDay?: (date: string) => DayMark;
   lang?: 'en' | 'kh';
   /** Called once both ends are chosen. */
   onDone?: () => void;
-  labels?: { pickStart: string; pickEnd: string; booked: string; unavailable: string };
+  labels?: { pickStart: string; pickEnd: string; pickSingle?: string; booked: string; unavailable: string };
 }) {
   const L = labels ?? { pickStart: 'Tap the start date', pickEnd: 'Tap the end date', booked: 'Car partly booked', unavailable: 'Unavailable' };
   const [picking, setPicking] = React.useState<'start' | 'end'>('start');
@@ -62,6 +65,11 @@ export function RangeCalendar({
   const previewEnd = picking === 'end' && hover && hover >= start && hover <= latestEnd ? hover : end;
 
   const pick = (d: string) => {
+    if (mode === 'single') {
+      onChange(d, d);
+      onDone?.();
+      return;
+    }
     if (picking === 'start' || d < start) {
       onChange(d, d);
       setPicking('end');
@@ -80,7 +88,7 @@ export function RangeCalendar({
         </button>
         <div className="text-center">
           <p className="text-[14.5px] font-bold">{monthLabel}</p>
-          <p className="text-[11.5px] font-medium text-primary">{picking === 'start' ? L.pickStart : L.pickEnd}</p>
+          <p className="text-[11.5px] font-medium text-primary">{mode === 'single' ? L.pickSingle ?? L.pickStart : picking === 'start' ? L.pickStart : L.pickEnd}</p>
         </div>
         <button type="button" onClick={() => shift(1)} className="flex size-9 items-center justify-center rounded-full hover:bg-muted" aria-label="Next month">
           <ChevronRight className="size-5" />

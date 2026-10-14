@@ -7,6 +7,7 @@ import { DateUtil } from '@/lib/date-utils';
 import { Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Field, Input, Textarea } from '@/components/ui/input';
+import { TimeField } from '@/components/ui/time-field';
 
 /** Self-drive early return (requester) or trip completion (driver). */
 export function ReturnSheet({ open, id, mode }: { open: boolean; id?: string; mode: 'early' | 'complete' }) {
@@ -17,6 +18,7 @@ export function ReturnSheet({ open, id, mode }: { open: boolean; id?: string; mo
   const [time, setTime] = React.useState('');
   const [odo, setOdo] = React.useState('');
   const [notes, setNotes] = React.useState('');
+  const [timeOpen, setTimeOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!open || !b) return;
@@ -61,9 +63,9 @@ export function ReturnSheet({ open, id, mode }: { open: boolean; id?: string; mo
       </div>
 
       <div className="mt-4 space-y-3.5">
-        <Field label={t('return_time')} htmlFor="rt-time" required>
-          <Input id="rt-time" type="time" value={time} min={b.startTime} max={planned} onChange={e => setTime(e.target.value)} className="tabular" />
-        </Field>
+        <div className="grid gap-2">
+          <TimeField label={`${t('return_time')} *`} value={time} onChange={setTime} open={timeOpen} onOpenChange={setTimeOpen} />
+        </div>
         {early && (
           <p className="flex items-center gap-2 rounded-xl bg-success-soft px-3 py-2.5 text-[13px] font-medium text-success">
             <Sparkles className="size-4 shrink-0" />

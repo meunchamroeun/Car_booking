@@ -14,6 +14,7 @@ import { DayBar } from '@/components/common/day-bar';
 import { cn } from '@/lib/utils';
 import { TimeField } from '@/components/ui/time-field';
 import { RangeCalendar } from '@/components/ui/range-calendar';
+import { DateBox } from '@/components/ui/date-box';
 import { BOOKING_SLOTS, SLOT_ORDER } from '@/lib/slots';
 
 const SLOTS = SLOT_ORDER.map(key => ({ key, ...BOOKING_SLOTS[key] }));
@@ -200,11 +201,15 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
               </button>
             );
           })}
-          <label className={cn('relative flex h-[58px] w-[54px] shrink-0 cursor-pointer flex-col items-center justify-center rounded-2xl border', !days.includes(date) ? 'border-navy bg-navy text-navy-foreground dark:bg-primary' : 'bg-card')}>
+          <button
+            type="button"
+            onClick={() => setPicker(p => (p === 'dates' ? null : 'dates'))}
+            aria-label={t('plan_date')}
+            className={cn('flex h-[58px] w-[54px] shrink-0 flex-col items-center justify-center rounded-2xl border', !days.includes(date) || multiDay ? 'border-navy bg-navy text-navy-foreground dark:bg-primary' : 'bg-card hover:bg-muted')}
+          >
             <CalendarDays className="size-5 opacity-70" />
-            <span className="text-[10.5px] font-semibold">{!days.includes(date) ? DateUtil.dayNum(date) : '···'}</span>
-            <input type="date" min={today} value={date} onChange={e => e.target.value && (setDate(e.target.value), setEndDate(e.target.value))} className="absolute inset-0 opacity-0" aria-label={t('plan_date')} />
-          </label>
+            <span className="text-[10.5px] font-semibold">{!days.includes(date) || multiDay ? DateUtil.dayNum(date) : '···'}</span>
+          </button>
         </div>
 
         <div className="mt-2.5 grid grid-cols-3 gap-2">
@@ -335,25 +340,6 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
         </div>
       </Step>
     </Sheet>
-  );
-}
-
-/** Tappable date box; opens the range calendar. */
-function DateBox({ label, value, lang, active, onClick }: { label: string; value: string; lang: 'en' | 'kh'; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-expanded={active}
-      className={cn(
-        'relative flex h-[56px] items-center justify-between rounded-xl border bg-card pl-3.5 pr-3 pt-4 text-left transition-[border-color,box-shadow]',
-        active ? 'border-primary ring-[3px] ring-primary/15' : 'border-input hover:border-primary/40'
-      )}
-    >
-      <span className="absolute left-3.5 top-1.5 text-[11px] font-medium text-muted-foreground">{label}</span>
-      <span className="truncate text-[15px] font-bold">{DateUtil.longDate(value, lang).replace(/^.*, /, '')}</span>
-      <CalendarDays className={cn('-mt-4 size-[18px] shrink-0', active ? 'text-primary' : 'text-muted-foreground')} />
-    </button>
   );
 }
 
