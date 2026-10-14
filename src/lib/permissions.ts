@@ -15,13 +15,14 @@ export type Permission =
   | 'task.view_all'
   | 'task.execute'
   | 'fleet.manage'
+  | 'vehicle.maintenance'
   | 'driver.manage'
   | 'demo.reset';
 
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   Employee: ['booking.create', 'booking.view_own'],
   Driver: ['task.view_own', 'task.execute'],
-  Approver: ['booking.create', 'booking.view_own', 'booking.view_all', 'booking.approve', 'task.view_all'],
+  Approver: ['booking.create', 'booking.view_own', 'booking.view_all', 'booking.approve', 'task.view_all', 'vehicle.maintenance'],
   Admin: [
     'booking.create',
     'booking.view_own',
@@ -29,6 +30,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'booking.approve',
     'task.view_all',
     'fleet.manage',
+    'vehicle.maintenance',
     'driver.manage',
     'demo.reset',
   ],

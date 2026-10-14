@@ -168,7 +168,7 @@ function VehicleCard({ car }: { car: Car }) {
   const inService = app.isCarInMaintenance(car.id, selectedDate);
   const win = inService ? null : suggestWindow(app, car.id);
   const canBook = can(currentUser, 'booking.create');
-  const canManage = can(currentUser, 'fleet.manage');
+  const canManage = can(currentUser, 'vehicle.maintenance');
   // The whole card books the car (the button just shows which slot)
   const bookable = canBook && !!win;
   const book = () => win && openBooking(car.id, win[0], win[1]);

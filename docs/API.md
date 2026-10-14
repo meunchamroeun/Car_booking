@@ -17,7 +17,7 @@ Errors return `4xx` with `{ "message": "human readable reason" }` — the fronte
 | Role (`UserRole`) | UI label | Can do |
 |---|---|---|
 | `Employee` | Employee | Create bookings, see own bookings, cancel own, return self-drive car early |
-| `Approver` | Manager | Everything Employee can + approve/reject others' requests, assign drivers. **Cannot approve own requests** (an Admin does) |
+| `Approver` | Manager | Everything Employee can + approve/reject others' requests, assign drivers, set vehicles to maintenance / back to available. **Cannot approve own requests** (an Admin does) |
 | `Driver` | Driver | See own assignments, start trip, complete trip (return time + odometer). Cannot book |
 | `Admin` | Fleet admin | Everything Approver can + vehicle service/maintenance, driver on/off duty, approve anyone's request |
 
@@ -60,8 +60,8 @@ shortens `endTime`, sets `returnedEarly: true` — the freed slot is immediately
 | POST | `/bookings/:id/return` | `{ returnTime, notes? }` | `returnVehicle` | self-drive requester (or Admin), trip date = today |
 | POST | `/tasks/:id/start` | — | `startTask` | assigned driver; trip date ≤ today |
 | POST | `/tasks/:id/complete` | `{ returnTime, odometer?, notes? }` | `returnVehicle` | assigned driver; `odometer` ≥ car's current odometer (updates car) |
-| PUT | `/vehicles/:id/maintenance` | `{ mode: "manual", reason, workshop?, estimatedDate? }` or `{ mode: "scheduled", reason, workshop?, startDate, startTime, endDate, endTime }` | `setMaintenance` | Admin; notifies requesters of bookings inside the window |
-| DELETE | `/vehicles/:id/maintenance` | — | `clearMaintenance` | Admin |
+| PUT | `/vehicles/:id/maintenance` | `{ mode: "manual", reason, workshop?, estimatedDate? }` or `{ mode: "scheduled", reason, workshop?, startDate, startTime, endDate, endTime }` | `setMaintenance` | Manager or Admin; notifies requesters of bookings inside the window |
+| DELETE | `/vehicles/:id/maintenance` | — | `clearMaintenance` | Manager or Admin |
 | PATCH | `/drivers/:id` | `{ status: "Active" \| "OffDuty" }` | `toggleDriverDuty` | Admin |
 | POST | `/notifications/read-all` | — | `markNotificationsRead` | |
 

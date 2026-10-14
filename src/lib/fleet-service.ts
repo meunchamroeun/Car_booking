@@ -357,7 +357,7 @@ export function setMaintenance(
   carId: string,
   m: { mode: 'manual' | 'scheduled'; reason: string; workshop?: string; estimatedDate?: string; startDate?: string; startTime?: string; endDate?: string; endTime?: string }
 ): Result {
-  if (!can(actor, 'fleet.manage')) fail('Only fleet admins can change vehicle status.');
+  if (!can(actor, 'vehicle.maintenance')) fail('Only managers and fleet admins can change vehicle status.');
   if (!m.reason.trim()) fail('Describe the issue or service.');
   const today = DateUtil.todayStr();
   if (m.mode === 'scheduled' && (!m.startDate || !m.endDate || m.endDate < m.startDate)) fail('Check the service dates.');
@@ -406,7 +406,7 @@ export function setMaintenance(
 
 /** DELETE /vehicles/:id/maintenance */
 export function clearMaintenance(data: FleetData, actor: User, carId: string): Result {
-  if (!can(actor, 'fleet.manage')) fail('Only fleet admins can change vehicle status.');
+  if (!can(actor, 'vehicle.maintenance')) fail('Only managers and fleet admins can change vehicle status.');
   const car = data.cars.find(c => c.id === carId) ?? fail('Vehicle not found.');
   return {
     data: { ...data, cars: data.cars.map(c => (c.id === carId ? { ...c, status: 'Active', maintenance: null } : c)) },

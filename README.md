@@ -17,7 +17,7 @@ Live demo: https://car-booking-demo-app.vercel.app — also runs as a Telegram M
 | Account | Role | What to try |
 |---|---|---|
 | Sokha Chan | Employee | Home → Vehicles → Book this car → date & time, purpose, who drives → Book now; My Booking; show vehicle pass; return early |
-| Sophea Lim | Manager | Approvals → assign a driver (busy/off-duty drivers are blocked) or reject with reason. Own requests need an Admin |
+| Sophea Lim | Manager | Approvals → assign a driver (busy/off-duty drivers are blocked) or reject with reason; Home → Vehicles → Service to set a car to maintenance. Own requests need an Admin |
 | Rithy Kong / Bona Sam | Driver | Home hero → Start trip → Complete trip (return time + odometer) |
 | Chanthy Ouk | Fleet admin | Dashboard KPIs & utilisation, Fleet → vehicle service (out now / scheduled), drivers on/off duty |
 
