@@ -7,6 +7,13 @@ export const metadata: Metadata = {
   title: 'OONE Fleet — Company Car Booking',
   description: 'Book company vehicles, approve requests, dispatch drivers and manage the OONE fleet.',
   manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [
+      { url: '/brand/logo.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: { url: '/apple-touch-icon.png', sizes: '180x180' },
+  },
   appleWebApp: { capable: true, statusBarStyle: 'default', title: 'OONE Fleet' },
 };
 
