@@ -17,3 +17,4 @@ backup-before-redesign.tar.gz
 *.log
 .vscode/
 .idea/
+.vercel
