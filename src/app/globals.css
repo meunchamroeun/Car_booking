@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * OONE brand tokens (from oone.bz)
+ *   plum   #875A7B  → primary
+ *   mauve  #B26EA0  → accent
+ *   navy   #162447  → hero surfaces / headings
+ *   slate  #5B657E  → secondary text
+ * Values are HSL channels so Tailwind can apply opacity: bg-primary/10
+ */
+@layer base {
+  :root {
+    --background: 300 14% 97%;
+    --foreground: 223 45% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 223 45% 15%;
+    --muted: 300 12% 95%;
+    --muted-foreground: 223 14% 45%;
+    --secondary: 300 10% 94%;
+    --secondary-foreground: 223 45% 15%;
+    --accent: 316 31% 56%;
+    --accent-foreground: 0 0% 100%;
+    --border: 300 9% 90%;
+    --input: 300 9% 87%;
+    --ring: 316 20% 44%;
+
+    --primary: 316 20% 44%;
+    --primary-foreground: 0 0% 100%;
+    --primary-soft: 316 30% 95%;
+
+    --navy: 223 53% 18%;
+    --navy-foreground: 0 0% 100%;
+
+    --success: 152 58% 34%;
+    --success-soft: 148 45% 93%;
+    --warning: 32 90% 40%;
+    --warning-soft: 42 90% 92%;
+    --danger: 354 66% 50%;
+    --danger-soft: 355 80% 96%;
+    --info: 214 66% 46%;
+    --info-soft: 214 80% 95%;
+
+    --shadow: 223 53% 18%;
+    --radius: 1rem;
+    --nav-h: 68px;
+  }
+
+  .dark {
+    --background: 225 30% 7%;
+    --foreground: 220 25% 94%;
+    --card: 225 25% 11%;
+    --card-foreground: 220 25% 94%;
+    --muted: 225 20% 15%;
+    --muted-foreground: 220 12% 63%;
+    --secondary: 225 20% 16%;
+    --secondary-foreground: 220 25% 94%;
+    --accent: 316 35% 66%;
+    --accent-foreground: 225 30% 8%;
+    --border: 225 18% 19%;
+    --input: 225 18% 22%;
+    --ring: 316 32% 64%;
+
+    --primary: 316 32% 64%;
+    --primary-foreground: 225 30% 8%;
+    --primary-soft: 316 18% 18%;
+
+    --navy: 224 38% 16%;
+    --navy-foreground: 0 0% 100%;
+
+    --success: 150 50% 52%;
+    --success-soft: 152 30% 14%;
+    --warning: 38 90% 60%;
+    --warning-soft: 36 40% 14%;
+    --danger: 354 80% 66%;
+    --danger-soft: 354 35% 16%;
+    --info: 214 85% 66%;
+    --info-soft: 214 35% 16%;
+
+    --shadow: 0 0% 0%;
+  }
+
+  * {
+    @apply border-border;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    font-size: 15px;
+    -webkit-text-size-adjust: 100%;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+  }
+
+  html[lang='km'] body {
+    font-family: 'Kantumruy Pro', Inter, system-ui, sans-serif;
+    line-height: 1.6;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  input[type='date']::-webkit-calendar-picker-indicator,
+  input[type='time']::-webkit-calendar-picker-indicator {
+    opacity: 0.55;
+    cursor: pointer;
+  }
+  .dark input[type='date']::-webkit-calendar-picker-indicator,
+  .dark input[type='time']::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
+}
+
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 10px);
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .hero-pattern {
+    background-image: radial-gradient(120% 90% at 100% 0%, hsl(var(--accent) / 0.45) 0%, transparent 55%),
+      radial-gradient(80% 80% at 0% 100%, hsl(var(--primary) / 0.35) 0%, transparent 60%);
+  }
+}

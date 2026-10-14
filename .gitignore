@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# next.js build output
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# local backups (old UI is kept in legacy/)
+backup-before-redesign.tar.gz
+
+# env / OS / editor
+.env*
+!.env.example
+.DS_Store
+*.log
+.vscode/
+.idea/
