@@ -78,7 +78,7 @@ export function TimeField({
       <div
         className={cn(
           'relative flex h-[56px] items-center rounded-xl border bg-card pl-3.5 pr-1 transition-[border-color,box-shadow]',
-          open ? 'border-primary ring-4 ring-primary/12' : 'border-input',
+          open ? 'border-primary ring-[3px] ring-primary/15' : 'border-input focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/15',
           (bad || invalid) && 'border-destructive'
         )}
       >
@@ -96,7 +96,7 @@ export function TimeField({
           onBlur={commit}
           onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), (e.target as HTMLInputElement).blur())}
           aria-invalid={bad || invalid}
-          className="h-full min-w-0 flex-1 bg-transparent pt-4 text-[18px] font-bold tabular outline-none"
+          className="h-full min-w-0 flex-1 bg-transparent pt-4 text-[18px] font-bold tabular outline-none focus-visible:ring-0"
         />
         <button
           type="button"

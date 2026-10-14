@@ -16,7 +16,7 @@ export function TimeSelect({ value, onChange, label, min, className }: { value: 
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="h-[52px] w-full appearance-none rounded-xl border border-input bg-card pl-3.5 pr-9 pt-4 text-[16px] font-semibold tabular focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/12"
+        className="h-[52px] w-full appearance-none rounded-xl border border-input bg-card pl-3.5 pr-9 pt-4 text-[16px] font-semibold tabular focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15"
       >
         {TIME_OPTIONS.map(t => (
           <option key={t} value={t} disabled={!!min && t <= min}>
