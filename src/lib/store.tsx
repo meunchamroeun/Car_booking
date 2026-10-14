@@ -7,6 +7,7 @@ import { I18N_DICTIONARY } from '@/lib/i18n';
 import { DateUtil } from '@/lib/date-utils';
 import { ROLE_DEFAULT_TAB, ROLE_TABS } from '@/lib/permissions';
 import * as svc from '@/lib/fleet-service';
+import { getTelegram, haptic, initTelegram, syncTelegramTheme } from '@/lib/telegram';
 
 export interface ToastItem {
   id: string;
@@ -131,10 +132,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Hydrate from localStorage
   useEffect(() => {
+    const tg = initTelegram();
     const th = store.get(THEME_KEY) as ThemeMode | null;
     const prefersDark = typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-    applyTheme(th ?? (prefersDark ? 'dark' : 'light'));
-    setThemeState(th ?? (prefersDark ? 'dark' : 'light'));
+    // Inside Telegram, follow the user's Telegram theme unless they picked one in the app
+    const initial = th ?? (tg ? tg.colorScheme : prefersDark ? 'dark' : 'light');
+    applyTheme(initial);
+    setThemeState(initial);
 
     const lg = store.get(LANG_KEY) as Language | null;
     if (lg) setLangState(lg);
@@ -174,6 +178,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   function applyTheme(th: ThemeMode) {
+    syncTelegramTheme(th);
     document.documentElement.setAttribute('data-theme', th);
     document.documentElement.classList.toggle('dark', th === 'dark');
   }
@@ -209,12 +214,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       commit(res.data);
       if (close) setSheet(null);
       showToast(res.message, 'success');
+      haptic('success');
       return true;
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Something went wrong', 'error');
+      haptic('error');
       return false;
     }
   };
+
+  // Telegram's native Back button: closes the open sheet, otherwise returns to Home
+  useEffect(() => {
+    const tg = getTelegram();
+    if (!tg || !tg.isVersionAtLeast('6.1')) return;
+    const home = ROLE_DEFAULT_TAB[currentUser.role];
+    const canGoBack = !!sheet || currentTab !== home;
+    const onBack = () => (sheet ? setSheet(null) : setCurrentTab(home));
+    if (canGoBack) tg.BackButton.show();
+    else tg.BackButton.hide();
+    tg.BackButton.onClick(onBack);
+    return () => tg.BackButton.offClick(onBack);
+  }, [sheet, currentTab, currentUser.role]);
 
   // Badges
   const pendingApprovalsCount = useMemo(
