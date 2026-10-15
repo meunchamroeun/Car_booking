@@ -62,7 +62,9 @@ export function DayBar({
       .filter(([s, e]) => e > s)
       .sort((x, y) => x[0] - y[0]);
     const out: { start: string; end: string }[] = [];
-    let cur = DAY_START * 60;
+    // Today: free time only counts from now on — the past can't be booked
+    const nowM = DateUtil.toMins(DateUtil.nowTimeStr());
+    let cur = date === DateUtil.todayStr() ? Math.max(DAY_START * 60, nowM) : DAY_START * 60;
     for (const [s, e] of taken) {
       if (s - cur >= 15) out.push({ start: hhmm(cur), end: hhmm(s) });
       cur = Math.max(cur, e);
@@ -70,7 +72,7 @@ export function DayBar({
     if (DAY_END * 60 - cur >= 15) out.push({ start: hhmm(cur), end: hhmm(DAY_END * 60) });
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookings, maintenance]);
+  }, [bookings, maintenance, date]);
 
   const toggle = (next: NonNullable<Selection>) =>
     setSel(cur => (cur && JSON.stringify(cur) === JSON.stringify(next) ? null : next));
@@ -86,6 +88,10 @@ export function DayBar({
     >
       <div className="relative">
         <div className={cn('relative overflow-hidden rounded-full bg-success/20', highlight || interactive ? 'h-3' : 'h-2')}>
+          {/* Time already passed today: grey diagonal stripes (//////) */}
+          {isToday && now > 0 && !maintenance && (
+            <div className="absolute inset-y-0 left-0 bg-muted bg-[repeating-linear-gradient(135deg,hsl(var(--muted-foreground)/0.38)_0_2px,transparent_2px_6px)]" style={{ width: `${now}%` }} aria-hidden />
+          )}
           {maintenance ? (
             <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,hsl(var(--warning)/0.55)_0_5px,hsl(var(--warning)/0.25)_5px_10px)]" />
           ) : (
@@ -247,7 +253,7 @@ function SegmentDetail({
   );
 }
 
-export type LegendKey = 'free' | 'booked' | 'returned' | 'yours' | 'clash' | 'now' | 'service';
+export type LegendKey = 'free' | 'booked' | 'returned' | 'yours' | 'clash' | 'now' | 'past' | 'service';
 
 /** Swatches drawn with the exact same styles as the bar, so the key always matches. */
 const SWATCH: Record<LegendKey, React.ReactNode> = {
@@ -257,6 +263,7 @@ const SWATCH: Record<LegendKey, React.ReactNode> = {
   yours: <span className="h-2.5 w-4 rounded-full border-2 border-success bg-success/35" />,
   clash: <span className="h-2.5 w-4 rounded-full border-2 border-destructive bg-destructive/30" />,
   now: <span className="h-3 w-0.5 rounded-full bg-foreground/70" />,
+  past: <span className="h-2.5 w-4 rounded-full bg-muted bg-[repeating-linear-gradient(135deg,hsl(var(--muted-foreground)/0.38)_0_2px,transparent_2px_6px)]" />,
   service: <span className="h-2.5 w-4 rounded-full bg-[repeating-linear-gradient(45deg,hsl(var(--warning)/0.55)_0_3px,hsl(var(--warning)/0.25)_3px_6px)]" />,
 };
 
@@ -267,6 +274,7 @@ export const legendLabels = (t: (k: string) => string): Record<LegendKey, string
   yours: t('lg_yours'),
   clash: t('lg_clash'),
   now: t('lg_now'),
+  past: t('passed'),
   service: t('lg_service'),
 });
 

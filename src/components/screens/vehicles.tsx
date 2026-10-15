@@ -131,7 +131,7 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
             <div className="rounded-xl border bg-card px-3 py-2">
               <DayBarLegend
                 labels={legendLabels(t)}
-                items={['free', 'booked', ...(selectedDate === DateUtil.todayStr() ? (['now'] as const) : []), 'service']}
+                items={['free', 'booked', ...(selectedDate === DateUtil.todayStr() ? (['past', 'now'] as const) : []), 'service']}
               />
               <p className="mt-1 text-[11px] text-muted-foreground">{t('bar_tap_hint')}</p>
             </div>

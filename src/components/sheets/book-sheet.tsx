@@ -285,7 +285,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           <DayBarLegend
             className="mt-2"
             labels={legendLabels(t)}
-            items={['free', 'booked', timeProblem ? 'clash' : 'yours', ...(date === today ? (['now'] as const) : [])]}
+            items={['free', 'booked', timeProblem ? 'clash' : 'yours', ...(date === today ? (['past', 'now'] as const) : [])]}
           />
           {booked.length > 0 && (
             <ul className="mt-2 space-y-1.5">
