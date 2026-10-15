@@ -41,6 +41,8 @@ const en = {
   // Common
   today: 'Today',
   tomorrow: 'Tomorrow',
+  select_date: 'Select date',
+  other_date: 'Other date',
   see_all: 'See all',
   cancel: 'Cancel',
   close: 'Close',
@@ -463,6 +465,8 @@ const kh: Partial<Dict> = {
 
   today: 'ថ្ងៃនេះ',
   tomorrow: 'ថ្ងៃស្អែក',
+  select_date: 'រើសថ្ងៃ',
+  other_date: 'ថ្ងៃផ្សេង',
   see_all: 'មើលទាំងអស់',
   cancel: 'បោះបង់',
   close: 'បិទ',
