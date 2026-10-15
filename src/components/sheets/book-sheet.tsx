@@ -7,7 +7,7 @@ import { DateUtil } from '@/lib/date-utils';
 import { occupyingBookings } from '@/lib/fleet-service';
 import { Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/input';
+import { Input, Textarea } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { CarPhoto } from '@/components/common/car-photo';
 import { DayBar, DayBarLegend, legendLabels } from '@/components/common/day-bar';
@@ -71,7 +71,8 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   const { start, end } = range;
   const multiDay = endDate !== date;
   const preset = multiDay ? undefined : SLOTS.find(s => s.start === start && s.end === end);
-  const days = [0, 1, 2, 3, 4].map(i => DateUtil.addDays(today, i));
+  const tomorrow = React.useMemo(() => DateUtil.addDays(today, 1), [today]);
+  const isCustom = (date !== today && date !== tomorrow) || date !== endDate;
 
 
   const slotProblem = (s: string, e: string): string | null => {
@@ -187,35 +188,65 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
 
       {/* 2. Date & time */}
       <Step n={2} icon={<CalendarDays />} label={`${t('plan_date')} & ${t('plan_time')}`} value={windowText} done={!timeProblem}>
-        <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5">
-          {days.map(d => {
-            const active = d === date && !multiDay;
-            return (
-              <button
-                key={d}
-                type="button"
-                aria-pressed={active}
-                onClick={() => (setDate(d), setEndDate(d))}
-                className={cn(
-                  'flex h-[58px] w-[54px] shrink-0 flex-col items-center justify-center rounded-2xl border transition-all',
-                  active ? 'border-navy bg-navy text-navy-foreground dark:border-primary dark:bg-primary dark:text-primary-foreground' : 'bg-card hover:bg-muted'
-                )}
-              >
-                <span className={cn('text-[10.5px] font-medium leading-none truncate max-w-full px-0.5', active ? 'opacity-75' : 'text-muted-foreground')}>
-                  {d === today ? t('today') : d === DateUtil.addDays(today, 1) ? t('tomorrow') : DateUtil.weekdayShort(d, lang)}
-                </span>
-                <span className="mt-1 text-[18px] font-bold leading-tight tabular">{DateUtil.dayNum(d)}</span>
-              </button>
-            );
-          })}
+        {/* Date Selector: Today | Tomorrow | Select Date */}
+        <div className="grid grid-cols-3 gap-1 rounded-2xl bg-muted/60 p-1 text-[13px]" role="radiogroup" aria-label={t('date')}>
+          {/* Today */}
+          <button
+            type="button"
+            onClick={() => {
+              setDate(today);
+              setEndDate(today);
+              setPicker(null);
+            }}
+            className={cn(
+              'flex h-[44px] flex-col items-center justify-center rounded-xl transition-all',
+              date === today && !multiDay && picker !== 'dates'
+                ? 'bg-background text-foreground shadow-xs font-semibold'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <span className="leading-tight text-[12.5px]">{t('today')}</span>
+            <span className="text-[10px] opacity-70 tabular leading-none">{DateUtil.formatDate(today, lang)}</span>
+          </button>
+
+          {/* Tomorrow */}
+          <button
+            type="button"
+            onClick={() => {
+              setDate(tomorrow);
+              setEndDate(tomorrow);
+              setPicker(null);
+            }}
+            className={cn(
+              'flex h-[44px] flex-col items-center justify-center rounded-xl transition-all',
+              date === tomorrow && !multiDay && picker !== 'dates'
+                ? 'bg-background text-foreground shadow-xs font-semibold'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <span className="leading-tight text-[12.5px]">{t('tomorrow')}</span>
+            <span className="text-[10px] opacity-70 tabular leading-none">{DateUtil.formatDate(tomorrow, lang)}</span>
+          </button>
+
+          {/* Select / Key in date */}
           <button
             type="button"
             onClick={() => setPicker(p => (p === 'dates' ? null : 'dates'))}
-            aria-label={t('plan_date')}
-            className={cn('flex h-[58px] w-[54px] shrink-0 flex-col items-center justify-center rounded-2xl border', !days.includes(date) || multiDay ? 'border-navy bg-navy text-navy-foreground dark:bg-primary' : 'bg-card hover:bg-muted')}
+            aria-expanded={picker === 'dates'}
+            className={cn(
+              'flex h-[44px] flex-col items-center justify-center rounded-xl transition-all',
+              isCustom || picker === 'dates'
+                ? 'bg-background text-primary shadow-xs font-semibold'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
           >
-            <CalendarDays className="size-5 opacity-70" />
-            <span className="text-[10.5px] font-semibold">{!days.includes(date) || multiDay ? DateUtil.dayNum(date) : '···'}</span>
+            <span className="flex items-center gap-1 leading-tight text-[12.5px]">
+              <CalendarDays className="size-3.5 shrink-0" />
+              <span className="truncate">{isCustom ? DateUtil.formatDate(date, lang) : t('select_date')}</span>
+            </span>
+            <span className="text-[10px] opacity-70 truncate max-w-full px-1 leading-none">
+              {isCustom ? (multiDay ? `${DateUtil.formatDate(date, lang)}–${DateUtil.formatDate(endDate, lang)}` : DateUtil.weekdayShort(date, lang)) : t('key_in_or_pick')}
+            </span>
           </button>
         </div>
 
@@ -231,23 +262,85 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           })}
         </div>
 
-        {/* Date range (calendar) + exact From/To time (type it or scroll the wheel) */}
+        {/* Date range (calendar & direct key-in) + exact From/To time */}
         <div className="mt-3 space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <DateBox label={t('start_date')} value={date} lang={lang} active={picker === 'dates'} onClick={() => setPicker(p => (p === 'dates' ? null : 'dates'))} />
             <DateBox label={t('end_date')} value={endDate} lang={lang} active={picker === 'dates'} onClick={() => setPicker(p => (p === 'dates' ? null : 'dates'))} />
           </div>
           {picker === 'dates' && (
-            <RangeCalendar
-              start={date}
-              end={endDate}
-              min={today}
-              lang={lang}
-              onChange={(s, e) => (setDate(s), setEndDate(e))}
-              onDone={() => setPicker(null)}
-              markDay={d => (car && isCarInMaintenance(car.id, d) ? 'service' : car && occupyingBookings(app, car.id, d).some(b => b.status === 'Approved') ? 'booked' : undefined)}
-              labels={{ pickStart: t('cal_pick_start'), pickEnd: t('cal_pick_end'), booked: t('cal_booked'), unavailable: t('unavailable'), prev: t('a11y_prev_month'), next: t('a11y_next_month') }}
-            />
+            <div className="space-y-2.5 rounded-2xl border bg-card p-3 shadow-card animate-in fade-in-0 zoom-in-95">
+              <div className="flex items-center justify-between border-b pb-2">
+                <span className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
+                  <CalendarDays className="size-4 text-primary" />
+                  {t('select_date')} · <span className="font-normal text-muted-foreground">{multiDay ? `${DateUtil.formatDate(date, lang)} – ${DateUtil.formatDate(endDate, lang)}` : DateUtil.longDate(date, lang)}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPicker(null)}
+                  className="rounded-lg px-2 py-0.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  {t('close')}
+                </button>
+              </div>
+
+              {/* Direct Key-In Date Inputs */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-muted-foreground">{t('start_date')}</label>
+                  <Input
+                    type="date"
+                    min={today}
+                    value={date}
+                    onChange={e => {
+                      if (e.target.value) {
+                        const newStart = e.target.value;
+                        setDate(newStart);
+                        if (newStart > endDate) setEndDate(newStart);
+                      }
+                    }}
+                    className="h-9 text-[12.5px] font-medium bg-muted/40"
+                    aria-label={t('start_date')}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium text-muted-foreground">{t('end_date')}</label>
+                  <Input
+                    type="date"
+                    min={date}
+                    value={endDate}
+                    onChange={e => {
+                      if (e.target.value) {
+                        setEndDate(e.target.value);
+                      }
+                    }}
+                    className="h-9 text-[12.5px] font-medium bg-muted/40"
+                    aria-label={t('end_date')}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  className="h-8 px-3 font-semibold text-[12px]"
+                  onClick={() => setPicker(null)}
+                >
+                  {t('confirm')}
+                </Button>
+              </div>
+
+              <RangeCalendar
+                start={date}
+                end={endDate}
+                min={today}
+                lang={lang}
+                onChange={(s, e) => (setDate(s), setEndDate(e))}
+                onDone={() => setPicker(null)}
+                markDay={d => (car && isCarInMaintenance(car.id, d) ? 'service' : car && occupyingBookings(app, car.id, d).some(b => b.status === 'Approved') ? 'booked' : undefined)}
+                labels={{ pickStart: t('cal_pick_start'), pickEnd: t('cal_pick_end'), booked: t('cal_booked'), unavailable: t('unavailable'), prev: t('a11y_prev_month'), next: t('a11y_next_month') }}
+              />
+            </div>
           )}
           <div className="grid grid-cols-2 gap-2">
             <TimeField

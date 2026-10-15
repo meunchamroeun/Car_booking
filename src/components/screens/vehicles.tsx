@@ -240,7 +240,7 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
           <EmptyState
             icon={<CarFront />}
             title={searchQuery ? (lang === 'kh' ? 'រកមិនឃើញរថយន្ត' : 'No matching vehicles') : t('no_results')}
-            description={searchQuery || filterType !== 'all' ? (lang === 'kh' ? 'សូមសាកល្បងផ្លាស់ប្តូរពាក្យស្វែងរក ឬប្រភេទរថយន្ត' : 'Try clearing your filters or search keywords') : undefined}
+            desc={searchQuery || filterType !== 'all' ? (lang === 'kh' ? 'សូមសាកល្បងផ្លាស់ប្តូរពាក្យស្វែងរក ឬប្រភេទរថយន្ត' : 'Try clearing your filters or search keywords') : undefined}
           />
         ) : viewMode === 'cards' ? (
           <div className="space-y-3">
