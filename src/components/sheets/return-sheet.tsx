@@ -6,7 +6,7 @@ import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Field, Input, Textarea } from '@/components/ui/input';
+import { Field, Textarea } from '@/components/ui/input';
 import { TimeField } from '@/components/ui/time-field';
 
 /** Self-drive early return (requester) or trip completion (driver). */
@@ -16,7 +16,6 @@ export function ReturnSheet({ open, id, mode }: { open: boolean; id?: string; mo
   const car = cars.find(c => c.id === b?.carId);
 
   const [time, setTime] = React.useState('');
-  const [odo, setOdo] = React.useState('');
   const [notes, setNotes] = React.useState('');
   const [timeOpen, setTimeOpen] = React.useState(false);
 
@@ -27,7 +26,6 @@ export function ReturnSheet({ open, id, mode }: { open: boolean; id?: string; mo
     // Default to "now", clamped inside the trip window
     const clamped = DateUtil.toMins(now) > DateUtil.toMins(planned) ? planned : DateUtil.toMins(now) <= DateUtil.toMins(b.startTime) ? planned : now;
     setTime(clamped);
-    setOdo('');
     setNotes('');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, id]);
@@ -35,7 +33,6 @@ export function ReturnSheet({ open, id, mode }: { open: boolean; id?: string; mo
   if (!b) return null;
   const planned = b.originalEndTime || b.endTime;
   const early = time && DateUtil.toMins(time) < DateUtil.toMins(planned);
-  const odoLow = !!odo && !!car?.odometer && Number(odo) < car.odometer;
 
   return (
     <Sheet
@@ -44,7 +41,7 @@ export function ReturnSheet({ open, id, mode }: { open: boolean; id?: string; mo
       title={mode === 'complete' ? t('complete_title') : t('return_title')}
       description={`${car?.name} · ${car?.plate}`}
       footer={
-        <Button size="lg" variant={mode === 'complete' ? 'success' : 'default'} className="w-full" disabled={!time || odoLow} onClick={() => returnVehicle(b.id, { returnTime: time, odometer: odo || undefined, notes })}>
+        <Button size="lg" variant={mode === 'complete' ? 'success' : 'default'} className="w-full" disabled={!time} onClick={() => returnVehicle(b.id, { returnTime: time, notes })}>
           {mode === 'complete' ? t('complete_trip') : t('return_early')}
         </Button>
       }
@@ -72,9 +69,6 @@ export function ReturnSheet({ open, id, mode }: { open: boolean; id?: string; mo
             {t('release_hint', { time: planned, h: DateUtil.diffHours(time, planned) })}
           </p>
         )}
-        <Field label={t('odometer')} htmlFor="rt-odo" hint={car?.odometer ? `≥ ${car.odometer.toLocaleString()}` : undefined} error={odoLow ? `≥ ${car?.odometer?.toLocaleString()} km` : undefined}>
-          <Input id="rt-odo" inputMode="numeric" value={odo} onChange={e => setOdo(e.target.value.replace(/\D/g, ''))} placeholder={car?.odometer ? String(car.odometer + 40) : ''} aria-invalid={odoLow} />
-        </Field>
         <Field label={t('notes')} htmlFor="rt-notes">
           <Textarea id="rt-notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder={t('notes_ph')} maxLength={250} />
         </Field>

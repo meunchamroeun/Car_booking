@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarClock, CarFront, CheckCircle2, ClipboardCheck, FileText, Gauge, MapPin, Phone, RotateCcw, Route, UserRound, XCircle } from 'lucide-react';
+import { CalendarClock, CarFront, CheckCircle2, ClipboardCheck, FileText, MapPin, Phone, RotateCcw, Route, UserRound, XCircle } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { canCancel, canCompleteTask, canReturnEarly, canReview, canShowPass, canStartTask } from '@/lib/permissions';
@@ -149,10 +149,9 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
           <span className="font-medium">{b.purpose}</span>
           <span className="block text-[12.5px] font-normal text-muted-foreground">{t('pax', { n: b.passengers })}</span>
         </InfoRow>
-        {(b.endOdometer || b.completionNotes) && (
-          <InfoRow icon={<Gauge />} label={t('odometer')}>
-            {b.endOdometer ? `${Number(b.endOdometer).toLocaleString()} km` : '—'}
-            {b.completionNotes && <span className="block text-[12.5px] font-normal text-muted-foreground">{b.completionNotes}</span>}
+        {b.completionNotes && (
+          <InfoRow icon={<FileText />} label={t('notes')}>
+            <span className="font-medium">{b.completionNotes}</span>
           </InfoRow>
         )}
       </div>
