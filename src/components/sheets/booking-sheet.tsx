@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarClock, CarFront, Check, CheckCircle2, ClipboardCheck, FileText, MapPin, Phone, RotateCcw, Route, UserRound, XCircle } from 'lucide-react';
+import { CalendarClock, CarFront, Check, CheckCircle2, ClipboardCheck, Copy, ExternalLink, FileText, MapPin, Phone, RotateCcw, Route, UserRound, X, XCircle } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { isLive } from '@/lib/selectors';
 import { DateUtil } from '@/lib/date-utils';
@@ -14,6 +14,7 @@ import { CarPhoto } from '@/components/common/car-photo';
 import { cn } from '@/lib/utils';
 import qrcode from 'qrcode-generator';
 import { passToken, passUrl } from '@/lib/pass';
+import { haptic } from '@/lib/telegram';
 
 export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
   const app = useApp();
@@ -249,7 +250,7 @@ function Progress({ b, approverName }: { b: Booking; approverName?: string }) {
   );
 }
 
-/** Digital vehicle pass with a deterministic QR-style code for the guard house. */
+/** Digital vehicle pass with a scannable QR for the guard house. */
 function Pass({ b }: { b: Booking }) {
   const { cars, users, drivers, t, lang } = useApp();
   const car = cars.find(c => c.id === b.carId)!;
@@ -266,15 +267,9 @@ function Pass({ b }: { b: Booking }) {
         </div>
         <CarPhoto car={car} zoomable className="h-16 w-24 shrink-0 rounded-xl ring-1 ring-white/20" />
       </div>
-      <div className="relative mx-4 mt-3 flex items-center justify-center rounded-2xl bg-white p-3">
-        <QrCode value={url} />
-      </div>
+      <HoldQr url={url} />
       <p className="px-4 pt-2 text-center text-[11.5px] text-white/60">{t('pass_hint')}</p>
-      <p className="pt-1 text-center">
-        <a href={url} target="_blank" rel="noreferrer" className="text-[11.5px] font-semibold text-[hsl(var(--accent))] underline-offset-2 hover:underline">
-          {t('pass_open_check')}
-        </a>
-      </p>
+      <p className="pt-0.5 text-center text-[11.5px] font-semibold text-[hsl(var(--accent))]">{t('pass_hold_hint')}</p>
       <div className="relative mt-3 border-t border-dashed border-white/20 px-4 py-3">
         <span className="absolute -left-3 -top-3 size-6 rounded-full bg-background" />
         <span className="absolute -right-3 -top-3 size-6 rounded-full bg-background" />
@@ -298,6 +293,92 @@ function Pass({ b }: { b: Booking }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** The QR; press and hold it (or right-click) to see the link it holds, copy it or open it. */
+function HoldQr({ url }: { url: string }) {
+  const { t } = useApp();
+  const [show, setShow] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
+  const timer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const reveal = () => {
+    setShow(true);
+    setCopied(false);
+    haptic('success');
+  };
+  const start = () => {
+    clearTimeout(timer.current);
+    timer.current = setTimeout(reveal, 450);
+  };
+  const cancel = () => clearTimeout(timer.current);
+  React.useEffect(() => cancel, []);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Older webviews: copy through a hidden text box
+      const ta = Object.assign(document.createElement('textarea'), { value: url });
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+    setCopied(true);
+    haptic('success');
+  };
+
+  return (
+    <div
+      className="relative mx-4 mt-3 flex select-none items-center justify-center rounded-2xl bg-white p-3 [-webkit-touch-callout:none]"
+      onPointerDown={show ? undefined : start}
+      onPointerUp={cancel}
+      onPointerLeave={cancel}
+      onPointerCancel={cancel}
+      onContextMenu={e => (e.preventDefault(), reveal())}
+    >
+      <QrCode value={url} />
+      {show && (
+        <div className="absolute inset-0 flex flex-col rounded-2xl bg-white/95 p-3 text-[#162447] backdrop-blur-sm animate-in fade-in-0 zoom-in-95 duration-150">
+          <div className="flex items-center justify-between">
+            <p className="text-[12px] font-semibold uppercase tracking-wide text-[#5B657E]">{t('pass_link')}</p>
+            <button
+              type="button"
+              onClick={() => setShow(false)}
+              aria-label={t('close')}
+              className="flex size-7 items-center justify-center rounded-full text-[#5B657E] hover:bg-black/5"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+          <p className="mt-1 min-h-0 flex-1 select-text overflow-y-auto break-all rounded-xl bg-[#162447]/[0.06] px-2.5 py-2 font-mono text-[11px] leading-snug">{url}</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={copy}
+              className={cn(
+                'flex h-10 items-center justify-center gap-1.5 rounded-xl text-[13px] font-semibold transition-colors',
+                copied ? 'bg-success-soft text-success' : 'bg-[#162447]/[0.08] hover:bg-[#162447]/[0.12]'
+              )}
+            >
+              {copied ? <Check className="size-4" strokeWidth={3} /> : <Copy className="size-4" />}
+              {copied ? t('copied') : t('copy_link')}
+            </button>
+            <a
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#162447] text-[13px] font-semibold text-white hover:bg-[#162447]/90"
+            >
+              <ExternalLink className="size-4" />
+              {t('open_link')}
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
