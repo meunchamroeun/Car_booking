@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { BookingStatusBadge } from '@/components/common/status';
 import { CarPhoto } from '@/components/common/car-photo';
 import { cn } from '@/lib/utils';
+import qrcode from 'qrcode-generator';
+import { passToken, passUrl } from '@/lib/pass';
 
 export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
   const app = useApp();
@@ -249,9 +251,11 @@ function Progress({ b, approverName }: { b: Booking; approverName?: string }) {
 
 /** Digital vehicle pass with a deterministic QR-style code for the guard house. */
 function Pass({ b }: { b: Booking }) {
-  const { cars, users, t, lang } = useApp();
+  const { cars, users, drivers, t, lang } = useApp();
   const car = cars.find(c => c.id === b.carId)!;
   const requester = users.find(u => u.id === b.requesterId);
+  // The QR opens <app>/?pass=… on any phone, which shows whether the pass is valid right now
+  const url = passUrl(passToken(b, car, requester, drivers.find(d => d.id === b.driverId)?.name));
   return (
     <div className="hero-pattern overflow-hidden rounded-[22px] bg-navy text-navy-foreground">
       <div className="flex items-center justify-between px-4 pt-4">
@@ -263,10 +267,14 @@ function Pass({ b }: { b: Booking }) {
         <CarPhoto car={car} zoomable className="h-16 w-24 shrink-0 rounded-xl ring-1 ring-white/20" />
       </div>
       <div className="relative mx-4 mt-3 flex items-center justify-center rounded-2xl bg-white p-3">
-        <QrCode value={`${b.id}|${car.plate}|${b.startDate}`} />
-        <span className="pointer-events-none absolute inset-x-6 h-0.5 animate-scan rounded-full bg-[hsl(var(--accent))] shadow-[0_0_12px_hsl(var(--accent))]" />
+        <QrCode value={url} />
       </div>
       <p className="px-4 pt-2 text-center text-[11.5px] text-white/60">{t('pass_hint')}</p>
+      <p className="pt-1 text-center">
+        <a href={url} target="_blank" rel="noreferrer" className="text-[11.5px] font-semibold text-[hsl(var(--accent))] underline-offset-2 hover:underline">
+          {t('pass_open_check')}
+        </a>
+      </p>
       <div className="relative mt-3 border-t border-dashed border-white/20 px-4 py-3">
         <span className="absolute -left-3 -top-3 size-6 rounded-full bg-background" />
         <span className="absolute -right-3 -top-3 size-6 rounded-full bg-background" />
@@ -294,36 +302,24 @@ function Pass({ b }: { b: Booking }) {
   );
 }
 
-function QrCode({ value, size = 25 }: { value: string; size?: number }) {
+/** Real, scannable QR code (qrcode-generator), drawn as crisp SVG squares. */
+function QrCode({ value }: { value: string }) {
   const { t } = useApp();
-  const cells = React.useMemo(() => {
-    let h = 2166136261;
-    for (const ch of value) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
-    const rand = () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)) >>> 0) / 4294967296;
-    const finder = (x: number, y: number) => {
-      for (const [fx, fy] of [[0, 0], [size - 7, 0], [0, size - 7]]) {
-        const dx = x - fx;
-        const dy = y - fy;
-        if (dx >= 0 && dx < 7 && dy >= 0 && dy < 7) {
-          const ring = Math.max(Math.abs(dx - 3), Math.abs(dy - 3));
-          return ring === 3 || ring <= 1 ? 1 : 0;
-        }
-        if (dx >= -1 && dx <= 7 && dy >= -1 && dy <= 7) return 0;
-      }
-      return null;
-    };
+  const { cells, n } = React.useMemo(() => {
+    const qr = qrcode(0, 'M'); // version picked automatically, medium error correction
+    qr.addData(value);
+    qr.make();
+    const count = qr.getModuleCount();
     const out: [number, number][] = [];
-    for (let y = 0; y < size; y++)
-      for (let x = 0; x < size; x++) {
-        const f = finder(x, y);
-        if (f === 1 || (f === null && rand() > 0.52)) out.push([x, y]);
-      }
-    return out;
-  }, [value, size]);
+    for (let y = 0; y < count; y++) for (let x = 0; x < count; x++) if (qr.isDark(y, x)) out.push([x, y]);
+    return { cells: out, n: count };
+  }, [value]);
+  // 2-module quiet zone around the code so scanners can find it
   return (
-    <svg viewBox={`-1 -1 ${size + 2} ${size + 2}`} className="size-36" shapeRendering="crispEdges" aria-label={t('a11y_qr')}>
+    <svg viewBox={`-2 -2 ${n + 4} ${n + 4}`} className="size-44" shapeRendering="crispEdges" role="img" aria-label={t('a11y_qr')}>
+      <rect x={-2} y={-2} width={n + 4} height={n + 4} fill="#fff" />
       {cells.map(([x, y]) => (
-        <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="#162447" />
+        <rect key={`${x}-${y}`} x={x} y={y} width="1.02" height="1.02" fill="#162447" />
       ))}
     </svg>
   );
