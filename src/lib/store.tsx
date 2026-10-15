@@ -59,7 +59,7 @@ interface AppContextType extends FleetData {
 
   // Actions — each one maps to an API endpoint (docs/API.md)
   createBooking: (input: svc.CreateBookingInput) => boolean;
-  approveBooking: (id: string, driverId: string | null) => boolean;
+  approveBooking: (id: string, driverId: string | null, assignDriver?: boolean) => boolean;
   rejectBooking: (id: string, reason: string) => boolean;
   cancelBooking: (id: string, reason?: string) => boolean;
   startTask: (id: string) => boolean;
@@ -328,7 +328,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (ok) setCurrentTab(currentUser.role === 'Admin' ? 'home' : 'trips');
       return ok;
     },
-    approveBooking: (id, driverId) => run(() => svc.approveBooking(data, currentUser, id, driverId)),
+    approveBooking: (id, driverId, assignDriver = true) => run(() => svc.approveBooking(data, currentUser, id, driverId, assignDriver)),
     rejectBooking: (id, reason) => run(() => svc.rejectBooking(data, currentUser, id, reason)),
     cancelBooking: (id, reason) => run(() => svc.cancelBooking(data, currentUser, id, reason)),
     startTask: id => run(() => svc.startTask(data, currentUser, id), false),

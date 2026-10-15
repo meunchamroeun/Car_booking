@@ -54,7 +54,7 @@ shortens `endTime`, sets `returnedEarly: true` — the freed slot is immediately
 | Method | Path | Body | Service fn | Rules |
 |---|---|---|---|---|
 | POST | `/bookings` | `{ carId, date, endDate?, startTime, endTime, purpose, destination, passengers, needDriver }` | `createBooking` | role can book; purpose required; not in past; `endDate` ≥ `date` (defaults to `date`), max 14 days; end date-time > start date-time; passengers ≤ seats; no overlap with Approved bookings; car not in service. Notifies Managers+Admins (Admins only if requester is a Manager) |
-| POST | `/bookings/:id/approve` | `{ driverId?: string }` | `approveBooking` | status Pending; reviewer ≠ requester for Managers; if `needDriver`, driver must be on duty and not busy in the window; re-check car conflict. Notifies requester + driver |
+| POST | `/bookings/:id/approve` | `{ assignDriver?: boolean, driverId?: string }` | `approveBooking` | status Pending; reviewer ≠ requester for Managers. If the request has `needDriver`, the approver answers *Assign a company driver?*: `assignDriver: true` + `driverId` (on duty, not busy in the window) or `assignDriver: false` → approved as self-drive (`needDriver` set false). Re-check car conflict. Notifies requester (+ driver if assigned) |
 | POST | `/bookings/:id/reject` | `{ reason }` | `rejectBooking` | reason required. Notifies requester |
 | POST | `/bookings/:id/cancel` | `{ reason? }` | `cancelBooking` | requester only; Pending, or Approved & not started |
 | POST | `/bookings/:id/return` | `{ returnTime, notes? }` | `returnVehicle` | requester (or Admin), today within the booking dates — self-drive **and** driver bookings; notifies the assigned driver |

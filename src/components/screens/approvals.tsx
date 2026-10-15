@@ -56,7 +56,7 @@ export function ApprovalsScreen() {
                       disabled={!conflict.ok}
                       onClick={() => (b.needDriver ? openSheet({ type: 'review', id: b.id }) : approveBooking(b.id, null))}
                     >
-                      <Check /> {b.needDriver ? t('choose_driver') : t('approve')}
+                      <Check /> {t('approve')}
                     </Button>
                   </>
                 }

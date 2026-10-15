@@ -192,11 +192,16 @@ export function createBooking(data: FleetData, actor: User, input: CreateBooking
   };
 }
 
-/** POST /bookings/:id/approve  { driverId? } */
-export function approveBooking(data: FleetData, actor: User, id: string, driverId: string | null): Result {
+/**
+ * POST /bookings/:id/approve  { driverId?, assignDriver? }
+ * For a request that asked for a driver, the approver decides: assign one (driverId) or
+ * approve without a driver (assignDriver: false) — the booking then becomes self-drive.
+ */
+export function approveBooking(data: FleetData, actor: User, id: string, driverId: string | null, assignDriver = true): Result {
   const b = findBooking(data, id);
   if (!canReview(actor, b)) fail('You are not allowed to approve this request.');
-  if (b.needDriver) {
+  const withDriver = b.needDriver && assignDriver;
+  if (withDriver) {
     if (!driverId) fail('Assign a driver before approving.');
     const driver = data.drivers.find(x => x.id === driverId) ?? fail('Driver not found.');
     if (driver.status !== 'Active') fail(`${driver.name} is off duty.`);
@@ -206,14 +211,15 @@ export function approveBooking(data: FleetData, actor: User, id: string, driverI
   const conflict = checkConflict(data, b.carId, b.startDate, b.startTime, b.endTime, b.id, endDateOf(b));
   if (!conflict.ok) fail(conflict.reason);
 
-  const driver = b.needDriver ? data.drivers.find(x => x.id === driverId) : undefined;
+  const driver = withDriver ? data.drivers.find(x => x.id === driverId) : undefined;
   const requester = data.users.find(u => u.id === b.requesterId);
+  const noDriverGiven = b.needDriver && !withDriver;
   const notifs = [
     ...notify([b.requesterId], {
       kind: 'approved',
       bookingId: id,
       title: 'Booking approved',
-      text: `${id} · ${carLabel(data, b.carId)} approved by ${actor.name}.${driver ? ` Driver: ${driver.name}.` : ' Self-drive.'}`,
+      text: `${id} · ${carLabel(data, b.carId)} approved by ${actor.name}.${driver ? ` Driver: ${driver.name}.` : noDriverGiven ? ' No company driver was assigned, please drive yourself.' : ' Self-drive.'}`,
     }),
     ...notify([driverUserId(data, driver?.id ?? null)].filter(Boolean) as string[], {
       kind: 'assigned',
@@ -228,6 +234,8 @@ export function approveBooking(data: FleetData, actor: User, id: string, driverI
       ...data,
       bookings: patchBooking(data, id, {
         status: 'Approved',
+        // Approved without a driver → it becomes a self-drive booking
+        needDriver: !!driver,
         driverId: driver?.id ?? null,
         taskStatus: driver ? 'Assigned' : null,
         approverId: actor.id,
@@ -235,7 +243,7 @@ export function approveBooking(data: FleetData, actor: User, id: string, driverI
       }),
       notifications: [...notifs, ...data.notifications],
     },
-    message: driver ? `${id} approved · ${driver.name} assigned` : `${id} approved`,
+    message: driver ? `${id} approved · ${driver.name} assigned` : noDriverGiven ? `${id} approved · no driver (self-drive)` : `${id} approved`,
   };
 }
 
