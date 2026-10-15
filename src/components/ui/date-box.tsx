@@ -5,7 +5,21 @@ import { DateUtil } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 
 /** Tappable date field showing "Thu 15 Oct"; opens the app's calendar (no native picker). */
-export function DateBox({ label, value, lang, active, onClick }: { label: string; value: string; lang: 'en' | 'kh'; active: boolean; onClick: () => void }) {
+export function DateBox({
+  label,
+  value,
+  lang,
+  active,
+  onClick,
+  required,
+}: {
+  label: string;
+  value: string;
+  lang: 'en' | 'kh';
+  active: boolean;
+  onClick: () => void;
+  required?: boolean;
+}) {
   return (
     <button
       type="button"
@@ -16,7 +30,10 @@ export function DateBox({ label, value, lang, active, onClick }: { label: string
         active ? 'border-primary ring-[3px] ring-primary/15' : 'border-input hover:border-primary/40'
       )}
     >
-      <span className="absolute left-3.5 top-1.5 text-[11px] font-medium text-muted-foreground">{label}</span>
+      <span className="absolute left-3.5 top-1.5 text-[11px] font-medium text-muted-foreground">
+        {label}
+        {required && <span className="ml-0.5 text-destructive">*</span>}
+      </span>
       <span className="min-w-0 truncate text-[15px] font-bold">{DateUtil.longDate(value, lang).replace(/^.*, /, '')}</span>
       <CalendarDays className={cn('-mt-4 size-[18px] shrink-0', active ? 'text-primary' : 'text-muted-foreground')} />
     </button>

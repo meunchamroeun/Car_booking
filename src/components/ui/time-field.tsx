@@ -44,6 +44,7 @@ export function TimeField({
   open,
   onOpenChange,
   invalid,
+  required,
 }: {
   label: string;
   value: string;
@@ -51,6 +52,7 @@ export function TimeField({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invalid?: boolean;
+  required?: boolean;
 }) {
   const [text, setText] = React.useState(value);
   const [bad, setBad] = React.useState(false);
@@ -84,6 +86,7 @@ export function TimeField({
       >
         <label htmlFor={id} className="pointer-events-none absolute left-3.5 top-1.5 text-[11px] font-medium text-muted-foreground">
           {label}
+          {required && <span className="ml-0.5 text-destructive">*</span>}
         </label>
         <input
           id={id}
@@ -96,6 +99,7 @@ export function TimeField({
           onBlur={commit}
           onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), (e.target as HTMLInputElement).blur())}
           aria-invalid={bad || invalid}
+          aria-required={required || undefined}
           className="h-full min-w-0 flex-1 bg-transparent pt-4 text-[18px] font-bold tabular outline-none focus-visible:ring-0"
         />
         <button

@@ -61,7 +61,7 @@ export function ReturnSheet({ open, id, mode }: { open: boolean; id?: string; mo
 
       <div className="mt-4 space-y-3.5">
         <div className="grid gap-2">
-          <TimeField label={`${t('return_time')} *`} value={time} onChange={setTime} open={timeOpen} onOpenChange={setTimeOpen} />
+          <TimeField required label={t('return_time')} value={time} onChange={setTime} open={timeOpen} onOpenChange={setTimeOpen} />
         </div>
         {early && (
           <p className="flex items-center gap-2 rounded-xl bg-success-soft px-3 py-2.5 text-[13px] font-medium text-success">
