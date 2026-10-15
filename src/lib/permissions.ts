@@ -71,9 +71,13 @@ export function canReview(user: User, b: Booking): boolean {
   return true;
 }
 
-/** Self-drive requester returns the car; driver trips are closed by the driver. */
+/**
+ * The person who booked (or a fleet admin) can end the booking early on its day —
+ * for self-drive and driver bookings alike. On driver bookings the driver is notified;
+ * the driver can still close it themselves with "Mark complete".
+ */
 export function canReturnEarly(user: User, b: Booking): boolean {
-  if (b.status !== 'Approved' || b.needDriver) return false;
+  if (b.status !== 'Approved') return false;
   const today = DateUtil.todayStr();
   if (b.startDate > today || (b.endDate || b.startDate) < today) return false;
   return b.requesterId === user.id || can(user, 'fleet.manage');

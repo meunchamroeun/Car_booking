@@ -16,7 +16,7 @@ Errors return `4xx` with `{ "message": "human readable reason" }` — the fronte
 
 | Role (`UserRole`) | UI label | Can do |
 |---|---|---|
-| `Employee` | Employee | Create bookings, see own bookings, cancel own, return self-drive car early |
+| `Employee` | Employee | Create bookings, see own bookings, cancel own, end own booking early (self-drive or with driver) |
 | `Approver` | Manager | Everything Employee can + approve/reject others' requests, assign drivers, set vehicles to maintenance / back to available. **Cannot approve own requests** (an Admin does) |
 | `Driver` | Driver | See own assignments, start trip, complete trip (return time + odometer). Cannot book |
 | `Admin` | Fleet admin | Everything Approver can + vehicle service/maintenance, driver on/off duty, approve anyone's request |
@@ -57,7 +57,7 @@ shortens `endTime`, sets `returnedEarly: true` — the freed slot is immediately
 | POST | `/bookings/:id/approve` | `{ driverId?: string }` | `approveBooking` | status Pending; reviewer ≠ requester for Managers; if `needDriver`, driver must be on duty and not busy in the window; re-check car conflict. Notifies requester + driver |
 | POST | `/bookings/:id/reject` | `{ reason }` | `rejectBooking` | reason required. Notifies requester |
 | POST | `/bookings/:id/cancel` | `{ reason? }` | `cancelBooking` | requester only; Pending, or Approved & not started |
-| POST | `/bookings/:id/return` | `{ returnTime, notes? }` | `returnVehicle` | self-drive requester (or Admin), trip date = today |
+| POST | `/bookings/:id/return` | `{ returnTime, notes? }` | `returnVehicle` | requester (or Admin), today within the booking dates — self-drive **and** driver bookings; notifies the assigned driver |
 | POST | `/tasks/:id/start` | — | `startTask` | assigned driver; trip date ≤ today |
 | POST | `/tasks/:id/complete` | `{ returnTime, odometer?, notes? }` | `returnVehicle` | assigned driver; `odometer` ≥ car's current odometer (updates car) |
 | PUT | `/vehicles/:id/maintenance` | `{ mode: "manual", reason, workshop?, estimatedDate? }` or `{ mode: "scheduled", reason, workshop?, startDate, startTime, endDate, endTime }` | `setMaintenance` | Manager or Admin; notifies requesters of bookings inside the window |

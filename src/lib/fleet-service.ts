@@ -320,7 +320,8 @@ export function returnVehicle(
   const odo = Number(input.odometer);
   if (input.odometer && car?.odometer && odo < car.odometer) fail(`Odometer can't be lower than ${car.odometer.toLocaleString()} km.`);
 
-  const to = [b.requesterId, b.approverId, ...admins(data)].filter(x => x && x !== actor.id) as string[];
+  // Requester, assigned driver, approver and admins — minus whoever did it
+  const to = [b.requesterId, driverUserId(data, b.driverId), b.approverId, ...admins(data)].filter(x => x && x !== actor.id) as string[];
   const notifs = notify(to, {
     kind: 'completed',
     bookingId: id,
