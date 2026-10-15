@@ -162,7 +162,7 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
         )}
       </div>
 
-      <Progress b={b} approverName={approver?.name} />
+      <Progress b={b} approverName={approver?.name} requesterName={requester?.name} />
     </Sheet>
   );
 }
@@ -171,12 +171,15 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
  * Booking progress: steps appear one after another, a coloured line grows through
  * the finished steps, finished dots pop in with a check, and the current step pulses.
  */
-function Progress({ b, approverName }: { b: Booking; approverName?: string }) {
-  const { t, lang } = useApp();
+function Progress({ b, approverName, requesterName }: { b: Booking; approverName?: string; requesterName?: string }) {
+  const { t, lang, users, currentUser } = useApp();
+  const rawReqName = requesterName ?? users.find(u => u.id === b.requesterId)?.name;
+  const isMine = b.requesterId === currentUser?.id;
+  const reqName = rawReqName ? (isMine ? `${rawReqName} (${t('you')})` : rawReqName) : undefined;
   const rejected = b.status === 'Rejected';
   const cancelled = b.status === 'Cancelled';
   const steps: { label: string; at?: string | null; done: boolean; bad?: boolean }[] = [
-    { label: t('ev_requested'), at: b.createdAt, done: true },
+    { label: reqName ? t('requested_by', { name: reqName }) : t('ev_requested'), at: b.createdAt, done: true },
     {
       label: rejected ? t('rejected_by', { name: approverName ?? '' }) : b.decisionAt ? t('approved_by', { name: approverName ?? '' }) : t('pending_review'),
       at: b.decisionAt,
