@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { CarPhoto } from '@/components/common/car-photo';
-import { DayBar } from '@/components/common/day-bar';
+import { DayBar, DayBarLegend, legendLabels } from '@/components/common/day-bar';
 import { cn } from '@/lib/utils';
 import { TimeField } from '@/components/ui/time-field';
 import { RangeCalendar } from '@/components/ui/range-calendar';
@@ -266,6 +266,11 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
 
         <div className="mt-2 rounded-2xl bg-muted/60 p-3">
           <DayBar bookings={barBookings} date={date} highlight={{ start, end: multiDay ? '23:59' : end, ok: !timeProblem }} />
+          <DayBarLegend
+            className="mt-2"
+            labels={legendLabels(t)}
+            items={['free', 'booked', timeProblem ? 'clash' : 'yours', ...(date === today ? (['now'] as const) : [])]}
+          />
           {booked.length > 0 && (
             <ul className="mt-2 space-y-1.5">
               {booked.map(b => {

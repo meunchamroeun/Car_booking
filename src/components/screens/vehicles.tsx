@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Chips, Segmented } from '@/components/ui/segmented';
 import { EmptyState } from '@/components/ui/empty';
 import { CarPhoto } from '@/components/common/car-photo';
-import { DAY_END, DAY_START, DayBar } from '@/components/common/day-bar';
+import { DAY_END, DAY_START, DayBar, DayBarLegend, legendLabels } from '@/components/common/day-bar';
 import { cn } from '@/lib/utils';
 import { BOOKING_SLOTS, SLOT_ORDER } from '@/lib/slots';
 
@@ -130,6 +130,11 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
           <EmptyState icon={<CarFront />} title={t('no_results')} />
         ) : viewMode === 'cards' ? (
           <div className="space-y-3">
+            <DayBarLegend
+              className="rounded-xl border bg-card px-3 py-2"
+              labels={legendLabels(t)}
+              items={['free', 'booked', 'returned', ...(selectedDate === DateUtil.todayStr() ? (['now'] as const) : []), 'service']}
+            />
             {filtered.map(c => (
               <VehicleCard key={c.id} car={c} />
             ))}

@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { Booking } from '@/types';
 import { DateUtil } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
@@ -58,5 +59,42 @@ export function DayBar({
         <span>18</span>
       </div>
     </div>
+  );
+}
+
+export type LegendKey = 'free' | 'booked' | 'returned' | 'yours' | 'clash' | 'now' | 'service';
+
+/** Swatches drawn with the exact same styles as the bar, so the key always matches. */
+const SWATCH: Record<LegendKey, React.ReactNode> = {
+  free: <span className="h-2.5 w-4 rounded-full bg-success/20" />,
+  booked: <span className="h-2.5 w-4 rounded-full bg-primary" />,
+  returned: <span className="h-2.5 w-4 rounded-full bg-muted-foreground/40" />,
+  yours: <span className="h-2.5 w-4 rounded-full border-2 border-success bg-success/35" />,
+  clash: <span className="h-2.5 w-4 rounded-full border-2 border-destructive bg-destructive/30" />,
+  now: <span className="h-3 w-0.5 rounded-full bg-foreground/70" />,
+  service: <span className="h-2.5 w-4 rounded-full bg-[repeating-linear-gradient(45deg,hsl(var(--warning)/0.55)_0_3px,hsl(var(--warning)/0.25)_3px_6px)]" />,
+};
+
+export const legendLabels = (t: (k: string) => string): Record<LegendKey, string> => ({
+  free: t('lg_free'),
+  booked: t('lg_booked'),
+  returned: t('lg_returned'),
+  yours: t('lg_yours'),
+  clash: t('lg_clash'),
+  now: t('lg_now'),
+  service: t('lg_service'),
+});
+
+/** Colour key for the availability bar. */
+export function DayBarLegend({ items, labels, className }: { items: LegendKey[]; labels: Record<LegendKey, string>; className?: string }) {
+  return (
+    <ul className={cn('flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11.5px] font-medium text-muted-foreground', className)} aria-label="Colour key">
+      {items.map(k => (
+        <li key={k} className="flex items-center gap-1.5">
+          <span className="flex w-4 justify-center">{SWATCH[k]}</span>
+          {labels[k]}
+        </li>
+      ))}
+    </ul>
   );
 }
