@@ -49,9 +49,14 @@ export function KpiSheet({ open, kind }: { open: boolean; kind?: KpiKind }) {
                       </span>
                     </span>
                     {kind === 'service' && m && (
-                      <span className="mt-0.5 block truncate text-[12px] font-medium text-warning">
-                        {m.reason}
-                        {m.estimatedDate ? ` · ${t('back_on', { date: DateUtil.friendly(m.estimatedDate, lang) })}` : ''}
+                      <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[12px]">
+                        <span className="truncate font-medium text-warning">{m.reason}</span>
+                        {m.estimatedDate && (
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-warning/25 bg-warning-soft px-2 py-0.5 text-[11px] font-semibold text-warning whitespace-nowrap">
+                            <Clock className="size-2.5 shrink-0" />
+                            {t('back_on', { date: DateUtil.friendly(m.estimatedDate, lang) })}
+                          </span>
+                        )}
                       </span>
                     )}
                   </span>

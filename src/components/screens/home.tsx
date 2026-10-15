@@ -393,18 +393,25 @@ function AdminHome() {
               </button>
             )}
             {s.inService.map(c => (
-              <button key={c.id} type="button" onClick={() => openSheet({ type: 'maintenance', carId: c.id })} className="flex w-full items-center gap-3 p-3.5 text-left hover:bg-muted/40">
-                <span className="flex size-9 items-center justify-center rounded-lg bg-warning-soft text-warning">
+              <button key={c.id} type="button" onClick={() => openSheet({ type: 'maintenance', carId: c.id })} className="flex w-full items-center gap-3 p-3.5 text-left transition-colors hover:bg-muted/40">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-warning-soft text-warning">
                   <Wrench className="size-[18px]" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[14px] font-semibold">{c.name}</span>
-                  <span className="block truncate text-[12.5px] text-muted-foreground">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="truncate text-[14px] font-semibold">{c.name}</span>
+                    {c.maintenance?.estimatedDate && (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-warning/25 bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning whitespace-nowrap">
+                        <Clock className="size-2.5 shrink-0" />
+                        {t('back_on', { date: DateUtil.friendly(c.maintenance.estimatedDate, lang) })}
+                      </span>
+                    )}
+                  </span>
+                  <span className="block truncate text-[12.5px] text-muted-foreground mt-0.5">
                     {c.maintenance?.reason}
-                    {c.maintenance?.estimatedDate && ` · ${t('back_on', { date: DateUtil.friendly(c.maintenance.estimatedDate, lang) })}`}
                   </span>
                 </span>
-                <ArrowRight className="size-4 text-muted-foreground" />
+                <ArrowRight className="size-4 shrink-0 text-muted-foreground" />
               </button>
             ))}
           </Card>

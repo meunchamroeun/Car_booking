@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarDays, CarFront, Fuel, LayoutList, Search, Users, Wrench } from 'lucide-react';
+import { CalendarDays, CarFront, ChevronRight, Clock, Fuel, LayoutList, MapPin, Search, Users, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { can } from '@/lib/permissions';
@@ -264,15 +264,69 @@ function VehicleCard({ car }: { car: Car }) {
 
       <div className="px-4 pb-3">
         {inService ? (
-          <div className="rounded-xl bg-warning-soft px-3 py-2 text-[12.5px] text-warning">
-            <span className="font-semibold">{car.maintenance?.reason}</span>
-            {car.maintenance?.estimatedDate && <span> · {t('back_on', { date: DateUtil.friendly(car.maintenance.estimatedDate, lang) })}</span>}
-            {car.maintenance?.mode === 'scheduled' && (
-              <span>
-                {' '}
-                · {DateUtil.friendly(car.maintenance.startDate!, lang)}–{DateUtil.friendly(car.maintenance.endDate!, lang)}
-              </span>
+          <div
+            className={cn(
+              'group/maint rounded-2xl border border-warning/25 bg-warning-soft/70 p-3.5 text-warning transition-all',
+              canManage && 'cursor-pointer hover:border-warning/45 hover:bg-warning-soft/90 hover:shadow-xs'
             )}
+            {...(canManage && {
+              role: 'button',
+              tabIndex: 0,
+              onClick: e => {
+                e.stopPropagation();
+                openSheet({ type: 'maintenance', carId: car.id });
+              },
+              onKeyDown: (e: React.KeyboardEvent) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openSheet({ type: 'maintenance', carId: car.id });
+                }
+              },
+            })}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-warning">
+                <span className="flex size-5 items-center justify-center rounded-full bg-warning/20">
+                  <Wrench className="size-3 text-warning" />
+                </span>
+                <span>{t('nt_maint_title')}</span>
+              </div>
+              {car.maintenance?.estimatedDate && (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-warning/25 bg-background/85 px-2.5 py-0.5 text-[11px] font-semibold text-warning shadow-xs whitespace-nowrap backdrop-blur-xs">
+                  <Clock className="size-3 shrink-0" />
+                  <span>{t('back_on', { date: DateUtil.friendly(car.maintenance.estimatedDate, lang) })}</span>
+                </span>
+              )}
+              {car.maintenance?.mode === 'scheduled' && car.maintenance.startDate && car.maintenance.endDate && (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-warning/25 bg-background/85 px-2.5 py-0.5 text-[11px] font-semibold text-warning shadow-xs whitespace-nowrap backdrop-blur-xs">
+                  <CalendarDays className="size-3 shrink-0" />
+                  <span>
+                    {DateUtil.friendly(car.maintenance.startDate, lang)} – {DateUtil.friendly(car.maintenance.endDate, lang)}
+                  </span>
+                </span>
+              )}
+            </div>
+
+            <p className="mt-2 text-[13px] font-medium leading-snug text-foreground/90">
+              {car.maintenance?.reason || t('nt_maint_title')}
+            </p>
+
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-muted-foreground">
+              {car.maintenance?.workshop ? (
+                <span className="flex items-center gap-1 truncate">
+                  <MapPin className="size-3 shrink-0 text-muted-foreground/80" />
+                  <span className="truncate">{car.maintenance.workshop}</span>
+                </span>
+              ) : (
+                <span />
+              )}
+              {canManage && (
+                <span className="ml-auto inline-flex items-center gap-0.5 font-medium text-warning group-hover/maint:underline">
+                  {t('manage')} <ChevronRight className="size-3" />
+                </span>
+              )}
+            </div>
           </div>
         ) : (
           <>
