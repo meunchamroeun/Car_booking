@@ -34,10 +34,8 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
     if (filterType !== 'all' && c.type !== filterType) return false;
     const q = searchQuery.trim().toLowerCase();
     if (q && !c.name.toLowerCase().includes(q) && !c.plate.toLowerCase().includes(q)) return false;
-    if (selectedSlot !== 'all') {
-      const [s, e] = SLOT_RANGE[selectedSlot];
-      return app.checkConflict(c.id, selectedDate, s, e).ok;
-    }
+    // Morning / Afternoon: keep cars with at least an hour free in that slot
+    if (selectedSlot !== 'all') return !app.isCarInMaintenance(c.id, selectedDate) && !!suggestWindow(app, c.id);
     return true;
   });
 
@@ -151,20 +149,48 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
 
 /** Slot to pre-select when booking: the one picked in the filter, if it's still ahead and free for this car. */
 const BOOK_SLOTS: [string, string][] = SLOT_ORDER.map(k => [BOOKING_SLOTS[k].start, BOOKING_SLOTS[k].end]);
-/** Name of the slot for a [start, end] window, e.g. 'morning'. */
+/** Name of the slot for a [start, end] window, e.g. 'morning'; null for a custom window. */
 function slotKeyOf([s, e]: [string, string]) {
-  return SLOT_ORDER.find(k => BOOKING_SLOTS[k].start === s && BOOKING_SLOTS[k].end === e) ?? 'full_day';
+  return SLOT_ORDER.find(k => BOOKING_SLOTS[k].start === s && BOOKING_SLOTS[k].end === e) ?? null;
 }
 
+const MIN_GAP = 60; // shortest free stretch worth offering, in minutes
+
+/**
+ * Time to offer on a car card:
+ * 1. the slot picked in the filter (or Full day, then Morning/Afternoon), if free;
+ * 2. otherwise the first free stretch of at least an hour inside working hours
+ *    (e.g. 14:00–17:30 when someone has 11:00–14:00), so a partly booked car is still bookable.
+ */
 function suggestWindow(app: ReturnType<typeof useApp>, carId: string): [string, string] | null {
   const { selectedDate, selectedSlot } = app;
+  const today = selectedDate === DateUtil.todayStr();
   const now = DateUtil.toMins(DateUtil.nowTimeStr());
-  // Filter on Full day → book full day first; Morning/Afternoon → exactly that slot
   const fullDay: [string, string] = [BOOKING_SLOTS.full_day.start, BOOKING_SLOTS.full_day.end];
   const candidates = selectedSlot === 'all' ? [fullDay, ...BOOK_SLOTS.filter(w => w[0] !== fullDay[0] || w[1] !== fullDay[1])] : [[...SLOT_RANGE[selectedSlot]] as [string, string]];
-  return (
-    candidates.find(([s, e]) => !(selectedDate === DateUtil.todayStr() && DateUtil.toMins(e) <= now) && app.checkConflict(carId, selectedDate, s, e).ok) ?? null
-  );
+  const preset = candidates.find(([s, e]) => !(today && DateUtil.toMins(e) <= now) && app.checkConflict(carId, selectedDate, s, e).ok);
+  if (preset) return preset;
+
+  // Free gaps inside the chosen range (whole working day, or the filtered slot)
+  const [rangeStart, rangeEnd] = (selectedSlot === 'all' ? fullDay : SLOT_RANGE[selectedSlot]).map(DateUtil.toMins);
+  // Today: start from the next half hour
+  const from = Math.max(rangeStart, today ? Math.ceil(now / 30) * 30 : rangeStart);
+  const taken = occupyingBookings(app, carId, selectedDate)
+    .filter(b => b.status === 'Approved')
+    .map(b => [DateUtil.toMins(b.startTime), DateUtil.toMins(b.endTime)] as const)
+    .sort((x, y) => x[0] - y[0]);
+  let cur = from;
+  const hhmm = (m: number) => `${DateUtil.pad(Math.floor(m / 60))}:${DateUtil.pad(m % 60)}`;
+  for (const [s, e] of [...taken, [rangeEnd, rangeEnd] as const]) {
+    const gapEnd = Math.min(s, rangeEnd);
+    if (gapEnd - cur >= MIN_GAP) {
+      const w: [string, string] = [hhmm(cur), hhmm(gapEnd)];
+      if (app.checkConflict(carId, selectedDate, w[0], w[1]).ok) return w;
+    }
+    cur = Math.max(cur, e);
+    if (cur >= rangeEnd) break;
+  }
+  return null;
 }
 
 function VehicleCard({ car }: { car: Car }) {
@@ -296,7 +322,7 @@ function VehicleCard({ car }: { car: Car }) {
                 <span className="flex items-center gap-1.5">
                   {t('book_short')}
                   <span className="opacity-60">·</span>
-                  <span className="font-medium opacity-90">{t(slotKeyOf(win))}</span>
+                  {slotKeyOf(win) && <span className="font-medium opacity-90">{t(slotKeyOf(win)!)}</span>}
                   <span className="tabular">
                     {win[0]}–{win[1]}
                   </span>

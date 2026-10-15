@@ -50,7 +50,12 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
     const usable = (x: (typeof SLOTS)[number]) => !(d === today && DateUtil.toMins(x.end) <= nowM) && checkConflict(carForSlot, d, x.start, x.end).ok;
     // Use the slot chosen in the Vehicles filter if it's free, otherwise the first free one
     const requested = SLOTS.find(x => x.start === init.start && x.end === init.end);
-    const first = requested && usable(requested) ? requested : SLOTS.find(usable);
+    // A custom free window from the car card (e.g. 14:00–17:30) is used as-is
+    const custom =
+      !requested && init.start && init.end && !(d === today && DateUtil.toMins(init.end) <= nowM) && checkConflict(carForSlot, d, init.start, init.end).ok
+        ? { start: init.start, end: init.end }
+        : null;
+    const first = custom ?? (requested && usable(requested) ? requested : SLOTS.find(usable));
     setCarId(carForSlot);
     setChangingCar(!init.carId);
     setDate(d);
