@@ -280,8 +280,8 @@ function Pass({ b }: { b: Booking }) {
           <div>
             <p className="text-white/55">{t('date')}</p>
             <p className="font-semibold">
-              {DateUtil.friendly(b.startDate, lang)}
-              {b.endDate && b.endDate !== b.startDate && ` → ${DateUtil.friendly(b.endDate, lang)}`}
+              {DateUtil.longDate(b.startDate, lang)}
+              {b.endDate && b.endDate !== b.startDate && ` → ${DateUtil.longDate(b.endDate, lang)}`}
             </p>
           </div>
           <div>

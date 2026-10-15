@@ -140,8 +140,8 @@ function TripHero({ b, mode }: { b: Booking; mode: 'requester' | 'driver' }) {
       <div className="mt-3 flex items-end justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[12.5px] font-medium text-white/65">
-            {DateUtil.friendly(b.startDate, lang)}
-            {b.endDate && b.endDate !== b.startDate && ` → ${DateUtil.friendly(b.endDate, lang)}`}
+            {DateUtil.longDate(b.startDate, lang)}
+            {b.endDate && b.endDate !== b.startDate && ` → ${DateUtil.longDate(b.endDate, lang)}`}
           </p>
           <p className="text-[28px] font-bold leading-none tracking-tight tabular">
             {b.startTime}
