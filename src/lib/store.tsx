@@ -68,6 +68,7 @@ interface AppContextType extends FleetData {
   clearMaintenance: (carId: string) => boolean;
   toggleDriverDuty: (driverId: string) => boolean;
   markNotificationsRead: () => void;
+  markNotificationRead: (id: string) => void;
   resetDemoData: () => void;
 
   // Queries
@@ -81,7 +82,7 @@ interface AppContextType extends FleetData {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const DATA_KEY = 'oone_fleet_data_v5';
+const DATA_KEY = 'oone_fleet_data_v6';
 const USER_KEY = 'oone_fleet_user_v3';
 const THEME_KEY = 'oone_fleet_theme_v3';
 const LANG_KEY = 'oone_fleet_lang_v3';
@@ -310,6 +311,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setMaintenance: (carId, m) => run(() => svc.setMaintenance(data, currentUser, carId, m)),
     clearMaintenance: carId => run(() => svc.clearMaintenance(data, currentUser, carId)),
     toggleDriverDuty: driverId => run(() => svc.toggleDriverDuty(data, currentUser, driverId), false),
+    markNotificationRead: id => commit({ ...data, notifications: data.notifications.map(n => (n.id === id ? { ...n, read: true } : n)) }),
     markNotificationsRead: () =>
       commit({ ...data, notifications: data.notifications.map(n => (n.userId === currentUser.id ? { ...n, read: true } : n)) }),
     resetDemoData: () => {

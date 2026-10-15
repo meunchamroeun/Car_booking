@@ -92,7 +92,10 @@ export interface NotificationItem {
   userId: string;
   title: string;
   text: string;
+  /** Display fallback, e.g. "Today 09:40". Prefer `at`. */
   time: string;
+  /** When it happened, "YYYY-MM-DD HH:MM". */
+  at?: string;
   read: boolean;
   bookingId?: string;
   kind?: 'request' | 'approved' | 'rejected' | 'assigned' | 'completed' | 'cancelled' | 'maintenance' | 'info';

@@ -75,6 +75,18 @@ export const DateUtil = {
     return (b.endDate || b.startDate) === b.startDate ? `${b.startTime}–${b.endTime}` : this.window(b, lang);
   },
 
+  /** "Just now", "12 min ago", "09:40" (today) or "Wed 14 Oct · 09:40". */
+  relative(stamp: string, lang: 'en' | 'kh' = 'en'): string {
+    const [d, tm] = stamp.split(' ');
+    if (d === this.todayStr()) {
+      const diff = this.toMins(this.nowTimeStr()) - this.toMins(tm);
+      if (diff >= 0 && diff < 1) return lang === 'kh' ? 'ឥឡូវនេះ' : 'Just now';
+      if (diff >= 0 && diff < 60) return lang === 'kh' ? `${diff} នាទីមុន` : `${diff} min ago`;
+      return tm;
+    }
+    return `${this.friendly(d, lang)} · ${tm}`;
+  },
+
   nowStamp(): string {
     return `${this.todayStr()} ${this.nowTimeStr()}`;
   },

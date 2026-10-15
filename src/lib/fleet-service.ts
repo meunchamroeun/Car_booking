@@ -24,7 +24,7 @@ let seq = 0;
 const nid = () => `n${Date.now()}${seq++}`;
 
 function notify(userIds: string[], n: Omit<NotificationItem, 'id' | 'userId' | 'time' | 'read'>): NotificationItem[] {
-  return [...new Set(userIds)].map(userId => ({ ...n, id: nid(), userId, time: 'Just now', read: false }));
+  return [...new Set(userIds)].map(userId => ({ ...n, id: nid(), userId, time: 'Just now', at: DateUtil.nowStamp(), read: false }));
 }
 
 const reviewers = (data: FleetData, exclude?: string) =>

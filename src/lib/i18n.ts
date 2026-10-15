@@ -277,6 +277,10 @@ const en = {
   notifications: 'Notifications',
   no_notifs: 'You are all caught up',
   mark_read: 'Mark all read',
+  notif_all: 'All',
+  notif_unread: 'Unread',
+  notif_view: 'View booking',
+  earlier: 'Earlier',
 
   // Toasts
   toast_switched: 'Signed in as {name} · {role}',
@@ -543,6 +547,10 @@ const kh: Partial<Dict> = {
   notifications: 'ការជូនដំណឹង',
   no_notifs: 'មិនមានការជូនដំណឹងថ្មី',
   mark_read: 'សម្គាល់ថាបានអាន',
+  notif_all: 'ទាំងអស់',
+  notif_unread: 'មិនទាន់អាន',
+  notif_view: 'មើលការកក់',
+  earlier: 'មុននេះ',
 
   toast_switched: 'ចូលជា {name} · {role}',
   toast_in_service: 'រថយន្តនេះកំពុងជួសជុល មិនអាចកក់បានទេ។',
