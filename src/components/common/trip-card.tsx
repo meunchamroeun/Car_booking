@@ -19,11 +19,14 @@ export function TripCard({
   b,
   perspective = 'requester',
   footer,
+  beforeFooter,
   onClick,
 }: {
   b: Booking;
   perspective?: 'requester' | 'reviewer' | 'driver';
   footer?: React.ReactNode;
+  /** Extra block between the card body and the footer (e.g. a choice to make before acting). */
+  beforeFooter?: React.ReactNode;
   onClick?: () => void;
 }) {
   const { cars, users, drivers, t, lang, openSheet } = useApp();
@@ -83,6 +86,7 @@ export function TripCard({
 
         {perspective !== 'driver' && b.purpose && <p className="mt-2.5 line-clamp-2 rounded-lg bg-muted/60 px-3 py-2 text-[12.5px] text-muted-foreground">{b.purpose}</p>}
       </button>
+      {beforeFooter && <div className="border-t px-4 py-3">{beforeFooter}</div>}
       {footer && <div className="flex gap-2 border-t px-4 py-3">{footer}</div>}
     </Card>
   );
