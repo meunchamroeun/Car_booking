@@ -5,7 +5,7 @@ import { ArrowRight, CalendarPlus, CarFront, Sparkles, CheckCircle2, ClipboardCh
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { driverTrips, fleetStats, isLive, myTrips } from '@/lib/selectors';
-import { canCompleteTask, canReturnEarly, canReview, canStartTask } from '@/lib/permissions';
+import { canCompleteTask, canReturnEarly, canStartTask } from '@/lib/permissions';
 import { Booking } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, SectionHeader } from '@/components/ui/card';
@@ -251,50 +251,6 @@ function EmployeeHome() {
 
 /* ── Manager / Approver ────────────────────────────────────────────────── */
 
-function PendingHero() {
-  const app = useApp();
-  const { currentUser, users, t, setCurrentTab } = app;
-  const pending = app.bookings.filter(b => canReview(currentUser, b));
-  if (!pending.length) {
-    return (
-      <Card className="flex items-center gap-3 p-4">
-        <span className="flex size-11 items-center justify-center rounded-2xl bg-success-soft text-success">
-          <CheckCircle2 className="size-6" />
-        </span>
-        <div>
-          <p className="font-semibold">{t('all_caught_up')}</p>
-          <p className="text-[13px] text-muted-foreground">{t('all_caught_up_desc')}</p>
-        </div>
-      </Card>
-    );
-  }
-  const people = [...new Set(pending.map(b => b.requesterId))].map(id => users.find(u => u.id === id)!).filter(Boolean);
-  return (
-    <button type="button" onClick={() => setCurrentTab('approvals')} className="hero-pattern w-full rounded-[22px] bg-navy p-4 text-left text-navy-foreground shadow-float active:scale-[0.99]">
-      <div className="flex items-center justify-between">
-        <Badge tone="glass">
-          <ClipboardCheck className="size-3" /> {t('pending_review')}
-        </Badge>
-        <div className="flex -space-x-2">
-          {people.slice(0, 4).map(u => (
-            <Avatar key={u.id} initials={u.initials} seed={u.id} className="size-8 border-2 border-navy text-[11px]" />
-          ))}
-        </div>
-      </div>
-      <p className="mt-4 text-[44px] font-bold leading-none tabular">{pending.length}</p>
-      <p className="mt-1 text-[13.5px] text-white/70">
-        {pending
-          .slice(0, 2)
-          .map(b => `${users.find(u => u.id === b.requesterId)?.name.split(' ')[0]} · ${DateUtil.friendly(b.startDate)}`)
-          .join('  ·  ')}
-      </p>
-      <span className="mt-4 flex h-11 items-center justify-center gap-2 rounded-xl bg-white text-[14px] font-semibold text-navy">
-        {t('review_now')} <ArrowRight className="size-4" />
-      </span>
-    </button>
-  );
-}
-
 function Kpis({ items }: { items: { label: string; value: number | string; icon: React.ReactNode; tone: string }[] }) {
   return (
     <div className="grid grid-cols-2 gap-2.5">
@@ -313,14 +269,15 @@ function Kpis({ items }: { items: { label: string; value: number | string; icon:
 
 function ApproverHome() {
   const app = useApp();
-  const { currentUser, t, setCurrentTab } = app;
+  const { currentUser, t } = app;
   const s = fleetStats(app);
   const { hero } = myTrips(app, currentUser.id);
 
+  // Pending requests live in the Approvals tab (with its badge), so Home starts with the manager's own booking
   return (
     <>
-      <PendingHero />
-      <SectionHeader title={t('fleet_today')}  />
+      {hero ? <TripHero b={hero} mode="requester" /> : <WelcomeHero />}
+      <SectionHeader title={t('fleet_today')} />
       <Kpis
         items={[
           { label: t('kpi_available'), value: s.available.length, icon: <CarFront />, tone: 'bg-success-soft text-success' },
@@ -329,11 +286,6 @@ function ApproverHome() {
           { label: t('kpi_service'), value: s.inService.length, icon: <Wrench />, tone: 'bg-warning-soft text-warning' },
         ]}
       />
-      {hero && (
-        <div className="mt-4">
-          <TripHero b={hero} mode="requester" />
-        </div>
-      )}
       <VehiclesScreen embedded />
     </>
   );
