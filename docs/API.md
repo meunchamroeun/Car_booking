@@ -65,6 +65,15 @@ shortens `endTime`, sets `returnedEarly: true` — the freed slot is immediately
 | PATCH | `/drivers/:id` | `{ status: "Active" \| "OffDuty" }` | `toggleDriverDuty` | Admin |
 | POST | `/notifications/read-all` | — | `markNotificationsRead` | |
 
+## Scheduled job: auto-complete at end time
+
+Run every minute (cron / queue). Service fn: `autoCompleteExpired`.
+Every `Approved` booking whose `endDate endTime` is in the past becomes `Completed`
+(`taskStatus: "Completed"` for driver bookings), `actualEndTime = endTime`,
+`completedAt = end stamp`, `completionNotes = "Completed automatically at the booking end time."`.
+The car is then free for new bookings. Notify the requester and the assigned driver
+("Booking ended — car available again").
+
 ## Conflict rule (server must enforce)
 
 Bookings are date-time ranges `[startDate startTime, endDate endTime)` and may span several days.

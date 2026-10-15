@@ -119,6 +119,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const [sheet, setSheet] = useState<SheetState>(null);
   const [lastCreatedId, setLastCreatedId] = useState<string | null>(null);
+  // True once saved data is loaded — time-based jobs must not run on the seed before that
+  const [hydrated, setHydrated] = useState(false);
+  // Ticks every 30s so time-based UI ("in use", progress, Now marker) stays current
+  const [tick, setTick] = useState(0);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const dismissToast = useCallback((id: string) => setToasts(prev => prev.filter(x => x.id !== id)), []);
@@ -155,6 +159,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     const uid = store.get(USER_KEY);
     if (uid) setCurrentUserId(uid);
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick(n => n + 1), 30_000);
+    return () => clearInterval(id);
   }, []);
 
   const commit = (next: FleetData) => {
@@ -223,6 +233,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
   };
+
+  // Bookings past their end time finish automatically and free the car (backend: scheduled job)
+  useEffect(() => {
+    if (!hydrated) return;
+    const res = svc.autoCompleteExpired(data);
+    if (!res.ended.length) return;
+    commit(res.data);
+    for (const b of res.ended) {
+      if (b.requesterId === currentUser.id || (b.driverId && b.driverId === currentUser.driverId)) {
+        const car = data.cars.find(c => c.id === b.carId)?.name ?? '';
+        showToast(t('toast_auto_ended', { id: b.id, car }), 'info');
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, tick, data.bookings]);
 
   // Telegram's native Back button: closes the open sheet, otherwise returns to Home
   useEffect(() => {

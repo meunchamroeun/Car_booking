@@ -299,6 +299,7 @@ const en = {
   toast_switched: 'Signed in as {name} · {role}',
   toast_in_service: 'This vehicle is in service and cannot be booked.',
   toast_reset: 'Demo data restored',
+  toast_auto_ended: '{id} ended · {car} is available again',
 };
 
 type Dict = Record<keyof typeof en, string>;
@@ -581,6 +582,7 @@ const kh: Partial<Dict> = {
   toast_switched: 'ចូលជា {name} · {role}',
   toast_in_service: 'រថយន្តនេះកំពុងជួសជុល មិនអាចកក់បានទេ។',
   toast_reset: 'បានស្តារទិន្នន័យសាកល្បង',
+  toast_auto_ended: '{id} បានបញ្ចប់ · {car} ទំនេរវិញហើយ',
 };
 
 export const I18N_DICTIONARY: Record<Language, Record<string, string>> = { en, kh: kh as Record<string, string> };

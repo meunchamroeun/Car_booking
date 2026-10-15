@@ -424,3 +424,46 @@ export function toggleDriverDuty(data: FleetData, actor: User, driverId: string)
     message: `${d.name} is ${next === 'Active' ? 'on duty' : 'off duty'}`,
   };
 }
+
+/**
+ * Scheduled job (backend: run every minute, e.g. cron).
+ * Approved bookings whose end time has passed are completed automatically, so the car
+ * becomes available again even if nobody pressed "Return" / "Mark complete".
+ */
+export function autoCompleteExpired(data: FleetData, now = DateUtil.nowStamp()): { data: FleetData; ended: Booking[] } {
+  const ended = data.bookings.filter(b => b.status === 'Approved' && DateUtil.stamp(endDateOf(b), b.endTime) <= now);
+  if (!ended.length) return { data, ended };
+  const ids = new Set(ended.map(b => b.id));
+
+  const notifs = ended.flatMap(b => {
+    const car = carLabel(data, b.carId);
+    return notify([b.requesterId, driverUserId(data, b.driverId)].filter(Boolean) as string[], {
+      kind: 'completed',
+      bookingId: b.id,
+      title: 'Booking ended',
+      text: `${b.id} · ${car} reached its end time (${b.endTime}) and is available again.`,
+    });
+  });
+
+  return {
+    ended,
+    data: {
+      ...data,
+      bookings: data.bookings.map(b =>
+        ids.has(b.id)
+          ? {
+              ...b,
+              status: 'Completed' as const,
+              taskStatus: b.needDriver ? ('Completed' as const) : null,
+              originalEndTime: b.originalEndTime || b.endTime,
+              actualEndTime: b.endTime,
+              returnedEarly: false,
+              completedAt: DateUtil.stamp(endDateOf(b), b.endTime),
+              completionNotes: b.completionNotes || 'Completed automatically at the booking end time.',
+            }
+          : b
+      ),
+      notifications: [...notifs, ...data.notifications],
+    },
+  };
+}
