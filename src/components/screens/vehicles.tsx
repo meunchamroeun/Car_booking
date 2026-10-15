@@ -16,6 +16,7 @@ import { Chips, Segmented } from '@/components/ui/segmented';
 import { EmptyState } from '@/components/ui/empty';
 import { CarPhoto } from '@/components/common/car-photo';
 import { DAY_END, DAY_START, DayBar, DayBarLegend, legendLabels } from '@/components/common/day-bar';
+import { RangeCalendar } from '@/components/ui/range-calendar';
 import { cn } from '@/lib/utils';
 import { BOOKING_SLOTS, SLOT_ORDER } from '@/lib/slots';
 
@@ -28,7 +29,21 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
   const app = useApp();
   const { t, viewMode, setViewMode, selectedDate, setSelectedDate, selectedSlot, setSelectedSlot, filterType, setFilterType, searchQuery, setSearchQuery, cars, lang } = app;
 
-  const days = React.useMemo(() => Array.from({ length: 10 }, (_, i) => DateUtil.addDays(DateUtil.todayStr(), i)), []);
+  const [calendarOpen, setCalendarOpen] = React.useState(false);
+  const today = React.useMemo(() => DateUtil.todayStr(), []);
+  const tomorrow = React.useMemo(() => DateUtil.addDays(today, 1), [today]);
+
+  const defaultDays = React.useMemo(() => Array.from({ length: 12 }, (_, i) => DateUtil.addDays(today, i)), [today]);
+  const days = React.useMemo(() => {
+    if (defaultDays.includes(selectedDate)) return defaultDays;
+    return [...defaultDays, selectedDate].sort((a, b) => a.localeCompare(b));
+  }, [defaultDays, selectedDate]);
+
+  const getDayLabel = (d: string) => {
+    if (d === today) return t('today');
+    if (d === tomorrow) return t('tomorrow');
+    return DateUtil.weekdayShort(d, lang);
+  };
 
   const filtered = cars.filter(c => {
     if (filterType !== 'all' && c.type !== filterType) return false;
@@ -69,20 +84,80 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
               type="button"
               role="option"
               aria-selected={active}
-              onClick={() => setSelectedDate(d)}
+              onClick={() => {
+                setSelectedDate(d);
+                setCalendarOpen(false);
+              }}
               className={cn(
-                'flex h-[64px] w-[52px] shrink-0 flex-col items-center justify-center rounded-2xl border text-center transition-all',
+                'flex h-[64px] min-w-[56px] px-1 shrink-0 flex-col items-center justify-center rounded-2xl border text-center transition-all',
                 active ? 'border-navy bg-navy text-navy-foreground shadow-float dark:border-primary dark:bg-primary dark:text-primary-foreground' : 'bg-card hover:bg-muted'
               )}
             >
-              <span className={cn('text-[11px] font-medium', active ? 'opacity-75' : 'text-muted-foreground')}>
-                {d === DateUtil.todayStr() ? t('today').slice(0, 5) : DateUtil.weekdayShort(d, lang)}
+              <span className={cn('text-[10.5px] font-medium leading-none truncate max-w-full px-0.5', active ? 'opacity-85' : 'text-muted-foreground')}>
+                {getDayLabel(d)}
               </span>
-              <span className="text-[18px] font-bold tabular leading-tight">{DateUtil.dayNum(d)}</span>
+              <span className="mt-1 text-[18px] font-bold tabular leading-tight">{DateUtil.dayNum(d)}</span>
             </button>
           );
         })}
+
+        <button
+          type="button"
+          onClick={() => setCalendarOpen(o => !o)}
+          aria-label={t('plan_date')}
+          aria-expanded={calendarOpen}
+          className={cn(
+            'flex h-[64px] min-w-[56px] px-1 shrink-0 flex-col items-center justify-center rounded-2xl border text-center transition-all',
+            calendarOpen || !defaultDays.includes(selectedDate)
+              ? 'border-primary bg-primary-soft text-primary font-semibold'
+              : 'border-dashed bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
+          )}
+        >
+          <CalendarDays className="size-4" />
+          <span className="mt-1 text-[10px] font-semibold leading-tight">
+            {!defaultDays.includes(selectedDate) ? DateUtil.dayNum(selectedDate) : t('plan_date')}
+          </span>
+        </button>
       </div>
+
+      {/* Expandable Calendar Picker */}
+      {calendarOpen && (
+        <div className="mt-2.5 rounded-2xl border bg-card p-3 shadow-card animate-in fade-in-0 zoom-in-95">
+          <div className="mb-2 flex items-center justify-between border-b pb-2">
+            <span className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
+              <CalendarDays className="size-4 text-primary" />
+              {t('plan_date')} · <span className="font-normal text-muted-foreground">{DateUtil.longDate(selectedDate, lang)}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setCalendarOpen(false)}
+              className="rounded-lg px-2 py-0.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              {t('close')}
+            </button>
+          </div>
+          <RangeCalendar
+            mode="single"
+            start={selectedDate}
+            end={selectedDate}
+            min={today}
+            lang={lang}
+            onChange={s => {
+              setSelectedDate(s);
+              setCalendarOpen(false);
+            }}
+            onDone={() => setCalendarOpen(false)}
+            labels={{
+              pickStart: t('cal_pick_start'),
+              pickEnd: t('cal_pick_end'),
+              booked: t('cal_booked'),
+              unavailable: t('unavailable'),
+              prev: t('a11y_prev_month'),
+              next: t('a11y_next_month'),
+            }}
+          />
+        </div>
+      )}
 
       <div className="mt-3 space-y-3">
         <Segmented

@@ -201,8 +201,10 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                   active ? 'border-navy bg-navy text-navy-foreground dark:border-primary dark:bg-primary dark:text-primary-foreground' : 'bg-card hover:bg-muted'
                 )}
               >
-                <span className={cn('text-[11px] font-medium', active ? 'opacity-75' : 'text-muted-foreground')}>{d === today ? t('today') : DateUtil.weekdayShort(d, lang)}</span>
-                <span className="text-[18px] font-bold leading-tight tabular">{DateUtil.dayNum(d)}</span>
+                <span className={cn('text-[10.5px] font-medium leading-none truncate max-w-full px-0.5', active ? 'opacity-75' : 'text-muted-foreground')}>
+                  {d === today ? t('today') : d === DateUtil.addDays(today, 1) ? t('tomorrow') : DateUtil.weekdayShort(d, lang)}
+                </span>
+                <span className="mt-1 text-[18px] font-bold leading-tight tabular">{DateUtil.dayNum(d)}</span>
               </button>
             );
           })}
