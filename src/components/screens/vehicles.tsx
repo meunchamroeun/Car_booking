@@ -278,8 +278,9 @@ const MIN_GAP = 60; // shortest free stretch worth offering, in minutes
  * 2. otherwise the first free stretch of at least an hour inside working hours
  *    (e.g. 14:00–17:30 when someone has 11:00–14:00), so a partly booked car is still bookable.
  */
-function suggestWindow(app: ReturnType<typeof useApp>, carId: string): [string, string] | null {
-  const { selectedDate, selectedSlot } = app;
+function suggestWindow(app: ReturnType<typeof useApp>, carId: string, slotOverride?: 'all' | 'morning' | 'afternoon'): [string, string] | null {
+  const { selectedDate } = app;
+  const selectedSlot = slotOverride ?? app.selectedSlot;
   const today = selectedDate === DateUtil.todayStr();
   const now = DateUtil.toMins(DateUtil.nowTimeStr());
   const fullDay: [string, string] = [BOOKING_SLOTS.full_day.start, BOOKING_SLOTS.full_day.end];
@@ -319,11 +320,12 @@ function suggestWindow(app: ReturnType<typeof useApp>, carId: string): [string, 
 
 function VehicleCard({ car }: { car: Car }) {
   const app = useApp();
-  const { t, selectedDate, currentUser, users, openBooking, openSheet, lang } = app;
+  const { t, selectedDate, selectedSlot, currentUser, users, openBooking, openSheet, lang } = app;
   const canSeeAll = can(currentUser, 'booking.view_all');
   const busy = occupyingBookings(app, car.id, selectedDate);
   const inService = app.isCarInMaintenance(car.id, selectedDate);
   const win = inService ? null : suggestWindow(app, car.id);
+  const anyWin = inService ? null : (selectedSlot === 'all' ? win : suggestWindow(app, car.id, 'all'));
   const canBook = can(currentUser, 'booking.create');
   const canManage = can(currentUser, 'vehicle.maintenance');
   // The whole card books the car (the button just shows which slot)
@@ -334,7 +336,7 @@ function VehicleCard({ car }: { car: Car }) {
     ? { tone: 'warning' as const, label: t('st_service') }
     : busy.length === 0
       ? { tone: 'success' as const, label: t('st_available') }
-      : win
+      : anyWin
         ? { tone: 'primary' as const, label: t('st_partly') }
         : { tone: 'danger' as const, label: t('st_full') };
 
