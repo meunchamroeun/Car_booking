@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarDays, CarFront, ChevronRight, Fuel, LayoutList, Search, Users, Wrench } from 'lucide-react';
+import { CalendarDays, CarFront, Fuel, LayoutList, Search, Users, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { can } from '@/lib/permissions';
@@ -363,7 +363,7 @@ function Timeline({ cars }: { cars: Car[] }) {
       <div className="no-scrollbar overflow-x-auto">
         <div className="min-w-[640px]">
           <div className="flex border-b bg-muted/40">
-            <div className="sticky left-0 z-10 w-[136px] shrink-0 bg-muted/90 backdrop-blur" />
+            <div className="sticky left-0 z-10 w-[120px] shrink-0 bg-muted/90 backdrop-blur" />
             {hours.map(h => (
               <div key={h} className="flex-1 border-l py-1.5 text-center text-[11px] font-semibold tabular text-muted-foreground">
                 {DateUtil.pad(h)}
@@ -382,13 +382,12 @@ function Timeline({ cars }: { cars: Car[] }) {
                   disabled={!win}
                   onClick={() => win && openBooking(c.id, win[0], win[1])}
                   aria-label={win ? `${t('book_short')} ${c.name} ${win[0]}–${win[1]}` : c.name}
-                  className="group sticky left-0 z-10 flex w-[136px] shrink-0 items-center gap-1 border-r bg-card px-3 py-2.5 text-left transition-colors enabled:hover:bg-primary-soft enabled:active:bg-primary-soft disabled:cursor-default"
+                  className="group sticky left-0 z-10 flex w-[120px] shrink-0 items-center border-r bg-card px-3 py-2.5 text-left transition-colors enabled:hover:bg-primary-soft enabled:active:bg-primary-soft disabled:cursor-default"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[12.5px] font-semibold group-enabled:group-hover:text-primary">{c.name}</span>
                     <span className="block font-mono text-[10.5px] text-muted-foreground">{c.plate}</span>
                   </span>
-                  {win && <ChevronRight className="size-3.5 shrink-0 text-muted-foreground/70 group-hover:text-primary" />}
                 </button>
                 <div className="relative flex flex-1">
                   {hours.map(h => (
