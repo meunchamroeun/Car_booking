@@ -72,6 +72,14 @@ export function getDefaultMockData(): FleetData {
     },
   ];
 
+  const minusMinutes = (stamp: string, mins: number) => {
+    const [date, time] = stamp.split(' ');
+    const [y, mo, da] = date.split('-').map(Number);
+    const [h, mi] = time.split(':').map(Number);
+    const dt = new Date(y, mo - 1, da, h, mi - mins);
+    return `${DateUtil.toDateStr(dt)} ${DateUtil.pad(dt.getHours())}:${DateUtil.pad(dt.getMinutes())}`;
+  };
+
   const base = (b: Partial<Booking> & Pick<Booking, 'id' | 'carId' | 'requesterId' | 'startDate' | 'startTime' | 'endTime' | 'purpose' | 'status'>): Booking => ({
     endDate: b.startDate,
     originalEndTime: b.endTime,
@@ -82,7 +90,8 @@ export function getDefaultMockData(): FleetData {
     taskStatus: null,
     approverId: null,
     decisionAt: null,
-    createdAt: `${d(-1)} 16:00`,
+    // Requested ~40 min before the decision so the Progress timeline reads in order
+    createdAt: b.decisionAt ? minusMinutes(b.decisionAt, 40) : `${d(-1)} 16:00`,
     ...b,
   });
 

@@ -259,7 +259,9 @@ function VehicleCard({ car }: { car: Car }) {
                             {who?.name ?? '—'}
                             {mine && <span className="ml-1 font-medium text-primary">({t('you')})</span>}
                           </span>
-                          <span className="block truncate text-[11.5px] text-muted-foreground">{who?.dept}</span>
+                          <span className="block truncate text-[11.5px] text-muted-foreground" title={b.purpose}>
+                            {b.purpose || who?.dept}
+                          </span>
                         </span>
                         <span className={cn('shrink-0 text-[12px] font-semibold tabular', done ? 'text-muted-foreground' : 'text-primary')}>
                           {DateUtil.timeSpan(app.bookings.find(x => x.id === b.id) ?? b, lang)}

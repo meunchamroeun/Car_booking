@@ -274,9 +274,12 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                 return (
                   <li key={b.id} className="flex items-center gap-2 text-[12.5px]">
                     <Avatar initials={who?.initials ?? '?'} seed={who?.id} className="size-6 text-[10px]" />
-                    <span className="min-w-0 flex-1 truncate font-medium">
-                      {who?.name}
-                      {b.requesterId === currentUser.id && <span className="text-primary"> ({t('you')})</span>}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">
+                        {who?.name}
+                        {b.requesterId === currentUser.id && <span className="text-primary"> ({t('you')})</span>}
+                      </span>
+                      <span className="block truncate text-[11.5px] text-muted-foreground">{b.purpose}</span>
                     </span>
                     <span className="shrink-0 font-semibold tabular text-primary">
                       {multiDay || !sameDay ? `${DateUtil.friendly(b.startDate, lang)} ` : ''}

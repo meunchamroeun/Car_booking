@@ -1,8 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarClock, CarFront, CheckCircle2, ClipboardCheck, FileText, MapPin, Phone, RotateCcw, Route, UserRound, XCircle } from 'lucide-react';
+import { CalendarClock, CarFront, Check, CheckCircle2, ClipboardCheck, FileText, MapPin, Phone, RotateCcw, Route, UserRound, XCircle } from 'lucide-react';
 import { useApp } from '@/lib/store';
+import { isLive } from '@/lib/selectors';
 import { DateUtil } from '@/lib/date-utils';
 import { canCancel, canCompleteTask, canReturnEarly, canReview, canShowPass, canStartTask } from '@/lib/permissions';
 import { Booking } from '@/types';
@@ -161,33 +162,84 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
   );
 }
 
+/**
+ * Booking progress: steps appear one after another, a coloured line grows through
+ * the finished steps, finished dots pop in with a check, and the current step pulses.
+ */
 function Progress({ b, approverName }: { b: Booking; approverName?: string }) {
-  const { t } = useApp();
+  const { t, lang } = useApp();
   const rejected = b.status === 'Rejected';
-  const steps = [
+  const cancelled = b.status === 'Cancelled';
+  const steps: { label: string; at?: string | null; done: boolean; bad?: boolean }[] = [
     { label: t('ev_requested'), at: b.createdAt, done: true },
-    { label: rejected ? t('rejected_by', { name: approverName ?? '' }) : b.decisionAt ? t('approved_by', { name: approverName ?? '' }) : t('ev_decided'), at: b.decisionAt, done: !!b.decisionAt, bad: rejected },
-    ...(rejected || b.status === 'Cancelled' ? [] : [
-      { label: t('ev_started'), at: b.startedAt, done: !!b.startedAt || b.status === 'Completed' },
-      { label: b.returnedEarly ? t('st_early') : t('ev_completed'), at: b.completedAt, done: b.status === 'Completed' },
-    ]),
+    {
+      label: rejected ? t('rejected_by', { name: approverName ?? '' }) : b.decisionAt ? t('approved_by', { name: approverName ?? '' }) : t('pending_review'),
+      at: b.decisionAt,
+      done: !!b.decisionAt,
+      bad: rejected,
+    },
+    ...(rejected
+      ? []
+      : cancelled
+        ? [{ label: t('st_Cancelled'), at: null, done: true, bad: true }]
+        : [
+            { label: t('ev_started'), at: b.startedAt, done: !!b.startedAt || b.status === 'Completed' },
+            { label: b.returnedEarly ? t('st_early') : t('ev_completed'), at: b.completedAt, done: b.status === 'Completed' },
+          ]),
   ];
+  const lastDone = steps.reduce((acc, s, i) => (s.done ? i : acc), 0);
+  const current = steps.findIndex(s => !s.done); // -1 when everything is finished
+  const live = isLive(b);
+  const STEP = 0.14; // seconds between steps
+  // Row height is fixed so the growing line can stop exactly at the last finished dot
+  const ROW = 56;
+
   return (
-    <div className="mt-3">
-      <p className="mb-2 text-[13px] font-semibold text-muted-foreground">{t('timeline_title')}</p>
-      <ol className="relative ml-1.5 space-y-3 border-l-2 border-dashed pl-5">
-        {steps.map((s, i) => (
-          <li key={i} className="relative">
-            <span
-              className={cn(
-                'absolute -left-[27px] top-0.5 flex size-4 items-center justify-center rounded-full border-2 border-background',
-                s.bad ? 'bg-destructive' : s.done ? 'bg-success' : 'bg-muted-foreground/30'
-              )}
-            />
-            <p className={cn('text-[13.5px] font-semibold', !s.done && 'text-muted-foreground')}>{s.label}</p>
-            {s.at && <p className="text-[12px] text-muted-foreground">{s.at}</p>}
-          </li>
-        ))}
+    <div className="mt-4 rounded-2xl border bg-card p-4">
+      <p className="mb-3 text-[13px] font-semibold text-muted-foreground">{t('timeline_title')}</p>
+      <ol className="relative">
+        {/* grey track */}
+        <span className="absolute left-[11px] top-3 w-0.5 rounded-full bg-border" style={{ height: (steps.length - 1) * ROW }} aria-hidden />
+        {/* coloured progress, grows from the top */}
+        {lastDone > 0 && (
+          <span
+            className={cn('absolute left-[11px] top-3 w-0.5 origin-top animate-grow-y rounded-full', steps[lastDone].bad ? 'bg-destructive' : 'bg-success')}
+            style={{ height: lastDone * ROW, animationDelay: '0.15s' }}
+            aria-hidden
+          />
+        )}
+        {steps.map((s, i) => {
+          const isCurrent = i === current;
+          return (
+            <li
+              key={i}
+              className="relative flex gap-3 animate-in fade-in-0 slide-in-from-left-2 duration-500 fill-mode-both"
+              style={{ height: i === steps.length - 1 ? undefined : ROW, animationDelay: `${i * STEP}s` }}
+            >
+              <span className="relative z-10 mt-0.5 flex size-6 shrink-0 items-center justify-center">
+                {isCurrent && <span className="absolute inset-0 animate-ping_soft rounded-full bg-primary" />}
+                <span
+                  className={cn(
+                    'relative flex size-6 items-center justify-center rounded-full border-2 border-card',
+                    s.bad ? 'bg-destructive text-white' : s.done ? 'bg-success text-white' : isCurrent ? 'bg-primary' : 'bg-muted',
+                    (s.done || s.bad) && 'animate-pop'
+                  )}
+                  style={{ animationDelay: `${0.15 + i * STEP}s` }}
+                >
+                  {s.bad ? <XCircle className="size-3.5" /> : s.done ? <Check className="size-3.5" strokeWidth={3} /> : isCurrent ? <span className="size-2 rounded-full bg-primary-foreground" /> : null}
+                </span>
+              </span>
+              <div className="min-w-0 pb-2">
+                <p className={cn('text-[14px] font-semibold leading-snug', !s.done && !isCurrent && 'text-muted-foreground', isCurrent && 'text-primary')}>{s.label}</p>
+                {s.at ? (
+                  <p className="text-[12px] tabular text-muted-foreground">{DateUtil.relative(s.at, lang)}</p>
+                ) : isCurrent ? (
+                  <p className="text-[12px] text-muted-foreground">{live ? t('ev_waiting') : t('ev_next')}</p>
+                ) : null}
+              </div>
+            </li>
+          );
+        })}
       </ol>
     </div>
   );
