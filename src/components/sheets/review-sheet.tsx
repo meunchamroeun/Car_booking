@@ -100,9 +100,13 @@ export function ReviewSheet({ open, id }: { open: boolean; id?: string }) {
               {DateUtil.window(b, lang)}
             </p>
             <p className="flex items-center gap-1.5 text-muted-foreground">
-              <MapPin className="size-3.5" />
-              <span className="truncate">{b.destination || '—'}</span>
-              <Users className="ml-1 size-3.5" />
+              {b.destination && (
+                <>
+                  <MapPin className="size-3.5" />
+                  <span className="truncate">{b.destination}</span>
+                </>
+              )}
+              <Users className={b.destination ? 'ml-1 size-3.5' : 'size-3.5'} />
               {b.passengers}
             </p>
           </div>

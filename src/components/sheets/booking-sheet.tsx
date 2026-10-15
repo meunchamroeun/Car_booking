@@ -115,9 +115,11 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
             <span className="ml-1.5 text-[12px] font-medium text-muted-foreground line-through">{b.originalEndTime}</span>
           )}
         </InfoRow>
-        <InfoRow icon={<MapPin />} label={t('route')}>
-          {t('depot')} → {b.destination || '—'}
-        </InfoRow>
+        {b.destination && (
+          <InfoRow icon={<MapPin />} label={t('route')}>
+            {t('depot')} → {b.destination}
+          </InfoRow>
+        )}
         {!isMine && requester && (
           <InfoRow icon={<UserRound />} label={t('requester')}>
             <span className="flex items-center justify-between gap-2">

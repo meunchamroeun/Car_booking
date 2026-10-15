@@ -54,8 +54,8 @@ export function ReturnSheet({ open, id, mode }: { open: boolean; id?: string; mo
           </p>
         </div>
         <div>
-          <p className="text-muted-foreground">{t('destination')}</p>
-          <p className="truncate font-semibold">{b.destination || '—'}</p>
+          <p className="text-muted-foreground">{t('purpose')}</p>
+          <p className="line-clamp-2 font-semibold leading-snug">{b.purpose || '—'}</p>
         </div>
       </div>
 

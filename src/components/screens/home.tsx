@@ -160,11 +160,26 @@ function TripHero({ b, mode }: { b: Booking; mode: 'requester' | 'driver' }) {
           <p className="truncate font-semibold">{car.name}</p>
           <p className="font-mono text-[11.5px] text-white/60">{car.plate}</p>
         </div>
-        <div className="min-w-0">
-          <p className="text-white/55">{mode === 'driver' ? t('passenger') : b.needDriver ? t('driver') : t('destination')}</p>
-          <p className="truncate font-semibold">{mode === 'driver' ? requester?.name : b.needDriver ? driver?.name ?? '—' : b.destination || '—'}</p>
-          <p className="truncate text-[11.5px] text-white/60">{mode === 'driver' ? b.destination : b.needDriver ? driver?.phone : t('self_drive')}</p>
-        </div>
+        {mode === 'driver' || b.needDriver ? (
+          <div className="min-w-0">
+            <p className="text-white/55">{mode === 'driver' ? t('passenger') : t('driver')}</p>
+            <p className="truncate font-semibold">{mode === 'driver' ? requester?.name : driver?.name ?? '—'}</p>
+            <p className="truncate text-[11.5px] text-white/60">{mode === 'driver' ? requester?.phone : driver?.phone}</p>
+          </div>
+        ) : (
+          <div className="min-w-0">
+            <p className="text-white/55">{t('purpose')}</p>
+            <p className="line-clamp-2 font-semibold leading-snug">{b.purpose || '—'}</p>
+            <p className="truncate text-[11.5px] text-white/60">{t('self_drive')}</p>
+          </div>
+        )}
+        {/* With a driver the second column is the person, so the purpose gets its own row */}
+        {(mode === 'driver' || b.needDriver) && b.purpose && (
+          <div className="col-span-2 min-w-0 border-t border-white/10 pt-2">
+            <p className="text-white/55">{t('purpose')}</p>
+            <p className="line-clamp-2 font-semibold leading-snug">{b.purpose}</p>
+          </div>
+        )}
       </div>
 
       <div className="mt-3 flex gap-2">

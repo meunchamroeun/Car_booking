@@ -70,10 +70,12 @@ export function TripCard({
               {DateUtil.window(b, lang)}
             </span>
           </span>
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <MapPin className="size-3.5 shrink-0" />
-            <span className="truncate">{b.destination || '—'}</span>
-          </span>
+          {b.destination && (
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <MapPin className="size-3.5 shrink-0" />
+              <span className="truncate">{b.destination}</span>
+            </span>
+          )}
           <span className="flex items-center gap-1.5 text-muted-foreground">
             <Users className="size-3.5" />
             {t('pax', { n: b.passengers })}
