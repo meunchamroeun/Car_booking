@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ArrowRight, CalendarPlus, CarFront, CheckCircle2, ClipboardCheck, Clock, Phone, QrCode, RotateCcw, Route, Wrench } from 'lucide-react';
+import { ArrowRight, CalendarPlus, CarFront, Sparkles, CheckCircle2, ClipboardCheck, Clock, Phone, QrCode, RotateCcw, Route, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { driverTrips, fleetStats, isLive, myTrips } from '@/lib/selectors';
@@ -97,10 +97,7 @@ function LiveProgress({ b, live }: { b: Booking; live: boolean }) {
   const left = end - now;
   return (
     <div className="mt-3" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct * 100)} aria-label={t('trip_now')}>
-      <div className="mb-1.5 flex items-baseline justify-between text-[12px]">
-        <span className="text-white/65">
-          <span className="font-semibold tabular text-white">{Math.round(pct * 100)}%</span> {t('done_pct')}
-        </span>
+      <div className="mb-1.5 flex items-baseline justify-end text-[12px]">
         <span className="text-white/65">
           <span className="font-semibold tabular text-white">{clock(left)}</span> {t('time_left')}
         </span>
@@ -214,6 +211,31 @@ function TripHero({ b, mode }: { b: Booking; mode: 'requester' | 'driver' }) {
   );
 }
 
+/* ── Welcome card when the user has no current or upcoming booking ───── */
+
+function WelcomeHero() {
+  const { currentUser, cars, t, isCarInMaintenance } = useApp();
+  const free = cars.filter(c => !isCarInMaintenance(c.id, DateUtil.todayStr())).length;
+  return (
+    <div className="hero-pattern relative overflow-hidden rounded-[22px] bg-navy p-5 text-navy-foreground shadow-float">
+      <Badge tone="glass">
+        <Sparkles className="size-3" /> {t('welcome_badge')}
+      </Badge>
+      <p className="mt-3 text-[22px] font-bold leading-tight tracking-tight">{t('welcome_title', { name: currentUser.name.split(' ')[0] })}</p>
+      <p className="mt-1 text-[13.5px] text-white/70">{t('welcome_text', { n: free })}</p>
+      <div className="mt-4 flex items-center gap-2">
+        <Button
+          className="flex-1 bg-white text-navy hover:bg-white/90"
+          onClick={() => document.getElementById('vehicles')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        >
+          <CarFront /> {t('welcome_cta')}
+        </Button>
+      </div>
+      <CarFront className="pointer-events-none absolute -right-4 -top-3 size-28 rotate-[-8deg] text-white/[0.06]" aria-hidden />
+    </div>
+  );
+}
+
 /* ── Employee ──────────────────────────────────────────────────────────── */
 
 function EmployeeHome() {
@@ -221,7 +243,7 @@ function EmployeeHome() {
   const { hero } = myTrips(app, app.currentUser.id);
   return (
     <>
-      {hero && <TripHero b={hero} mode="requester" />}
+      {hero ? <TripHero b={hero} mode="requester" /> : <WelcomeHero />}
       <VehiclesScreen embedded />
     </>
   );

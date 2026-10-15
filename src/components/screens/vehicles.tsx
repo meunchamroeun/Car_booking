@@ -40,7 +40,7 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
   });
 
   return (
-    <div className={embedded ? 'mt-6' : ''}>
+    <div id={embedded ? 'vehicles' : undefined} className={embedded ? 'mt-6 scroll-mt-20' : ''}>
       <PageHeader
         compact={embedded}
         title={t('vehicles_title')}
