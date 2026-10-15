@@ -10,7 +10,7 @@ const endStamp = (b: Booking) => DateUtil.stamp(b.endDate || b.startDate, b.endT
 export function isLive(b: Booking): boolean {
   if (b.status !== 'Approved') return false;
   if (b.taskStatus === 'In Progress') return true;
-  if (b.needDriver) return false;
+  if (b.taskStatus === 'Completed') return false;
   const now = DateUtil.nowStamp();
   return startStamp(b) <= now && now < endStamp(b);
 }
