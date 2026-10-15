@@ -63,8 +63,8 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
         }
       />
 
-      {/* Date selector: Today | Tomorrow | Select date */}
-      <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={t('date')}>
+      {/* Compact date selector: Today | Tomorrow | Select / Key-in date */}
+      <div className="grid grid-cols-3 gap-1 rounded-2xl bg-muted/60 p-1 text-[13px]" role="radiogroup" aria-label={t('date')}>
         {/* Today */}
         <button
           type="button"
@@ -73,16 +73,14 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
             setCalendarOpen(false);
           }}
           className={cn(
-            'flex h-[58px] flex-col items-center justify-center rounded-2xl border text-center transition-all',
+            'flex h-[44px] flex-col items-center justify-center rounded-xl transition-all',
             selectedDate === today && !calendarOpen
-              ? 'border-navy bg-navy text-navy-foreground shadow-float dark:border-primary dark:bg-primary dark:text-primary-foreground'
-              : 'bg-card hover:bg-muted'
+              ? 'bg-background text-foreground shadow-xs font-semibold'
+              : 'text-muted-foreground hover:text-foreground'
           )}
         >
-          <span className="text-[13px] font-semibold">{t('today')}</span>
-          <span className={cn('text-[11px] tabular', selectedDate === today && !calendarOpen ? 'opacity-75' : 'text-muted-foreground')}>
-            {DateUtil.friendly(today, lang)}
-          </span>
+          <span className="leading-tight text-[12.5px]">{t('today')}</span>
+          <span className="text-[10px] opacity-70 tabular leading-none">{DateUtil.formatDate(today, lang)}</span>
         </button>
 
         {/* Tomorrow */}
@@ -93,47 +91,45 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
             setCalendarOpen(false);
           }}
           className={cn(
-            'flex h-[58px] flex-col items-center justify-center rounded-2xl border text-center transition-all',
+            'flex h-[44px] flex-col items-center justify-center rounded-xl transition-all',
             selectedDate === tomorrow && !calendarOpen
-              ? 'border-navy bg-navy text-navy-foreground shadow-float dark:border-primary dark:bg-primary dark:text-primary-foreground'
-              : 'bg-card hover:bg-muted'
+              ? 'bg-background text-foreground shadow-xs font-semibold'
+              : 'text-muted-foreground hover:text-foreground'
           )}
         >
-          <span className="text-[13px] font-semibold">{t('tomorrow')}</span>
-          <span className={cn('text-[11px] tabular', selectedDate === tomorrow && !calendarOpen ? 'opacity-75' : 'text-muted-foreground')}>
-            {DateUtil.friendly(tomorrow, lang)}
-          </span>
+          <span className="leading-tight text-[12.5px]">{t('tomorrow')}</span>
+          <span className="text-[10px] opacity-70 tabular leading-none">{DateUtil.formatDate(tomorrow, lang)}</span>
         </button>
 
-        {/* Select date */}
+        {/* Select / Key in date */}
         <button
           type="button"
           onClick={() => setCalendarOpen(o => !o)}
           aria-expanded={calendarOpen}
           className={cn(
-            'flex h-[58px] flex-col items-center justify-center rounded-2xl border text-center transition-all',
+            'flex h-[44px] flex-col items-center justify-center rounded-xl transition-all',
             isCustom || calendarOpen
-              ? 'border-navy bg-navy text-navy-foreground shadow-float dark:border-primary dark:bg-primary dark:text-primary-foreground'
-              : 'border-dashed bg-card hover:bg-muted'
+              ? 'bg-background text-primary shadow-xs font-semibold'
+              : 'text-muted-foreground hover:text-foreground'
           )}
         >
-          <span className="flex items-center gap-1 text-[13px] font-semibold">
+          <span className="flex items-center gap-1 leading-tight text-[12.5px]">
             <CalendarDays className="size-3.5 shrink-0" />
-            <span className="truncate">{isCustom ? DateUtil.friendly(selectedDate, lang) : t('select_date')}</span>
+            <span className="truncate">{isCustom ? DateUtil.formatDate(selectedDate, lang) : t('select_date')}</span>
           </span>
-          <span className={cn('text-[11px] truncate max-w-full px-1', isCustom || calendarOpen ? 'opacity-75' : 'text-muted-foreground')}>
-            {isCustom ? DateUtil.weekdayShort(selectedDate, lang) : t('other_date')}
+          <span className="text-[10px] opacity-70 truncate max-w-full px-1 leading-none">
+            {isCustom ? DateUtil.weekdayShort(selectedDate, lang) : t('key_in_or_pick')}
           </span>
         </button>
       </div>
 
-      {/* Expandable Calendar Picker */}
+      {/* Expandable Calendar & Key-In Date Picker */}
       {calendarOpen && (
         <div className="mt-2.5 rounded-2xl border bg-card p-3 shadow-card animate-in fade-in-0 zoom-in-95">
-          <div className="mb-2 flex items-center justify-between border-b pb-2">
+          <div className="mb-2.5 flex items-center justify-between border-b pb-2">
             <span className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
               <CalendarDays className="size-4 text-primary" />
-              {t('plan_date')} · <span className="font-normal text-muted-foreground">{DateUtil.longDate(selectedDate, lang)}</span>
+              {t('select_date')} · <span className="font-normal text-muted-foreground">{DateUtil.longDate(selectedDate, lang)}</span>
             </span>
             <button
               type="button"
@@ -143,6 +139,32 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
               {t('close')}
             </button>
           </div>
+
+          {/* Direct Key-In Date Input */}
+          <div className="mb-3 flex items-center gap-2">
+            <div className="relative flex-1">
+              <Input
+                type="date"
+                min={today}
+                value={selectedDate}
+                onChange={e => {
+                  if (e.target.value) {
+                    setSelectedDate(e.target.value);
+                  }
+                }}
+                className="h-9 text-[13px] font-medium bg-muted/40"
+                aria-label={t('key_in_date')}
+              />
+            </div>
+            <Button
+              size="sm"
+              className="h-9 px-3.5 font-semibold"
+              onClick={() => setCalendarOpen(false)}
+            >
+              {t('confirm')}
+            </Button>
+          </div>
+
           <RangeCalendar
             mode="single"
             start={selectedDate}
