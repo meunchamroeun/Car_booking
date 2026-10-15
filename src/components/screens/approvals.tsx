@@ -9,8 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Segmented } from '@/components/ui/segmented';
 import { EmptyState } from '@/components/ui/empty';
 import { TripCard } from '@/components/common/trip-card';
-import { Avatar } from '@/components/ui/avatar';
-import { isDriverBusy } from '@/lib/fleet-service';
+import { DriverSelect } from '@/components/common/driver-select';
 import { Booking } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -53,22 +52,10 @@ export function ApprovalsScreen() {
  */
 function PendingCard({ b }: { b: Booking }) {
   const app = useApp();
-  const { drivers, t, openSheet, approveBooking, checkConflict } = app;
+  const { t, openSheet, approveBooking, checkConflict } = app;
   const [assign, setAssign] = React.useState<'yes' | 'no' | null>(null);
   const [driverId, setDriverId] = React.useState<string | null>(null);
   const conflict = checkConflict(b.carId, b.startDate, b.startTime, b.endTime, b.id, b.endDate);
-
-  const driverState = (dId: string) => {
-    const d = drivers.find(x => x.id === dId)!;
-    if (d.status !== 'Active') return { ok: false, label: t('driver_off') };
-    const busy = isDriverBusy(app, dId, b);
-    return busy ? { ok: false, label: t('driver_busy', { start: busy.startTime, end: busy.endTime }) } : { ok: true, label: t('driver_free') };
-  };
-
-  const pickYes = () => {
-    setAssign('yes');
-    if (!driverId) setDriverId(drivers.find(d => driverState(d.id).ok)?.id ?? null);
-  };
 
   const ready = conflict.ok && (!b.needDriver || assign === 'no' || (assign === 'yes' && !!driverId));
   const approve = () => approveBooking(b.id, assign === 'yes' ? driverId : null, !b.needDriver || assign === 'yes');
@@ -81,7 +68,7 @@ function PendingCard({ b }: { b: Booking }) {
       <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('assign_q')}>
         {(
           [
-            { v: 'yes', icon: UserRound, label: t('assign_yes'), onClick: pickYes },
+            { v: 'yes', icon: UserRound, label: t('assign_yes'), onClick: () => setAssign('yes') },
             { v: 'no', icon: CarFront, label: t('assign_no'), onClick: () => setAssign('no') },
           ] as const
         ).map(o => (
@@ -104,33 +91,7 @@ function PendingCard({ b }: { b: Booking }) {
 
       {assign === 'yes' && (
         <div className="mt-3 animate-in fade-in-0 slide-in-from-top-1 duration-200">
-          <p className="mb-1.5 text-[12.5px] font-semibold text-muted-foreground">{t('choose_driver')}</p>
-          <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5" role="radiogroup" aria-label={t('choose_driver')}>
-            {drivers.map(d => {
-              const st = driverState(d.id);
-              const active = driverId === d.id;
-              return (
-                <button
-                  key={d.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  disabled={!st.ok}
-                  onClick={() => setDriverId(d.id)}
-                  className={cn(
-                    'flex shrink-0 items-center gap-2 rounded-full border-2 py-1 pl-1 pr-3 text-left transition-all disabled:opacity-45',
-                    active ? 'border-primary bg-primary-soft' : 'border-transparent bg-muted/60'
-                  )}
-                >
-                  <Avatar initials={d.name.split(' ').map(x => x[0]).join('')} seed={d.id} className="size-7 text-[10.5px]" />
-                  <span className="leading-tight">
-                    <span className="block text-[12.5px] font-semibold">{d.name}</span>
-                    <span className={cn('block text-[10.5px]', st.ok ? 'text-success' : 'text-muted-foreground')}>{st.label}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <DriverSelect b={b} value={driverId} onChange={setDriverId} />
         </div>
       )}
       {assign === 'no' && <p className="mt-2 text-[12px] text-muted-foreground">{t('assign_no_desc')}</p>}

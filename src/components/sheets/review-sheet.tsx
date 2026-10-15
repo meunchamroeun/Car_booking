@@ -4,17 +4,17 @@ import * as React from 'react';
 import { AlertTriangle, CalendarClock, CarFront, Check, MapPin, UserRound, Users, X } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
-import { isDriverBusy } from '@/lib/fleet-service';
 import { Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Field, Textarea } from '@/components/ui/input';
 import { CarPhoto } from '@/components/common/car-photo';
+import { DriverSelect } from '@/components/common/driver-select';
 import { cn } from '@/lib/utils';
 
 export function ReviewSheet({ open, id }: { open: boolean; id?: string }) {
   const app = useApp();
-  const { bookings, cars, users, drivers, t, lang, closeSheet, approveBooking, rejectBooking, checkConflict } = app;
+  const { bookings, cars, users, t, lang, closeSheet, approveBooking, rejectBooking, checkConflict } = app;
   const b = bookings.find(x => x.id === id);
 
   const [mode, setMode] = React.useState<'approve' | 'reject'>('approve');
@@ -23,22 +23,11 @@ export function ReviewSheet({ open, id }: { open: boolean; id?: string }) {
   const [assign, setAssign] = React.useState<'yes' | 'no' | null>(null);
   const [reason, setReason] = React.useState('');
 
-  const driverState = React.useCallback(
-    (dId: string) => {
-      const d = drivers.find(x => x.id === dId)!;
-      if (d.status !== 'Active') return { ok: false, label: t('driver_off') };
-      const busy = b && isDriverBusy(app, dId, b);
-      if (busy) return { ok: false, label: t('driver_busy', { start: busy.startTime, end: busy.endTime }) };
-      return { ok: true, label: t('driver_free') };
-    },
-    [app, b, drivers, t]
-  );
-
   React.useEffect(() => {
     if (!open || !b) return;
     setMode('approve');
     setReason('');
-    setDriverId(b.needDriver ? drivers.find(d => driverState(d.id).ok)?.id ?? null : null);
+    setDriverId(null);
     setAssign(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, id]);
@@ -162,37 +151,7 @@ export function ReviewSheet({ open, id }: { open: boolean; id?: string }) {
 
       {mode === 'approve' && b.needDriver && assign === 'yes' && (
         <div className="mt-4 animate-in fade-in-0 slide-in-from-top-1 duration-200">
-          <p className="mb-2 text-[13px] font-semibold text-muted-foreground">{t('choose_driver')}</p>
-          <div className="space-y-2" role="radiogroup" aria-label={t('choose_driver')}>
-            {drivers.map(d => {
-              const st = driverState(d.id);
-              const active = driverId === d.id;
-              return (
-                <button
-                  key={d.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  disabled={!st.ok}
-                  onClick={() => setDriverId(d.id)}
-                  className={cn(
-                    'flex w-full items-center gap-3 rounded-2xl border-2 p-3 text-left transition-all disabled:opacity-50',
-                    active ? 'border-primary bg-primary-soft/50' : 'border-transparent bg-card ring-1 ring-border'
-                  )}
-                >
-                  <Avatar initials={d.name.split(' ').map(x => x[0]).join('')} seed={d.id} className="size-9 text-[12px]" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-semibold">{d.name}</p>
-                    <p className="text-[12px] text-muted-foreground">{d.phone}</p>
-                  </div>
-                  <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-semibold', st.ok ? 'bg-success-soft text-success' : 'bg-muted text-muted-foreground')}>{st.label}</span>
-                  <span className={cn('flex size-5 items-center justify-center rounded-full border-2', active ? 'border-primary bg-primary' : 'border-input')}>
-                    {active && <Check className="size-3 text-primary-foreground" strokeWidth={3} />}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <DriverSelect b={b} value={driverId} onChange={setDriverId} />
         </div>
       )}
 
