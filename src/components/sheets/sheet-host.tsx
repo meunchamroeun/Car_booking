@@ -9,6 +9,7 @@ import { ReviewSheet } from './review-sheet';
 import { ReturnSheet } from './return-sheet';
 import { MaintenanceSheet } from './maintenance-sheet';
 import { NotificationsSheet } from './notifications-sheet';
+import { KpiSheet } from './kpi-sheet';
 
 type Of<T extends NonNullable<SheetState>['type']> = Extract<NonNullable<SheetState>, { type: T }>;
 
@@ -31,6 +32,7 @@ export function SheetHost() {
       <ReturnSheet open={is('return')} id={l.return?.id} mode={l.return?.mode ?? 'early'} />
       <MaintenanceSheet open={is('maintenance')} carId={l.maintenance?.carId} defaultMode={l.maintenance?.mode} />
       <NotificationsSheet open={is('notifications')} />
+      <KpiSheet open={is('kpi')} kind={l.kpi?.kind} />
     </>
   );
 }

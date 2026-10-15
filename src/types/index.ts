@@ -114,6 +114,9 @@ export type ThemeMode = 'light' | 'dark';
 export type ViewMode = 'cards' | 'timeline';
 export type AppTab = 'home' | 'vehicles' | 'trips' | 'tasks' | 'approvals' | 'fleet' | 'profile';
 
+/** Fleet-today numbers that open a detail list. */
+export type KpiKind = 'available' | 'in_use' | 'today' | 'service';
+
 export type SheetState =
   | { type: 'book'; carId?: string; date?: string; start?: string; end?: string }
   | { type: 'booking'; id: string }
@@ -121,4 +124,5 @@ export type SheetState =
   | { type: 'return'; id: string; mode: 'early' | 'complete' }
   | { type: 'maintenance'; carId: string; mode?: 'manual' | 'scheduled' }
   | { type: 'notifications' }
+  | { type: 'kpi'; kind: KpiKind }
   | null;

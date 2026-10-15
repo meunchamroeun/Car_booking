@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import * as Menu from '@radix-ui/react-dropdown-menu';
-import { Check, ChevronDown, Phone, UserRound } from 'lucide-react';
+import { Check, ChevronDown, Phone, Search, UserRound, X } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { isDriverBusy } from '@/lib/fleet-service';
 import { Booking } from '@/types';
@@ -40,6 +40,21 @@ export function DriverSelect({ b, value, onChange }: { b: Booking; value: string
   const selected = options.find(o => o.driver.id === value);
   const freeCount = options.filter(o => o.ok).length;
   const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState('');
+  const searchRef = React.useRef<HTMLInputElement>(null);
+
+  // Fresh search each time; put the cursor in the box once the menu has opened
+  React.useEffect(() => {
+    if (!open) return setQuery('');
+    const id = setTimeout(() => searchRef.current?.focus(), 30);
+    return () => clearTimeout(id);
+  }, [open]);
+
+  const q = query.trim().toLowerCase();
+  const digits = q.replace(/\D/g, '');
+  const shown = options.filter(
+    o => !q || o.driver.name.toLowerCase().includes(q) || (!!digits && o.driver.phone.replace(/\D/g, '').includes(digits))
+  );
 
   return (
     // Taps here must not reach the card underneath (which opens the review)
@@ -91,8 +106,40 @@ export function DriverSelect({ b, value, onChange }: { b: Booking; value: string
             onClick={e => e.stopPropagation()}
             className="z-[70] w-[var(--radix-dropdown-menu-trigger-width)] overflow-hidden rounded-2xl border bg-card p-1.5 shadow-float outline-none focus-visible:ring-0 focus-visible:ring-offset-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1"
           >
-            <Menu.Label className="px-2.5 pb-1 pt-1.5 text-[11.5px] font-semibold uppercase tracking-wide text-muted-foreground">{t('choose_driver')}</Menu.Label>
-            {options.map(o => {
+            {/* Search: keys typed here must not trigger the menu's own type-to-select */}
+            <div className="relative mb-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                ref={searchRef}
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Escape') return;
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    (e.currentTarget.closest('[role=menu]')?.querySelector('[role=menuitem]:not([data-disabled])') as HTMLElement | null)?.focus();
+                    return;
+                  }
+                  e.stopPropagation();
+                }}
+                placeholder={t('driver_search')}
+                aria-label={t('driver_search')}
+                className="h-10 w-full rounded-xl border border-input bg-background pl-9 pr-9 text-[13.5px] placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none focus:ring-[3px] focus:ring-primary/15 focus-visible:ring-offset-0"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => (setQuery(''), searchRef.current?.focus())}
+                  aria-label={t('close')}
+                  className="absolute right-1.5 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+            <Menu.Label className="px-2.5 pb-1 pt-1 text-[11.5px] font-semibold uppercase tracking-wide text-muted-foreground">{t('choose_driver')}</Menu.Label>
+            {shown.length === 0 && <p className="px-2.5 py-3 text-center text-[13px] text-muted-foreground">{t('driver_no_match')}</p>}
+            {shown.map(o => {
               const active = o.driver.id === value;
               return (
                 <Menu.Item

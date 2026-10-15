@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ArrowRight, CalendarPlus, CarFront, Sparkles, CheckCircle2, ClipboardCheck, Clock, Phone, QrCode, RotateCcw, Route, Wrench } from 'lucide-react';
+import { ArrowRight, CalendarPlus, CarFront, ChevronRight, Sparkles, CheckCircle2, ClipboardCheck, Clock, Phone, QrCode, RotateCcw, Route, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { driverTrips, fleetStats, isLive, myTrips } from '@/lib/selectors';
@@ -251,17 +251,26 @@ function EmployeeHome() {
 
 /* ── Manager / Approver ────────────────────────────────────────────────── */
 
-function Kpis({ items }: { items: { label: string; value: number | string; icon: React.ReactNode; tone: string }[] }) {
+function Kpis({ items }: { items: { label: string; value: number | string; icon: React.ReactNode; tone: string; onClick?: () => void }[] }) {
   return (
     <div className="grid grid-cols-2 gap-2.5">
       {items.map(k => (
-        <Card key={k.label} className="p-3.5">
+        <button
+          key={k.label}
+          type="button"
+          onClick={k.onClick}
+          disabled={!k.onClick}
+          className="group rounded-xl border bg-card p-3.5 text-left shadow-card transition-[transform,box-shadow,border-color] enabled:hover:border-primary/40 enabled:hover:shadow-float enabled:active:scale-[0.98]"
+        >
           <div className="flex items-center justify-between">
             <span className="text-[12.5px] font-medium text-muted-foreground">{k.label}</span>
             <span className={cn('flex size-8 items-center justify-center rounded-lg [&_svg]:size-4', k.tone)}>{k.icon}</span>
           </div>
-          <p className="mt-1.5 text-[26px] font-bold leading-none tabular">{k.value}</p>
-        </Card>
+          <div className="mt-1.5 flex items-end justify-between">
+            <p className="text-[26px] font-bold leading-none tabular">{k.value}</p>
+            {k.onClick && <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />}
+          </div>
+        </button>
       ))}
     </div>
   );
@@ -269,7 +278,7 @@ function Kpis({ items }: { items: { label: string; value: number | string; icon:
 
 function ApproverHome() {
   const app = useApp();
-  const { currentUser, t } = app;
+  const { currentUser, t, openSheet } = app;
   const s = fleetStats(app);
   const { hero } = myTrips(app, currentUser.id);
 
@@ -280,10 +289,10 @@ function ApproverHome() {
       <SectionHeader title={t('fleet_today')} />
       <Kpis
         items={[
-          { label: t('kpi_available'), value: s.available.length, icon: <CarFront />, tone: 'bg-success-soft text-success' },
-          { label: t('kpi_in_use'), value: s.inUse.length, icon: <Route />, tone: 'bg-info-soft text-info' },
-          { label: t('kpi_trips_today'), value: s.tripsToday.length, icon: <Clock />, tone: 'bg-primary-soft text-primary' },
-          { label: t('kpi_service'), value: s.inService.length, icon: <Wrench />, tone: 'bg-warning-soft text-warning' },
+          { label: t('kpi_available'), value: s.available.length, icon: <CarFront />, tone: 'bg-success-soft text-success', onClick: () => openSheet({ type: 'kpi', kind: 'available' }) },
+          { label: t('kpi_in_use'), value: s.inUse.length, icon: <Route />, tone: 'bg-info-soft text-info', onClick: () => openSheet({ type: 'kpi', kind: 'in_use' }) },
+          { label: t('kpi_trips_today'), value: s.tripsToday.length, icon: <Clock />, tone: 'bg-primary-soft text-primary', onClick: () => openSheet({ type: 'kpi', kind: 'today' }) },
+          { label: t('kpi_service'), value: s.inService.length, icon: <Wrench />, tone: 'bg-warning-soft text-warning', onClick: () => openSheet({ type: 'kpi', kind: 'service' }) },
         ]}
       />
       <VehiclesScreen embedded />
@@ -346,10 +355,10 @@ function AdminHome() {
     <>
       <Kpis
         items={[
-          { label: t('kpi_available'), value: s.available.length, icon: <CarFront />, tone: 'bg-success-soft text-success' },
-          { label: t('kpi_in_use'), value: s.inUse.length, icon: <Route />, tone: 'bg-info-soft text-info' },
-          { label: t('kpi_service'), value: s.inService.length, icon: <Wrench />, tone: 'bg-warning-soft text-warning' },
-          { label: t('kpi_pending'), value: s.pending.length, icon: <ClipboardCheck />, tone: 'bg-primary-soft text-primary' },
+          { label: t('kpi_available'), value: s.available.length, icon: <CarFront />, tone: 'bg-success-soft text-success', onClick: () => openSheet({ type: 'kpi', kind: 'available' }) },
+          { label: t('kpi_in_use'), value: s.inUse.length, icon: <Route />, tone: 'bg-info-soft text-info', onClick: () => openSheet({ type: 'kpi', kind: 'in_use' }) },
+          { label: t('kpi_service'), value: s.inService.length, icon: <Wrench />, tone: 'bg-warning-soft text-warning', onClick: () => openSheet({ type: 'kpi', kind: 'service' }) },
+          { label: t('kpi_pending'), value: s.pending.length, icon: <ClipboardCheck />, tone: 'bg-primary-soft text-primary', onClick: () => setCurrentTab('approvals') },
         ]}
       />
 
