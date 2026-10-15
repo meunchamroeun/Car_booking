@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ArrowRight, CalendarPlus, CarFront, ChevronRight, Sparkles, CheckCircle2, ClipboardCheck, Clock, Phone, QrCode, RotateCcw, Route, Wrench } from 'lucide-react';
+import { ArrowRight, CalendarPlus, CarFront, ChevronRight, Sparkles, CheckCircle2, ClipboardCheck, Clock, Phone, QrCode, RotateCcw, Route, UserRound, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { driverTrips, fleetStats, isLive, myTrips } from '@/lib/selectors';
@@ -154,30 +154,43 @@ function TripHero({ b, mode }: { b: Booking; mode: 'requester' | 'driver' }) {
 
       <LiveProgress b={b} live={live} />
 
-      <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl bg-white/[0.07] p-3 text-[12.5px]">
-        <div className="min-w-0">
-          <p className="text-white/55">{t('vehicle')}</p>
-          <p className="truncate font-semibold">{car.name}</p>
-          <p className="font-mono text-[11.5px] text-white/60">{car.plate}</p>
+      <div className="mt-3 divide-y divide-white/10 rounded-2xl bg-white/[0.07] text-[12.5px]">
+        <div className="grid grid-cols-2 gap-3 p-3">
+          <div className="min-w-0">
+            <p className="text-[11.5px] font-medium text-white/55">{t('vehicle')}</p>
+            <p className="truncate text-[13.5px] font-semibold">{car.name}</p>
+            <p className="font-mono text-[11.5px] text-white/60">{car.plate}</p>
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11.5px] font-medium text-white/55">
+              {mode === 'driver' ? t('passenger') : t('driver')}
+            </p>
+            {mode === 'driver' ? (
+              <>
+                <p className="truncate text-[13.5px] font-semibold">{requester?.name ?? '—'}</p>
+                <p className="truncate text-[11.5px] text-white/60">{requester?.phone || '—'}</p>
+              </>
+            ) : b.needDriver ? (
+              <>
+                <p className="truncate text-[13.5px] font-semibold">{driver?.name ?? t('with_driver')}</p>
+                <p className="truncate text-[11.5px] text-white/60">{driver?.phone || t('with_driver_desc')}</p>
+              </>
+            ) : (
+              <>
+                <p className="flex items-center gap-1.5 truncate text-[13.5px] font-semibold">
+                  <UserRound className="size-3.5 text-white/70" />
+                  {t('self_drive')}
+                </p>
+                <p className="truncate text-[11.5px] text-white/60">{t('self_drive_desc')}</p>
+              </>
+            )}
+          </div>
         </div>
-        {mode === 'driver' || b.needDriver ? (
-          <div className="min-w-0">
-            <p className="text-white/55">{mode === 'driver' ? t('passenger') : t('driver')}</p>
-            <p className="truncate font-semibold">{mode === 'driver' ? requester?.name : driver?.name ?? '—'}</p>
-            <p className="truncate text-[11.5px] text-white/60">{mode === 'driver' ? requester?.phone : driver?.phone}</p>
-          </div>
-        ) : (
-          <div className="min-w-0">
-            <p className="text-white/55">{t('purpose')}</p>
-            <p className="line-clamp-2 font-semibold leading-snug">{b.purpose || '—'}</p>
-            <p className="truncate text-[11.5px] text-white/60">{t('self_drive')}</p>
-          </div>
-        )}
-        {/* With a driver the second column is the person, so the purpose gets its own row */}
-        {(mode === 'driver' || b.needDriver) && b.purpose && (
-          <div className="col-span-2 min-w-0 border-t border-white/10 pt-2">
-            <p className="text-white/55">{t('purpose')}</p>
-            <p className="line-clamp-2 font-semibold leading-snug">{b.purpose}</p>
+
+        {b.purpose && (
+          <div className="p-3 pt-2.5">
+            <p className="text-[11.5px] font-medium text-white/55">{t('purpose')}</p>
+            <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-white/95">{b.purpose}</p>
           </div>
         )}
       </div>

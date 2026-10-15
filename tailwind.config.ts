@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import tailwindAnimate from 'tailwindcss-animate';
 
 const token = (name: string) => `hsl(var(--${name}) / <alpha-value>)`;
 
@@ -57,5 +58,5 @@ export default {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [tailwindAnimate],
 } satisfies Config;
