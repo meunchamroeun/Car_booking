@@ -116,20 +116,37 @@ export function TimeField({
       </div>
       {bad && <p className="col-span-full -mt-1 text-right text-[11.5px] font-medium text-destructive">{t('time_example')}</p>}
       {open && (
-        <div className="relative col-span-full flex overflow-hidden rounded-2xl border bg-card px-6">
-          {/* Selection band */}
-          <div className="pointer-events-none absolute inset-x-2 top-1/2 -translate-y-1/2 rounded-xl bg-primary-soft" style={{ height: ITEM_H }} />
-          <Wheel items={HOURS} value={h} onChange={nh => onChange(`${nh}:${m}`)} ariaLabel={t('a11y_hour', { label })} />
-          <div className="relative z-10 flex items-center text-[20px] font-bold text-muted-foreground">:</div>
-          <Wheel
-            items={MINUTES.includes(m) ? MINUTES : [...MINUTES, m].sort()}
-            value={m}
-            onChange={nm => onChange(`${h}:${nm}`)}
-            ariaLabel={t('a11y_minute', { label })}
-          />
-          {/* Fade top/bottom like native wheels */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-card to-transparent" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-card to-transparent" />
+        <div className="relative col-span-full flex flex-col overflow-hidden rounded-2xl border bg-card shadow-card animate-in fade-in-0 zoom-in-95">
+          <div className="relative flex px-6">
+            {/* Selection band */}
+            <div className="pointer-events-none absolute inset-x-2 top-1/2 -translate-y-1/2 rounded-xl bg-primary-soft" style={{ height: ITEM_H }} />
+            <Wheel items={HOURS} value={h} onChange={nh => onChange(`${nh}:${m}`)} ariaLabel={t('a11y_hour', { label })} loop />
+            <div className="relative z-10 flex items-center text-[20px] font-bold text-muted-foreground">:</div>
+            <Wheel
+              items={MINUTES.includes(m) ? MINUTES : [...MINUTES, m].sort()}
+              value={m}
+              onChange={nm => onChange(`${h}:${nm}`)}
+              ariaLabel={t('a11y_minute', { label })}
+              loop
+            />
+            {/* Fade top/bottom like native wheels */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-card to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-card to-transparent" />
+          </div>
+
+          {/* Quick bar with value & done button */}
+          <div className="flex items-center justify-between border-t bg-muted/30 px-3 py-1.5">
+            <span className="text-[12px] font-medium text-muted-foreground">
+              {label}: <span className="font-bold text-foreground tabular">{value}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="rounded-lg px-2.5 py-1 text-[12px] font-semibold text-primary hover:bg-primary-soft"
+            >
+              {t('confirm') ?? 'Done'}
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -137,27 +154,71 @@ export function TimeField({
 }
 
 /** One scroll-snapping column. Scroll, tap a row, or use arrow keys. */
-function Wheel({ items, value, onChange, ariaLabel }: { items: string[]; value: string; onChange: (v: string) => void; ariaLabel: string }) {
+function Wheel({
+  items,
+  value,
+  onChange,
+  ariaLabel,
+  loop = false,
+}: {
+  items: string[];
+  value: string;
+  onChange: (v: string) => void;
+  ariaLabel: string;
+  loop?: boolean;
+}) {
   const ref = React.useRef<HTMLDivElement>(null);
   const settle = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const idx = Math.max(0, items.indexOf(value));
+  const isUserScrolling = React.useRef(false);
 
-  // Keep the wheel centred on the current value (e.g. after typing)
+  const N = items.length;
+  const REPEATS = loop ? (N <= 4 ? 9 : 5) : 1;
+  const midRepeat = Math.floor(REPEATS / 2);
+  const repeatOffset = midRepeat * N;
+
+  const baseIdx = Math.max(0, items.indexOf(value));
+  const activeIdx = loop ? repeatOffset + baseIdx : baseIdx;
+
+  // Repeated list for smooth seamless looping
+  const displayItems = React.useMemo(() => {
+    if (!loop) return items.map((it, i) => ({ key: `${it}-${i}`, it, origIdx: i }));
+    const list: { key: string; it: string; origIdx: number }[] = [];
+    for (let r = 0; r < REPEATS; r++) {
+      for (let i = 0; i < N; i++) {
+        list.push({ key: `${r}-${items[i]}-${i}`, it: items[i], origIdx: i });
+      }
+    }
+    return list;
+  }, [items, loop, N, REPEATS]);
+
+  // Center on current value
   React.useEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    const target = idx * ITEM_H;
-    if (Math.abs(el.scrollTop - target) > 2) el.scrollTo({ top: target, behavior: el.dataset.ready ? 'smooth' : 'auto' });
+    if (!el || isUserScrolling.current) return;
+    const target = activeIdx * ITEM_H;
+    if (Math.abs(el.scrollTop - target) > 2) {
+      el.scrollTo({ top: target, behavior: el.dataset.ready ? 'smooth' : 'auto' });
+    }
     el.dataset.ready = '1';
-  }, [idx]);
+  }, [activeIdx]);
 
   const onScroll = () => {
+    isUserScrolling.current = true;
     clearTimeout(settle.current);
     settle.current = setTimeout(() => {
+      isUserScrolling.current = false;
       const el = ref.current;
       if (!el) return;
-      const i = Math.min(items.length - 1, Math.max(0, Math.round(el.scrollTop / ITEM_H)));
-      if (items[i] !== value) onChange(items[i]);
+      const rawIdx = Math.round(el.scrollTop / ITEM_H);
+      const normalizedIdx = loop ? ((rawIdx % N) + N) % N : Math.min(N - 1, Math.max(0, rawIdx));
+      if (items[normalizedIdx] !== value) {
+        onChange(items[normalizedIdx]);
+      }
+      // Re-center scrollTop silently if scrolled near edges
+      if (loop && (rawIdx < N || rawIdx >= (REPEATS - 1) * N)) {
+        const resetTarget = (repeatOffset + normalizedIdx) * ITEM_H;
+        el.scrollTo({ top: resetTarget, behavior: 'instant' as ScrollBehavior });
+      }
     }, 90);
   };
 
@@ -171,15 +232,16 @@ function Wheel({ items, value, onChange, ariaLabel }: { items: string[]; value: 
       onKeyDown={e => {
         if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
         e.preventDefault();
-        const next = items[Math.min(items.length - 1, Math.max(0, idx + (e.key === 'ArrowDown' ? 1 : -1)))];
-        onChange(next);
+        const delta = e.key === 'ArrowDown' ? 1 : -1;
+        const nextIdx = loop ? ((baseIdx + delta) % N + N) % N : Math.min(N - 1, Math.max(0, baseIdx + delta));
+        onChange(items[nextIdx]);
       }}
       className="no-scrollbar relative z-10 flex-1 snap-y snap-mandatory overflow-y-auto overscroll-contain outline-none"
       style={{ height: WHEEL_H, paddingBlock: (WHEEL_H - ITEM_H) / 2 }}
     >
-      {items.map(it => (
+      {displayItems.map(({ key, it }) => (
         <div
-          key={it}
+          key={key}
           role="option"
           aria-selected={it === value}
           onClick={() => onChange(it)}
