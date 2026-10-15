@@ -15,9 +15,9 @@ export default function Home() {
   }, []);
   if (!mounted) {
     return (
-      <div className="mx-auto min-h-dvh max-w-[430px] space-y-3 p-4 pt-16">
+      <div className="mx-auto min-h-dvh max-w-[430px] space-y-3 p-4 pt-16" suppressHydrationWarning>
         {[120, 72, 180, 180].map((h, i) => (
-          <div key={i} className="animate-pulse rounded-xl bg-muted" style={{ height: h }} />
+          <div key={i} className="animate-pulse rounded-xl bg-muted" style={{ height: h }} suppressHydrationWarning />
         ))}
       </div>
     );
