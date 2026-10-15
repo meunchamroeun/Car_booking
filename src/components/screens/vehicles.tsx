@@ -34,14 +34,22 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
   const tomorrow = React.useMemo(() => DateUtil.addDays(today, 1), [today]);
   const isCustom = selectedDate !== today && selectedDate !== tomorrow;
 
-  const filtered = cars.filter(c => {
-    if (filterType !== 'all' && c.type !== filterType) return false;
-    const q = searchQuery.trim().toLowerCase();
-    if (q && !c.name.toLowerCase().includes(q) && !c.plate.toLowerCase().includes(q)) return false;
-    // Morning / Afternoon: keep cars with at least an hour free in that slot
-    if (selectedSlot !== 'all') return !app.isCarInMaintenance(c.id, selectedDate) && !!suggestWindow(app, c.id);
-    return true;
-  });
+  const filtered = React.useMemo(() => {
+    return cars
+      .filter(c => {
+        if (filterType !== 'all' && c.type !== filterType) return false;
+        const q = searchQuery.trim().toLowerCase();
+        if (q && !c.name.toLowerCase().includes(q) && !c.plate.toLowerCase().includes(q)) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const aAvail = !app.isCarInMaintenance(a.id, selectedDate) && !!suggestWindow(app, a.id);
+        const bAvail = !app.isCarInMaintenance(b.id, selectedDate) && !!suggestWindow(app, b.id);
+        if (aAvail && !bAvail) return -1;
+        if (!aAvail && bAvail) return 1;
+        return 0;
+      });
+  }, [cars, filterType, searchQuery, app, selectedDate, selectedSlot]);
 
   return (
     <div id={embedded ? 'vehicles' : undefined} className={embedded ? 'mt-6 scroll-mt-20' : ''}>
@@ -229,7 +237,11 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
 
       <div className="mt-4">
         {filtered.length === 0 ? (
-          <EmptyState icon={<CarFront />} title={t('no_results')} />
+          <EmptyState
+            icon={<CarFront />}
+            title={searchQuery ? (lang === 'kh' ? 'រកមិនឃើញរថយន្ត' : 'No matching vehicles') : t('no_results')}
+            description={searchQuery || filterType !== 'all' ? (lang === 'kh' ? 'សូមសាកល្បងផ្លាស់ប្តូរពាក្យស្វែងរក ឬប្រភេទរថយន្ត' : 'Try clearing your filters or search keywords') : undefined}
+          />
         ) : viewMode === 'cards' ? (
           <div className="space-y-3">
             <div className="rounded-xl border bg-card px-3 py-2">
