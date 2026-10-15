@@ -131,7 +131,7 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
             <div className="rounded-xl border bg-card px-3 py-2">
               <DayBarLegend
                 labels={legendLabels(t)}
-                items={['free', 'booked', 'returned', ...(selectedDate === DateUtil.todayStr() ? (['now'] as const) : []), 'service']}
+                items={['free', 'booked', ...(selectedDate === DateUtil.todayStr() ? (['now'] as const) : []), 'service']}
               />
               <p className="mt-1 text-[11px] text-muted-foreground">{t('bar_tap_hint')}</p>
             </div>
@@ -168,19 +168,27 @@ function suggestWindow(app: ReturnType<typeof useApp>, carId: string): [string, 
   const now = DateUtil.toMins(DateUtil.nowTimeStr());
   const fullDay: [string, string] = [BOOKING_SLOTS.full_day.start, BOOKING_SLOTS.full_day.end];
   const candidates = selectedSlot === 'all' ? [fullDay, ...BOOK_SLOTS.filter(w => w[0] !== fullDay[0] || w[1] !== fullDay[1])] : [[...SLOT_RANGE[selectedSlot]] as [string, string]];
-  const preset = candidates.find(([s, e]) => !(today && DateUtil.toMins(e) <= now) && app.checkConflict(carId, selectedDate, s, e).ok);
+  const hhmm = (m: number) => `${DateUtil.pad(Math.floor(m / 60))}:${DateUtil.pad(m % 60)}`;
+  // Today: a slot that has already started is offered from the next half hour (e.g. 09:30–17:30)
+  const nextHalf = Math.ceil(now / 30) * 30;
+  const fromNow = ([s, e]: [string, string]): [string, string] | null => {
+    if (!today || DateUtil.toMins(s) >= nextHalf) return [s, e];
+    return DateUtil.toMins(e) - nextHalf >= MIN_GAP ? [hhmm(nextHalf), e] : null;
+  };
+  const preset = candidates
+    .map(fromNow)
+    .find((w): w is [string, string] => !!w && app.checkConflict(carId, selectedDate, w[0], w[1]).ok);
   if (preset) return preset;
 
   // Free gaps inside the chosen range (whole working day, or the filtered slot)
   const [rangeStart, rangeEnd] = (selectedSlot === 'all' ? fullDay : SLOT_RANGE[selectedSlot]).map(DateUtil.toMins);
   // Today: start from the next half hour
-  const from = Math.max(rangeStart, today ? Math.ceil(now / 30) * 30 : rangeStart);
+  const from = Math.max(rangeStart, today ? nextHalf : rangeStart);
   const taken = occupyingBookings(app, carId, selectedDate)
     .filter(b => b.status === 'Approved')
     .map(b => [DateUtil.toMins(b.startTime), DateUtil.toMins(b.endTime)] as const)
     .sort((x, y) => x[0] - y[0]);
   let cur = from;
-  const hhmm = (m: number) => `${DateUtil.pad(Math.floor(m / 60))}:${DateUtil.pad(m % 60)}`;
   for (const [s, e] of [...taken, [rangeEnd, rangeEnd] as const]) {
     const gapEnd = Math.min(s, rangeEnd);
     if (gapEnd - cur >= MIN_GAP) {

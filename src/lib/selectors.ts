@@ -53,7 +53,7 @@ export function fleetStats(data: FleetData, date = DateUtil.todayStr()) {
   const tripsToday = data.bookings.filter(b => b.startDate === date && (b.status === 'Approved' || b.status === 'Completed'));
   const span = 10 * 60;
   const utilisation = data.cars.map(c => {
-    const occ = occupyingBookings(data, c.id, date);
+    const occ = occupyingBookings(data, c.id, date, true);
     const mins = occ.reduce((s, b) => s + Math.max(0, DateUtil.toMins(b.endTime) - DateUtil.toMins(b.startTime)), 0);
     return { car: c, bookings: occ, pct: Math.min(100, Math.round((mins / span) * 100)), maintenance: inService.includes(c) };
   });

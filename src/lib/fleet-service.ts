@@ -53,13 +53,15 @@ const spanOf = (b: Pick<Booking, 'startDate' | 'startTime' | 'endDate' | 'endTim
 const overlaps = (a: readonly [string, string], b: readonly [string, string]) => a[0] < b[1] && b[0] < a[1];
 
 /**
- * Bookings that occupy the vehicle on `date` (approved, or completed-early which keeps its shortened slot).
+ * Bookings that hold the vehicle on `date`. Only Approved ones: once a booking is completed
+ * (returned early or at its end time) the car is Available again and the booking disappears
+ * from the car's bar. `includeCompleted` keeps them for usage statistics.
  * Multi-day bookings are clipped to that day so they draw correctly on a single-day bar.
  */
-export function occupyingBookings(data: FleetData, carId: string, date: string): Booking[] {
+export function occupyingBookings(data: FleetData, carId: string, date: string, includeCompleted = false): Booking[] {
   return data.bookings
     .filter(b => b.carId === carId && b.startDate <= date && date <= endDateOf(b))
-    .filter(b => b.status === 'Approved' || (b.status === 'Completed' && b.actualEndTime))
+    .filter(b => b.status === 'Approved' || (includeCompleted && b.status === 'Completed' && b.actualEndTime))
     .map(b => ({
       ...b,
       startTime: b.startDate < date ? '00:00' : b.startTime,
