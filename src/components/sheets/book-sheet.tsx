@@ -265,7 +265,18 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
         </div>
 
         <div className="mt-2 rounded-2xl bg-muted/60 p-3">
-          <DayBar bookings={barBookings} date={date} highlight={{ start, end: multiDay ? '23:59' : end, ok: !timeProblem }} />
+          <DayBar
+            bookings={barBookings}
+            date={date}
+            interactive
+            allowOpenBooking={false}
+            highlight={{ start, end: multiDay ? '23:59' : end, ok: !timeProblem, reason: timeProblem }}
+            onUseFree={(s, e) => {
+              setEndDate(date);
+              setPicker(null);
+              setRange({ start: s, end: e });
+            }}
+          />
           <DayBarLegend
             className="mt-2"
             labels={legendLabels(t)}

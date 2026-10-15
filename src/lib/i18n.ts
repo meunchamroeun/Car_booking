@@ -150,6 +150,9 @@ const en = {
   lg_clash: 'Clash',
   lg_now: 'Now',
   lg_service: 'In service',
+  seg_free_desc: 'Nobody has booked this time.',
+  seg_use: 'Use this time',
+  bar_tap_hint: 'Tap the bar for details',
   set_service: 'Service',
   manage: 'Manage',
 
@@ -439,6 +442,9 @@ const kh: Partial<Dict> = {
   lg_clash: 'ជាន់គ្នា',
   lg_now: 'ឥឡូវ',
   lg_service: 'កំពុងជួសជុល',
+  seg_free_desc: 'មិនទាន់មាននរណាកក់ម៉ោងនេះទេ។',
+  seg_use: 'ប្រើម៉ោងនេះ',
+  bar_tap_hint: 'ចុចលើរបារដើម្បីមើលព័ត៌មាន',
   set_service: 'ជួសជុល',
   manage: 'គ្រប់គ្រង',
 

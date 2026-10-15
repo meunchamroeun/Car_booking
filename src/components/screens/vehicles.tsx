@@ -130,11 +130,13 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
           <EmptyState icon={<CarFront />} title={t('no_results')} />
         ) : viewMode === 'cards' ? (
           <div className="space-y-3">
-            <DayBarLegend
-              className="rounded-xl border bg-card px-3 py-2"
-              labels={legendLabels(t)}
-              items={['free', 'booked', 'returned', ...(selectedDate === DateUtil.todayStr() ? (['now'] as const) : []), 'service']}
-            />
+            <div className="rounded-xl border bg-card px-3 py-2">
+              <DayBarLegend
+                labels={legendLabels(t)}
+                items={['free', 'booked', 'returned', ...(selectedDate === DateUtil.todayStr() ? (['now'] as const) : []), 'service']}
+              />
+              <p className="mt-1 text-[11px] text-muted-foreground">{t('bar_tap_hint')}</p>
+            </div>
             {filtered.map(c => (
               <VehicleCard key={c.id} car={c} />
             ))}
@@ -240,7 +242,7 @@ function VehicleCard({ car }: { car: Car }) {
           </div>
         ) : (
           <>
-            <DayBar bookings={busy} date={selectedDate} />
+            <DayBar bookings={busy} date={selectedDate} interactive />
             {busy.length > 0 && (
               <ul className="mt-2.5 space-y-1.5">
                 {busy.map(b => {
