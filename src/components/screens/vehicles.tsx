@@ -356,6 +356,7 @@ function Timeline({ cars }: { cars: Car[] }) {
   const canSeeAll = can(currentUser, 'booking.view_all');
   const isToday = selectedDate === DateUtil.todayStr();
   const now = pct(DateUtil.nowTimeStr());
+  const nowM = DateUtil.toMins(DateUtil.nowTimeStr());
 
   return (
     <Card className="overflow-hidden">
@@ -394,12 +395,20 @@ function Timeline({ cars }: { cars: Car[] }) {
                     <button
                       key={h}
                       type="button"
-                      disabled={!canBook || service}
+                      disabled={!canBook || service || (isToday && (h + 1) * 60 <= nowM)}
                       aria-label={`${c.name} ${DateUtil.pad(h)}:00`}
                       onClick={() => openBooking(c.id, `${DateUtil.pad(h)}:00`, `${DateUtil.pad(h + 1)}:00`)}
                       className="flex-1 border-l transition-colors enabled:hover:bg-primary-soft disabled:cursor-default"
                     />
                   ))}
+                  {/* Time already passed today: grey diagonal stripes (//////) */}
+                  {isToday && now > 0 && (
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-y-0 left-0 bg-[repeating-linear-gradient(135deg,hsl(var(--muted-foreground)/0.22)_0_2px,transparent_2px_7px)]"
+                      style={{ width: `${Math.min(now, 100)}%` }}
+                    />
+                  )}
                   {service && (
                     <div className="absolute inset-1 flex items-center justify-center rounded-lg bg-[repeating-linear-gradient(45deg,hsl(var(--warning)/0.18)_0_6px,transparent_6px_12px)] text-[11px] font-semibold text-warning">
                       <Wrench className="mr-1 size-3.5" /> {t('st_service')}
