@@ -46,6 +46,81 @@ function Greeting() {
   );
 }
 
+/* ── Live progress: real date-time maths, updated every second ─────────── */
+
+const toDate = (date: string, time: string) => {
+  const [y, m, d] = date.split('-').map(Number);
+  const [h, mi] = time.split(':').map(Number);
+  return new Date(y, m - 1, d, h, mi);
+};
+
+/** Current time, re-rendered every `ms`. */
+function useNow(ms = 1000) {
+  const [now, setNow] = React.useState(() => Date.now());
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), ms);
+    return () => clearInterval(id);
+  }, [ms]);
+  return now;
+}
+
+/** "1:38:12" (or "2d 03:10:05" for long bookings). */
+function clock(msLeft: number) {
+  const total = Math.max(0, Math.floor(msLeft / 1000));
+  const d = Math.floor(total / 86400);
+  const h = Math.floor((total % 86400) / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const sec = total % 60;
+  const hms = `${d ? DateUtil.pad(h) : h}:${DateUtil.pad(m)}:${DateUtil.pad(sec)}`;
+  return d ? `${d}d ${hms}` : hms;
+}
+
+/** In use: progress bar + countdown to the end. Upcoming: countdown to the start. */
+function LiveProgress({ b, live }: { b: Booking; live: boolean }) {
+  const { t } = useApp();
+  const now = useNow(1000);
+  const start = toDate(b.startDate, b.startTime).getTime();
+  const end = toDate(b.endDate || b.startDate, b.endTime).getTime();
+
+  if (!live) {
+    const until = start - now;
+    if (until <= 0 || until > 24 * 3600 * 1000) return null;
+    return (
+      <p className="mt-2 flex items-center gap-1.5 text-[12.5px] font-medium text-white/75">
+        <Clock className="size-3.5" />
+        {t('starts_in')} <span className="font-semibold tabular text-white">{clock(until)}</span>
+      </p>
+    );
+  }
+
+  const pct = Math.min(1, Math.max(0, (now - start) / Math.max(1, end - start)));
+  const left = end - now;
+  return (
+    <div className="mt-3" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct * 100)} aria-label={t('trip_now')}>
+      <div className="mb-1.5 flex items-baseline justify-between text-[12px]">
+        <span className="text-white/65">
+          <span className="font-semibold tabular text-white">{Math.round(pct * 100)}%</span> {t('done_pct')}
+        </span>
+        <span className="text-white/65">
+          <span className="font-semibold tabular text-white">{clock(left)}</span> {t('time_left')}
+        </span>
+      </div>
+      <div className="relative h-2 rounded-full bg-white/15">
+        <div className="h-full rounded-full bg-[hsl(var(--accent))] transition-[width] duration-1000 ease-linear" style={{ width: `${pct * 100}%` }} />
+        {/* "now" dot */}
+        <span
+          className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[hsl(var(--accent))] shadow transition-[left] duration-1000 ease-linear"
+          style={{ left: `${pct * 100}%` }}
+        />
+      </div>
+      <div className="mt-1 flex justify-between text-[11px] tabular text-white/55">
+        <span>{b.startTime}</span>
+        <span>{t('ends_in', { time: b.endTime })}</span>
+      </div>
+    </div>
+  );
+}
+
 /* ── Hero: dark navy card for the trip that matters right now ─────────── */
 
 function TripHero({ b, mode }: { b: Booking; mode: 'requester' | 'driver' }) {
@@ -54,7 +129,6 @@ function TripHero({ b, mode }: { b: Booking; mode: 'requester' | 'driver' }) {
   const requester = users.find(u => u.id === b.requesterId);
   const driver = drivers.find(d => d.id === b.driverId);
   const live = isLive(b);
-  const progress = live ? DateUtil.progress(b.startTime, b.endTime) : 0;
 
   return (
     <div className="hero-pattern relative overflow-hidden rounded-[22px] bg-navy p-4 text-navy-foreground shadow-float">
@@ -81,14 +155,7 @@ function TripHero({ b, mode }: { b: Booking; mode: 'requester' | 'driver' }) {
         <CarPhoto car={car} zoomable className="h-[80px] w-[124px] shrink-0 rounded-2xl ring-1 ring-white/15" />
       </div>
 
-      {live && (
-        <div className="mt-3">
-          <div className="h-1.5 overflow-hidden rounded-full bg-white/15">
-            <div className="h-full rounded-full bg-[hsl(var(--accent))]" style={{ width: `${Math.max(4, progress * 100)}%` }} />
-          </div>
-          <p className="mt-1 text-right text-[11.5px] text-white/60">{t('ends_in', { time: b.endTime })}</p>
-        </div>
-      )}
+      <LiveProgress b={b} live={live} />
 
       <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl bg-white/[0.07] p-3 text-[12.5px]">
         <div className="min-w-0">
