@@ -48,7 +48,7 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
         action={
           <Segmented
             size="sm"
-            ariaLabel="View"
+            ariaLabel={t('a11y_view_mode')}
             value={viewMode}
             onChange={setViewMode}
             options={[
@@ -89,7 +89,7 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
           size="lg"
           value={selectedSlot}
           onChange={setSelectedSlot}
-          ariaLabel="Time slot"
+          ariaLabel={t('a11y_time_slot')}
           options={(
             [
               ['all', 'full_day'],

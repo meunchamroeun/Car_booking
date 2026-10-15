@@ -10,7 +10,11 @@ below. To connect a real backend, replace the matching action in
 - Role rules: `src/lib/permissions.ts`
 
 All endpoints are authenticated; the server derives the acting user from the session/JWT.
-Errors return `4xx` with `{ "message": "human readable reason" }` — the frontend shows `message` in a toast.
+Errors return `4xx` with `{ "message": "English text", "key": "err_seats", "vars": { "car": "Toyota Camry Hybrid", "n": 4 } }`.
+Success responses carry the same `{ key, vars }` shape for the confirmation toast. Keys live in `src/lib/i18n.ts`
+(English + Khmer); the app translates them, so the API never has to know the user's language.
+Values of the form `{ "win": { startDate, startTime, endDate, endTime } }` or `{ "day": "YYYY-MM-DD" }` are dates the app formats per language.
+Notifications are stored with `titleKey`, `textKey`, `vars` (plus English `title`/`text` as a fallback).
 
 ## Roles
 

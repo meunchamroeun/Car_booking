@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
  * With `zoomable`, tapping it opens the full photo in a popup.
  */
 export function CarPhoto({ car, className, zoomable }: { car?: Car; className?: string; zoomable?: boolean }) {
+  const { t } = useApp();
   const [failed, setFailed] = React.useState(false);
   const [loaded, setLoaded] = React.useState(false);
   const [open, setOpen] = React.useState(false);
@@ -54,7 +55,7 @@ export function CarPhoto({ car, className, zoomable }: { car?: Car; className?: 
     <>
       <button
         type="button"
-        aria-label={`View photo: ${car!.name}`}
+        aria-label={t('a11y_view_photo', { car: car!.name })}
         // Don't let the tap also trigger the card's own action (e.g. booking)
         onClick={e => {
           e.stopPropagation();

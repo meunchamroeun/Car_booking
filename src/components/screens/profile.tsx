@@ -121,7 +121,7 @@ export function ProfileScreen() {
             ))}
         </ul>
       </details>
-      <p className="mt-6 text-center text-[11.5px] text-muted-foreground">OONE Power Technology · Fleet v3 (demo data)</p>
+      <p className="mt-6 text-center text-[11.5px] text-muted-foreground">OONE Power Technology · Fleet v3 ({t('demo_data')})</p>
     </div>
   );
 }

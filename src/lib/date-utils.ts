@@ -1,4 +1,35 @@
+// Own name tables so Khmer dates work even where the browser has no Khmer locale data
+const NAMES = {
+  en: {
+    dayShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    dayLong: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    dayNarrow: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+    monthShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    monthLong: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+  },
+  kh: {
+    dayShort: ['អាទិត្យ', 'ច័ន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហ', 'សុក្រ', 'សៅរ៍'],
+    dayLong: ['ថ្ងៃអាទិត្យ', 'ថ្ងៃច័ន្ទ', 'ថ្ងៃអង្គារ', 'ថ្ងៃពុធ', 'ថ្ងៃព្រហស្បតិ៍', 'ថ្ងៃសុក្រ', 'ថ្ងៃសៅរ៍'],
+    dayNarrow: ['អា', 'ច', 'អ', 'ពុ', 'ព្រ', 'សុ', 'ស'],
+    monthShort: ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'],
+    monthLong: ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ'],
+  },
+} as const;
+type Lang = keyof typeof NAMES;
+
 export const DateUtil = {
+  names(lang: Lang = 'en') {
+    return NAMES[lang] ?? NAMES.en;
+  },
+
+  /** "Thu 15 Oct" (short) or "Thursday 15 October" (long), in the given language. */
+  formatDate(dateStr: string, lang: Lang = 'en', style: 'short' | 'long' = 'short'): string {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const n = this.names(lang);
+    const wd = new Date(y, m - 1, d).getDay();
+    return style === 'long' ? `${n.dayLong[wd]} ${d} ${n.monthLong[m - 1]}` : `${n.dayShort[wd]} ${d} ${n.monthShort[m - 1]}`;
+  },
+
   pad: (n: number) => String(n).padStart(2, '0'),
 
   toDateStr(d: Date): string {
@@ -110,25 +141,19 @@ export const DateUtil = {
     if (dateStr === this.todayStr()) return lang === 'kh' ? 'ថ្ងៃនេះ' : 'Today';
     if (dateStr === this.tomorrowStr()) return lang === 'kh' ? 'ថ្ងៃស្អែក' : 'Tomorrow';
     if (dateStr === this.addDays(this.todayStr(), -1)) return lang === 'kh' ? 'ម្សិលមិញ' : 'Yesterday';
-    const [y, m, d] = dateStr.split('-').map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString(lang === 'kh' ? 'km-KH' : 'en-GB', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-    });
+    return this.formatDate(dateStr, lang);
   },
 
   /** "Thu 15 Oct", prefixed with Today/Tomorrow when relevant. */
   longDate(dateStr: string, lang: 'en' | 'kh' = 'en'): string {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const full = new Date(y, m - 1, d).toLocaleDateString(lang === 'kh' ? 'km-KH' : 'en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    const full = this.formatDate(dateStr, lang);
     const rel = this.friendly(dateStr, lang);
     return rel === full || /\d/.test(rel) ? full : `${rel}, ${full}`;
   },
 
   weekdayShort(dateStr: string, lang: 'en' | 'kh' = 'en'): string {
     const [y, m, d] = dateStr.split('-').map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString(lang === 'kh' ? 'km-KH' : 'en-GB', { weekday: 'short' });
+    return this.names(lang).dayShort[new Date(y, m - 1, d).getDay()];
   },
 
   dayNum(dateStr: string): number {

@@ -4,6 +4,7 @@ import * as React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { ChevronLeft, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useApp } from '@/lib/store';
 
 /**
  * Mobile bottom sheet built on Radix Dialog (focus trap, Esc to close,
@@ -34,6 +35,7 @@ export function Sheet({
   /** Extra control on the right of a full-screen header. */
   headerAction?: React.ReactNode;
 }) {
+  const { t } = useApp();
   if (fullScreen) {
     return (
       <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -48,7 +50,7 @@ export function Sheet({
             )}
           >
             <header className="flex items-center gap-1 border-b bg-background/90 px-2 pb-2 pt-[max(env(safe-area-inset-top),10px)] backdrop-blur">
-              <Dialog.Close className="flex size-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted" aria-label="Back">
+              <Dialog.Close className="flex size-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-muted" aria-label={t('back')}>
                 <ChevronLeft className="size-6" />
               </Dialog.Close>
               <div className="min-w-0 flex-1">
@@ -85,7 +87,7 @@ export function Sheet({
               <Dialog.Title className="text-[18px] font-bold tracking-tight">{title}</Dialog.Title>
               {description && <Dialog.Description className="mt-0.5 text-[13px] text-muted-foreground">{description}</Dialog.Description>}
             </div>
-            <Dialog.Close className="-mr-1 flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:text-foreground" aria-label="Close">
+            <Dialog.Close className="-mr-1 flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:text-foreground" aria-label={t('close')}>
               <X className="size-[18px]" />
             </Dialog.Close>
           </div>

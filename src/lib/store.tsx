@@ -1,9 +1,9 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { AppTab, CarType, FleetData, Language, SheetState, ThemeMode, User, ViewMode } from '@/types';
+import { AppTab, CarType, FleetData, Language, Msg, MsgVar, SheetState, ThemeMode, User, ViewMode } from '@/types';
 import { getDefaultMockData } from '@/lib/mock-data';
-import { I18N_DICTIONARY } from '@/lib/i18n';
+import { translate } from '@/lib/i18n';
 import { DateUtil } from '@/lib/date-utils';
 import { ROLE_DEFAULT_TAB, ROLE_TABS } from '@/lib/permissions';
 import * as svc from '@/lib/fleet-service';
@@ -30,7 +30,9 @@ interface AppContextType extends FleetData {
   setTheme: (theme: ThemeMode) => void;
   lang: Language;
   setLang: (lang: Language) => void;
-  t: (key: string, vars?: Record<string, string | number>) => string;
+  t: (key: string, vars?: Record<string, MsgVar>) => string;
+  /** Translate a message returned by the booking rules. */
+  tm: (m: Msg) => string;
 
   // Vehicle browsing filters
   selectedDate: string;
@@ -82,7 +84,7 @@ interface AppContextType extends FleetData {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const DATA_KEY = 'oone_fleet_data_v7';
+const DATA_KEY = 'oone_fleet_data_v8';
 const USER_KEY = 'oone_fleet_user_v3';
 const THEME_KEY = 'oone_fleet_theme_v3';
 const LANG_KEY = 'oone_fleet_lang_v3';
@@ -179,14 +181,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!ROLE_TABS[currentUser.role].includes(currentTab)) setCurrentTab(ROLE_DEFAULT_TAB[currentUser.role]);
   }, [currentUser.role, currentTab]);
 
-  const t = useCallback(
-    (key: string, vars?: Record<string, string | number>) => {
-      let s = I18N_DICTIONARY[lang]?.[key] ?? I18N_DICTIONARY.en[key] ?? key;
-      if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, String(v));
-      return s;
-    },
-    [lang]
-  );
+  const t = useCallback((key: string, vars?: Record<string, MsgVar>) => translate(lang, key, vars), [lang]);
+  const tm = useCallback((m: Msg) => translate(lang, m.key, m.vars), [lang]);
 
   function applyTheme(th: ThemeMode) {
     syncTelegramTheme(th);
@@ -218,17 +214,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   /** Runs a service command; shows its message or error as a toast. */
-  const run = (fn: () => { data: FleetData; message: string; bookingId?: string }, close = true): boolean => {
+  const run = (fn: () => { data: FleetData; message: Msg; bookingId?: string }, close = true): boolean => {
     try {
       const res = fn();
       if (res.bookingId) setLastCreatedId(res.bookingId);
       commit(res.data);
       if (close) setSheet(null);
-      showToast(res.message, 'success');
+      showToast(tm(res.message), 'success');
       haptic('success');
       return true;
     } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Something went wrong', 'error');
+      showToast(e instanceof svc.ServiceError ? tm(e.msg) : t('err_generic'), 'error');
       haptic('error');
       return false;
     }
@@ -305,6 +301,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     lang,
     setLang,
     t,
+    tm,
     selectedDate,
     setSelectedDate,
     selectedSlot,
@@ -349,7 +346,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     },
 
     isCarInMaintenance,
-    checkConflict: (carId, date, start, end, excludeId, endDate) => svc.checkConflict(data, carId, date, start, end, excludeId, endDate),
+    // Conflict reasons are shown in the UI, so translate them here
+    checkConflict: (carId, date, start, end, excludeId, endDate) => {
+      const c = svc.checkConflict(data, carId, date, start, end, excludeId, endDate);
+      return c.ok ? c : { ...c, reason: tm(c.msg) };
+    },
 
     toasts,
     showToast,

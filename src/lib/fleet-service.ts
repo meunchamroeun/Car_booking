@@ -1,4 +1,5 @@
-import { Booking, Car, FleetData, NotificationItem, User } from '@/types';
+import { Booking, Car, FleetData, Msg, MsgVar, NotificationItem, User } from '@/types';
+import { translate } from '@/lib/i18n';
 import { DateUtil } from '@/lib/date-utils';
 import { can, canCancel, canCompleteTask, canReturnEarly, canReview, canStartTask } from '@/lib/permissions';
 
@@ -12,19 +13,32 @@ import { can, canCancel, canCompleteTask, canReturnEarly, canReview, canStartTas
  * endpoint and keep these rules on the server.
  */
 
-export class ServiceError extends Error {}
+/** Rule violation; `msg` is translatable, `message` is the English text (for logs). */
+export class ServiceError extends Error {
+  constructor(public msg: Msg) {
+    super(translate('en', msg.key, msg.vars));
+  }
+}
 
-type Result = { data: FleetData; message: string; bookingId?: string };
+type Result = { data: FleetData; message: Msg; bookingId?: string };
 
-const fail = (msg: string): never => {
-  throw new ServiceError(msg);
+const fail = (key: string, vars?: Record<string, MsgVar>): never => {
+  throw new ServiceError({ key, vars });
 };
+const msg = (key: string, vars?: Record<string, MsgVar>): Msg => ({ key, vars });
+const winOf = (b: { startDate: string; startTime: string; endDate?: string; endTime: string }) => ({ win: b });
 
 let seq = 0;
 const nid = () => `n${Date.now()}${seq++}`;
 
-function notify(userIds: string[], n: Omit<NotificationItem, 'id' | 'userId' | 'time' | 'read'>): NotificationItem[] {
-  return [...new Set(userIds)].map(userId => ({ ...n, id: nid(), userId, time: 'Just now', at: DateUtil.nowStamp(), read: false }));
+/** Notifications store translation keys (+ English fallback text) so each reader sees their language. */
+function notify(
+  userIds: string[],
+  n: Pick<NotificationItem, 'kind' | 'bookingId'> & { titleKey: string; textKey: string; vars?: Record<string, MsgVar> }
+): NotificationItem[] {
+  const title = translate('en', n.titleKey, n.vars);
+  const text = translate('en', n.textKey, n.vars);
+  return [...new Set(userIds)].map(userId => ({ ...n, title, text, id: nid(), userId, time: 'Just now', at: DateUtil.nowStamp(), read: false }));
 }
 
 const reviewers = (data: FleetData, exclude?: string) =>
@@ -43,7 +57,7 @@ const carLabel = (data: FleetData, carId: string) => {
 const patchBooking = (data: FleetData, id: string, patch: Partial<Booking>): Booking[] =>
   data.bookings.map(b => (b.id === id ? { ...b, ...patch } : b));
 
-const findBooking = (data: FleetData, id: string) => data.bookings.find(b => b.id === id) ?? fail('Booking not found.');
+const findBooking = (data: FleetData, id: string) => data.bookings.find(b => b.id === id) ?? fail('err_booking_not_found');
 
 /* ── Queries ───────────────────────────────────────────────────────────── */
 
@@ -85,13 +99,6 @@ export function isCarInMaintenance(car: Car | undefined, date: string, start?: s
   return false;
 }
 
-/** Human label for a booking window, e.g. "Fri 16 Oct 13:00 → Sat 17 Oct 12:00" or "16 Oct 09:00–13:00". */
-function windowLabel(b: Pick<Booking, 'startDate' | 'startTime' | 'endDate' | 'endTime'>) {
-  return endDateOf(b) === b.startDate
-    ? `${DateUtil.friendly(b.startDate)} ${b.startTime}–${b.endTime}`
-    : `${DateUtil.friendly(b.startDate)} ${b.startTime} → ${DateUtil.friendly(endDateOf(b))} ${b.endTime}`;
-}
-
 export function checkConflict(
   data: FleetData,
   carId: string,
@@ -100,20 +107,22 @@ export function checkConflict(
   end: string,
   excludeId?: string,
   endDate: string = date
-): { ok: true } | { ok: false; reason: string; maintenance?: boolean } {
+): { ok: true } | { ok: false; reason: string; msg: Msg; maintenance?: boolean } {
   const car = data.cars.find(c => c.id === carId);
   const days = DateUtil.dateRange(date, endDate);
   const inService = days.some(d =>
     isCarInMaintenance(car, d, d === date ? start : '00:00', d === endDate ? end : '23:59')
   );
   if (inService) {
-    return { ok: false, maintenance: true, reason: `In service: ${car?.maintenance?.reason ?? 'maintenance'}` };
+    const m = msg('conflict_maint', { reason: car?.maintenance?.reason ?? '' });
+    return { ok: false, maintenance: true, msg: m, reason: translate('en', m.key, m.vars) };
   }
   const want = [DateUtil.stamp(date, start), DateUtil.stamp(endDate, end)] as const;
   const clash = data.bookings.find(b => b.id !== excludeId && b.carId === carId && b.status === 'Approved' && overlaps(want, spanOf(b)));
   if (clash) {
     const who = data.users.find(u => u.id === clash.requesterId)?.name ?? 'a colleague';
-    return { ok: false, reason: `Already booked ${windowLabel(clash)} by ${who}.` };
+    const m = msg('conflict_booked', { win: winOf(clash), name: who });
+    return { ok: false, msg: m, reason: translate('en', m.key, m.vars) };
   }
   return { ok: true };
 }
@@ -140,17 +149,17 @@ export interface CreateBookingInput {
 
 /** POST /bookings */
 export function createBooking(data: FleetData, actor: User, input: CreateBookingInput): Result {
-  if (!can(actor, 'booking.create')) fail('Your role cannot request vehicles.');
-  const car = data.cars.find(c => c.id === input.carId) ?? fail('Please choose a vehicle.');
-  if (!input.purpose.trim()) fail('Please describe the purpose of the booking.');
+  if (!can(actor, 'booking.create')) fail('err_role_cannot_book');
+  const car = data.cars.find(c => c.id === input.carId) ?? fail('err_choose_vehicle');
+  if (!input.purpose.trim()) fail('err_purpose');
   const endDate = input.endDate || input.date;
-  if (input.date < DateUtil.todayStr()) fail('You cannot book a past date.');
-  if (endDate < input.date) fail('End date must be on or after the start date.');
-  if (DateUtil.dayDiff(input.date, endDate) > 14) fail('Bookings can be at most 14 days.');
-  if (DateUtil.stamp(endDate, input.endTime) <= DateUtil.stamp(input.date, input.startTime)) fail('End time must be after start time.');
-  if (input.passengers > car.seats) fail(`${car.name} seats ${car.seats}. Choose a bigger vehicle.`);
+  if (input.date < DateUtil.todayStr()) fail('err_past');
+  if (endDate < input.date) fail('err_end_date');
+  if (DateUtil.dayDiff(input.date, endDate) > 14) fail('max_days');
+  if (DateUtil.stamp(endDate, input.endTime) <= DateUtil.stamp(input.date, input.startTime)) fail('err_end_time');
+  if (input.passengers > car.seats) fail('err_seats', { car: car.name, n: car.seats });
   const conflict = checkConflict(data, input.carId, input.date, input.startTime, input.endTime, undefined, endDate);
-  if (!conflict.ok) fail(conflict.reason);
+  if (!conflict.ok) throw new ServiceError(conflict.msg);
 
   const max = data.bookings.reduce((m, b) => Math.max(m, Number(b.id.replace(/\D/g, '')) || 0), 0);
   const id = `BK-${String(max + 1).padStart(4, '0')}`;
@@ -181,13 +190,14 @@ export function createBooking(data: FleetData, actor: User, input: CreateBooking
   const notifs = notify(to, {
     kind: 'request',
     bookingId: id,
-    title: 'New booking request',
-    text: `${actor.name} requested ${car.name} · ${windowLabel({ startDate: input.date, startTime: input.startTime, endDate, endTime: input.endTime })}`,
+    titleKey: 'nt_request_title',
+    textKey: 'nt_request_text',
+    vars: { name: actor.name, car: car.name, win: winOf({ startDate: input.date, startTime: input.startTime, endDate, endTime: input.endTime }) },
   });
 
   return {
     data: { ...data, bookings: [booking, ...data.bookings], notifications: [...notifs, ...data.notifications] },
-    message: `Request ${id} sent for approval`,
+    message: msg('msg_requested', { id }),
     bookingId: id,
   };
 }
@@ -199,17 +209,17 @@ export function createBooking(data: FleetData, actor: User, input: CreateBooking
  */
 export function approveBooking(data: FleetData, actor: User, id: string, driverId: string | null, assignDriver = true): Result {
   const b = findBooking(data, id);
-  if (!canReview(actor, b)) fail('You are not allowed to approve this request.');
+  if (!canReview(actor, b)) fail('err_not_allowed_approve');
   const withDriver = b.needDriver && assignDriver;
   if (withDriver) {
-    if (!driverId) fail('Assign a driver before approving.');
-    const driver = data.drivers.find(x => x.id === driverId) ?? fail('Driver not found.');
-    if (driver.status !== 'Active') fail(`${driver.name} is off duty.`);
+    if (!driverId) fail('err_assign_driver');
+    const driver = data.drivers.find(x => x.id === driverId) ?? fail('err_driver_not_found');
+    if (driver.status !== 'Active') fail('err_driver_off', { name: driver.name });
     const busy = isDriverBusy(data, driverId!, b);
-    if (busy) fail(`${driver.name} is already driving ${busy.startTime}–${busy.endTime}.`);
+    if (busy) fail('err_driver_busy', { name: driver.name, start: busy.startTime, end: busy.endTime });
   }
   const conflict = checkConflict(data, b.carId, b.startDate, b.startTime, b.endTime, b.id, endDateOf(b));
-  if (!conflict.ok) fail(conflict.reason);
+  if (!conflict.ok) throw new ServiceError(conflict.msg);
 
   const driver = withDriver ? data.drivers.find(x => x.id === driverId) : undefined;
   const requester = data.users.find(u => u.id === b.requesterId);
@@ -218,14 +228,16 @@ export function approveBooking(data: FleetData, actor: User, id: string, driverI
     ...notify([b.requesterId], {
       kind: 'approved',
       bookingId: id,
-      title: 'Booking approved',
-      text: `${id} · ${carLabel(data, b.carId)} approved by ${actor.name}.${driver ? ` Driver: ${driver.name}.` : noDriverGiven ? ' No company driver was assigned, please drive yourself.' : ' Self-drive.'}`,
+      titleKey: 'nt_approved_title',
+      textKey: driver ? 'nt_approved_text_driver' : noDriverGiven ? 'nt_approved_text_nodriver' : 'nt_approved_text_self',
+      vars: { id, car: carLabel(data, b.carId), by: actor.name, driver: driver?.name ?? '' },
     }),
     ...notify([driverUserId(data, driver?.id ?? null)].filter(Boolean) as string[], {
       kind: 'assigned',
       bookingId: id,
-      title: 'New driving assignment',
-      text: `Drive ${requester?.name ?? 'staff'} to ${b.destination || 'field mission'} · ${DateUtil.friendly(b.startDate)} ${b.startTime}–${b.endTime}.`,
+      titleKey: 'nt_assigned_title',
+      textKey: 'nt_assigned_text',
+      vars: { name: requester?.name ?? '', dest: b.destination || '—', win: winOf(b) },
     }),
   ];
 
@@ -243,32 +255,32 @@ export function approveBooking(data: FleetData, actor: User, id: string, driverI
       }),
       notifications: [...notifs, ...data.notifications],
     },
-    message: driver ? `${id} approved · ${driver.name} assigned` : noDriverGiven ? `${id} approved · no driver (self-drive)` : `${id} approved`,
+    message: driver ? msg('msg_approved_driver', { id, name: driver.name }) : noDriverGiven ? msg('msg_approved_nodriver', { id }) : msg('msg_approved', { id }),
   };
 }
 
 /** POST /bookings/:id/reject  { reason } */
 export function rejectBooking(data: FleetData, actor: User, id: string, reason: string): Result {
   const b = findBooking(data, id);
-  if (!canReview(actor, b)) fail('You are not allowed to reject this request.');
-  if (!reason.trim()) fail('Please give a reason so the requester knows what to change.');
+  if (!canReview(actor, b)) fail('err_not_allowed_reject');
+  if (!reason.trim()) fail('err_reject_reason');
   return {
     data: {
       ...data,
       bookings: patchBooking(data, id, { status: 'Rejected', rejectReason: reason.trim(), approverId: actor.id, decisionAt: DateUtil.nowStamp() }),
       notifications: [
-        ...notify([b.requesterId], { kind: 'rejected', bookingId: id, title: 'Booking rejected', text: `${id} was rejected: "${reason.trim()}"` }),
+        ...notify([b.requesterId], { kind: 'rejected', bookingId: id, titleKey: 'nt_rejected_title', textKey: 'nt_rejected_text', vars: { id, reason: reason.trim() } }),
         ...data.notifications,
       ],
     },
-    message: `${id} rejected`,
+    message: msg('msg_rejected', { id }),
   };
 }
 
 /** POST /bookings/:id/cancel  { reason? } */
 export function cancelBooking(data: FleetData, actor: User, id: string, reason?: string): Result {
   const b = findBooking(data, id);
-  if (!canCancel(actor, b)) fail('This booking can no longer be cancelled.');
+  if (!canCancel(actor, b)) fail('err_cannot_cancel');
   const to = b.status === 'Approved' ? [b.approverId, driverUserId(data, b.driverId)] : reviewers(data, actor.id);
   return {
     data: {
@@ -278,30 +290,31 @@ export function cancelBooking(data: FleetData, actor: User, id: string, reason?:
         ...notify(to.filter(Boolean) as string[], {
           kind: 'cancelled',
           bookingId: id,
-          title: 'Booking cancelled',
-          text: `${actor.name} cancelled ${id} · ${carLabel(data, b.carId)} ${DateUtil.friendly(b.startDate)} ${b.startTime}–${b.endTime}.`,
+          titleKey: 'nt_cancelled_title',
+          textKey: 'nt_cancelled_text',
+          vars: { name: actor.name, id, car: carLabel(data, b.carId), win: winOf(b) },
         }),
         ...data.notifications,
       ],
     },
-    message: `${id} cancelled · slot released`,
+    message: msg('msg_cancelled', { id }),
   };
 }
 
 /** POST /tasks/:id/start */
 export function startTask(data: FleetData, actor: User, id: string): Result {
   const b = findBooking(data, id);
-  if (!canStartTask(actor, b)) fail('This booking cannot be started yet.');
+  if (!canStartTask(actor, b)) fail('err_cannot_start');
   return {
     data: {
       ...data,
       bookings: patchBooking(data, id, { taskStatus: 'In Progress', startedAt: DateUtil.nowStamp() }),
       notifications: [
-        ...notify([b.requesterId], { kind: 'info', bookingId: id, title: 'Your driver is on the way', text: `${actor.name} started driving for ${id}.` }),
+        ...notify([b.requesterId], { kind: 'info', bookingId: id, titleKey: 'nt_started_title', textKey: 'nt_started_text', vars: { name: actor.name, id } }),
         ...data.notifications,
       ],
     },
-    message: `${id} · driving started`,
+    message: msg('msg_started', { id }),
   };
 }
 
@@ -318,25 +331,24 @@ export function returnVehicle(
 ): Result {
   const b = findBooking(data, id);
   const isDriver = canCompleteTask(actor, b);
-  if (!isDriver && !canReturnEarly(actor, b)) fail('You cannot complete this booking.');
+  if (!isDriver && !canReturnEarly(actor, b)) fail('err_cannot_complete');
   const returnDay = endDateOf(b) > DateUtil.todayStr() ? DateUtil.todayStr() : endDateOf(b);
-  if (DateUtil.stamp(returnDay, input.returnTime) <= DateUtil.stamp(b.startDate, b.startTime)) fail('Return time must be after the booking start.');
+  if (DateUtil.stamp(returnDay, input.returnTime) <= DateUtil.stamp(b.startDate, b.startTime)) fail('err_return_time');
 
   const planned = b.originalEndTime || b.endTime;
   const early = DateUtil.stamp(returnDay, input.returnTime) < DateUtil.stamp(endDateOf(b), planned);
   const car = data.cars.find(c => c.id === b.carId);
   const odo = Number(input.odometer);
-  if (input.odometer && car?.odometer && odo < car.odometer) fail(`Odometer can't be lower than ${car.odometer.toLocaleString()} km.`);
+  if (input.odometer && car?.odometer && odo < car.odometer) fail('err_odometer', { km: car.odometer.toLocaleString() });
 
   // Requester, assigned driver, approver and admins — minus whoever did it
   const to = [b.requesterId, driverUserId(data, b.driverId), b.approverId, ...admins(data)].filter(x => x && x !== actor.id) as string[];
   const notifs = notify(to, {
     kind: 'completed',
     bookingId: id,
-    title: early ? 'Vehicle returned early' : 'Booking completed',
-    text: early
-      ? `${carLabel(data, b.carId)} returned at ${input.returnTime} (planned ${planned}). Free from ${input.returnTime} for others.`
-      : `${id} · ${carLabel(data, b.carId)} completed at ${input.returnTime}.`,
+    titleKey: early ? 'nt_early_title' : 'nt_done_title',
+    textKey: early ? 'nt_early_text' : 'nt_done_text',
+    vars: { id, car: carLabel(data, b.carId), time: input.returnTime, planned },
   });
 
   return {
@@ -357,7 +369,7 @@ export function returnVehicle(
       }),
       notifications: [...notifs, ...data.notifications],
     },
-    message: early ? `Returned early · ${DateUtil.diffHours(input.returnTime, planned)}h released for colleagues` : `${id} completed`,
+    message: early ? msg('msg_returned_early', { h: DateUtil.diffHours(input.returnTime, planned) }) : msg('msg_completed', { id }),
   };
 }
 
@@ -368,12 +380,12 @@ export function setMaintenance(
   carId: string,
   m: { mode: 'manual' | 'scheduled'; reason: string; workshop?: string; estimatedDate?: string; startDate?: string; startTime?: string; endDate?: string; endTime?: string }
 ): Result {
-  if (!can(actor, 'vehicle.maintenance')) fail('Only managers and fleet admins can change vehicle status.');
-  if (!m.reason.trim()) fail('Describe the issue or service.');
+  if (!can(actor, 'vehicle.maintenance')) fail('err_maint_role');
+  if (!m.reason.trim()) fail('err_maint_reason');
   const today = DateUtil.todayStr();
-  if (m.mode === 'scheduled' && (!m.startDate || !m.endDate || m.endDate < m.startDate)) fail('Check the service dates.');
+  if (m.mode === 'scheduled' && (!m.startDate || !m.endDate || m.endDate < m.startDate)) fail('err_maint_dates');
   const goesOfflineNow = m.mode === 'manual' || (m.startDate! <= today && today <= m.endDate!);
-  const car = data.cars.find(c => c.id === carId) ?? fail('Vehicle not found.');
+  const car = data.cars.find(c => c.id === carId) ?? fail('err_vehicle_not_found');
 
   // Approved trips that now collide with the service window
   const affected = data.bookings.filter(
@@ -406,33 +418,33 @@ export function setMaintenance(
       notifications: [
         ...notify(
           affected.map(b => b.requesterId),
-          { kind: 'maintenance', title: 'Vehicle unavailable', text: `${car.name} will be in service (${m.reason.trim()}). Please re-book another vehicle.` }
+          { kind: 'maintenance', titleKey: 'nt_unavail_title', textKey: 'nt_unavail_text', vars: { car: car.name, reason: m.reason.trim() } }
         ),
         ...data.notifications,
       ],
     },
-    message: goesOfflineNow ? `${car.name} is now in service` : `Service scheduled for ${car.name}`,
+    message: goesOfflineNow ? msg('msg_maint_now', { car: car.name }) : msg('msg_maint_scheduled', { car: car.name }),
   };
 }
 
 /** DELETE /vehicles/:id/maintenance */
 export function clearMaintenance(data: FleetData, actor: User, carId: string): Result {
-  if (!can(actor, 'vehicle.maintenance')) fail('Only managers and fleet admins can change vehicle status.');
-  const car = data.cars.find(c => c.id === carId) ?? fail('Vehicle not found.');
+  if (!can(actor, 'vehicle.maintenance')) fail('err_maint_role');
+  const car = data.cars.find(c => c.id === carId) ?? fail('err_vehicle_not_found');
   return {
     data: { ...data, cars: data.cars.map(c => (c.id === carId ? { ...c, status: 'Active', maintenance: null } : c)) },
-    message: `${car.name} is back in service`,
+    message: msg('msg_available_again', { car: car.name }),
   };
 }
 
 /** PATCH /drivers/:id  { status } */
 export function toggleDriverDuty(data: FleetData, actor: User, driverId: string): Result {
-  if (!can(actor, 'driver.manage')) fail('Only fleet admins can manage drivers.');
-  const d = data.drivers.find(x => x.id === driverId) ?? fail('Driver not found.');
+  if (!can(actor, 'driver.manage')) fail('err_driver_role');
+  const d = data.drivers.find(x => x.id === driverId) ?? fail('err_driver_not_found');
   const next = d.status === 'Active' ? 'OffDuty' : 'Active';
   return {
     data: { ...data, drivers: data.drivers.map(x => (x.id === driverId ? { ...x, status: next } : x)) },
-    message: `${d.name} is ${next === 'Active' ? 'on duty' : 'off duty'}`,
+    message: msg(next === 'Active' ? 'msg_driver_on' : 'msg_driver_off', { name: d.name }),
   };
 }
 
@@ -451,8 +463,9 @@ export function autoCompleteExpired(data: FleetData, now = DateUtil.nowStamp()):
     return notify([b.requesterId, driverUserId(data, b.driverId)].filter(Boolean) as string[], {
       kind: 'completed',
       bookingId: b.id,
-      title: 'Booking ended',
-      text: `${b.id} · ${car} reached its end time (${b.endTime}) and is available again.`,
+      titleKey: 'nt_ended_title',
+      textKey: 'nt_ended_text',
+      vars: { id: b.id, car, time: b.endTime },
     });
   });
 
@@ -470,7 +483,7 @@ export function autoCompleteExpired(data: FleetData, now = DateUtil.nowStamp()):
               actualEndTime: b.endTime,
               returnedEarly: false,
               completedAt: DateUtil.stamp(endDateOf(b), b.endTime),
-              completionNotes: b.completionNotes || 'Completed automatically at the booking end time.',
+              autoCompleted: true,
             }
           : b
       ),

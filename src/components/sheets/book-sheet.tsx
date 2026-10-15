@@ -244,7 +244,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
               onChange={(s, e) => (setDate(s), setEndDate(e))}
               onDone={() => setPicker(null)}
               markDay={d => (car && isCarInMaintenance(car.id, d) ? 'service' : car && occupyingBookings(app, car.id, d).some(b => b.status === 'Approved') ? 'booked' : undefined)}
-              labels={{ pickStart: t('cal_pick_start'), pickEnd: t('cal_pick_end'), booked: t('cal_booked'), unavailable: t('unavailable') }}
+              labels={{ pickStart: t('cal_pick_start'), pickEnd: t('cal_pick_end'), booked: t('cal_booked'), unavailable: t('unavailable'), prev: t('a11y_prev_month'), next: t('a11y_next_month') }}
             />
           )}
           <div className="grid grid-cols-2 gap-2">

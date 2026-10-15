@@ -85,6 +85,24 @@ export interface Booking {
   cancelReason?: string;
   endOdometer?: string;
   completionNotes?: string;
+  /** Closed by the end-time job rather than by a person. */
+  autoCompleted?: boolean;
+}
+
+/**
+ * A value inside a translated message. Plain text/numbers are inserted as-is;
+ * `win` (a booking window) and `day` (a date) are formatted in the reader's language.
+ */
+export type MsgVar =
+  | string
+  | number
+  | { win: { startDate: string; startTime: string; endDate?: string; endTime: string } }
+  | { day: string };
+
+/** Translatable message: a key in i18n.ts plus its values. */
+export interface Msg {
+  key: string;
+  vars?: Record<string, MsgVar>;
 }
 
 export interface NotificationItem {
@@ -92,6 +110,10 @@ export interface NotificationItem {
   userId: string;
   title: string;
   text: string;
+  /** Translation keys; when present they win over the English `title` / `text`. */
+  titleKey?: string;
+  textKey?: string;
+  vars?: Record<string, MsgVar>;
   /** Display fallback, e.g. "Today 09:40". Prefer `at`. */
   time: string;
   /** When it happened, "YYYY-MM-DD HH:MM". */

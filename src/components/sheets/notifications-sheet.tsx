@@ -105,14 +105,14 @@ export function NotificationsSheet({ open }: { open: boolean }) {
                         <span className="flex gap-3">
                           <span className={cn('relative flex size-11 shrink-0 items-center justify-center rounded-2xl', k.tone)}>
                             <k.icon className="size-5" />
-                            {!n.read && <span className="absolute -right-0.5 -top-0.5 size-3 rounded-full border-2 border-card bg-primary" aria-label="unread" />}
+                            {!n.read && <span className="absolute -right-0.5 -top-0.5 size-3 rounded-full border-2 border-card bg-primary" aria-label={t('notif_unread')} />}
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="flex items-baseline justify-between gap-2">
-                              <span className={cn('truncate text-[14.5px]', n.read ? 'font-medium' : 'font-bold')}>{n.title}</span>
+                              <span className={cn('truncate text-[14.5px]', n.read ? 'font-medium' : 'font-bold')}>{n.titleKey ? t(n.titleKey, n.vars) : n.title}</span>
                               <span className="shrink-0 text-[11.5px] tabular text-muted-foreground">{n.at ? DateUtil.relative(n.at, lang) : n.time}</span>
                             </span>
-                            <span className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-muted-foreground">{n.text}</span>
+                            <span className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-muted-foreground">{n.textKey ? t(n.textKey, n.vars) : n.text}</span>
                           </span>
                         </span>
 

@@ -150,9 +150,9 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
           <span className="font-medium">{b.purpose}</span>
           <span className="block text-[12.5px] font-normal text-muted-foreground">{t('pax', { n: b.passengers })}</span>
         </InfoRow>
-        {b.completionNotes && (
+        {(b.completionNotes || b.autoCompleted) && (
           <InfoRow icon={<FileText />} label={t('notes')}>
-            <span className="font-medium">{b.completionNotes}</span>
+            <span className="font-medium">{b.completionNotes || t('auto_completed_note')}</span>
           </InfoRow>
         )}
       </div>
@@ -293,6 +293,7 @@ function Pass({ b }: { b: Booking }) {
 }
 
 function QrCode({ value, size = 25 }: { value: string; size?: number }) {
+  const { t } = useApp();
   const cells = React.useMemo(() => {
     let h = 2166136261;
     for (const ch of value) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
@@ -318,7 +319,7 @@ function QrCode({ value, size = 25 }: { value: string; size?: number }) {
     return out;
   }, [value, size]);
   return (
-    <svg viewBox={`-1 -1 ${size + 2} ${size + 2}`} className="size-36" shapeRendering="crispEdges" aria-label="QR code">
+    <svg viewBox={`-1 -1 ${size + 2} ${size + 2}`} className="size-36" shapeRendering="crispEdges" aria-label={t('a11y_qr')}>
       {cells.map(([x, y]) => (
         <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="#162447" />
       ))}

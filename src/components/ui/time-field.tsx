@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useApp } from '@/lib/store';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const HOURS = Array.from({ length: 24 }, (_, i) => pad(i));
@@ -54,6 +55,7 @@ export function TimeField({
   invalid?: boolean;
   required?: boolean;
 }) {
+  const { t } = useApp();
   const [text, setText] = React.useState(value);
   const [bad, setBad] = React.useState(false);
   const id = React.useId();
@@ -105,25 +107,25 @@ export function TimeField({
         <button
           type="button"
           onClick={() => onOpenChange(!open)}
-          aria-label={`${label}: pick time`}
+          aria-label={t('a11y_pick_time', { label })}
           aria-expanded={open}
           className={cn('flex size-10 items-center justify-center rounded-lg transition-colors', open ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted')}
         >
           <Clock className="size-[18px]" />
         </button>
       </div>
-      {bad && <p className="col-span-full -mt-1 text-right text-[11.5px] font-medium text-destructive">e.g. 09:30</p>}
+      {bad && <p className="col-span-full -mt-1 text-right text-[11.5px] font-medium text-destructive">{t('time_example')}</p>}
       {open && (
         <div className="relative col-span-full flex overflow-hidden rounded-2xl border bg-card px-6">
           {/* Selection band */}
           <div className="pointer-events-none absolute inset-x-2 top-1/2 -translate-y-1/2 rounded-xl bg-primary-soft" style={{ height: ITEM_H }} />
-          <Wheel items={HOURS} value={h} onChange={nh => onChange(`${nh}:${m}`)} ariaLabel={`${label} hour`} />
+          <Wheel items={HOURS} value={h} onChange={nh => onChange(`${nh}:${m}`)} ariaLabel={t('a11y_hour', { label })} />
           <div className="relative z-10 flex items-center text-[20px] font-bold text-muted-foreground">:</div>
           <Wheel
             items={MINUTES.includes(m) ? MINUTES : [...MINUTES, m].sort()}
             value={m}
             onChange={nm => onChange(`${h}:${nm}`)}
-            ariaLabel={`${label} minute`}
+            ariaLabel={t('a11y_minute', { label })}
           />
           {/* Fade top/bottom like native wheels */}
           <div className="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-card to-transparent" />

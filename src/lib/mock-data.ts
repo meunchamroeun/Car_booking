@@ -1,4 +1,5 @@
-import { FleetData, Booking } from '@/types';
+import { FleetData, Booking, MsgVar } from '@/types';
+import { translate } from '@/lib/i18n';
 import { DateUtil } from '@/lib/date-utils';
 
 /**
@@ -121,15 +122,30 @@ export function getDefaultMockData(): FleetData {
     base({ id: 'BK-0001', carId: 'c1', requesterId: 'u2', startDate: d(-5), startTime: '08:00', endTime: '17:00', purpose: 'Full-day field maintenance round', destination: 'Kampong Speu', passengers: 2, needDriver: true, driverId: 'd2', status: 'Completed', taskStatus: 'Completed', approverId: 'u4', decisionAt: `${d(-6)} 10:00`, completedAt: `${d(-5)} 17:00`, actualEndTime: '17:00', endOdometer: '42180' }),
   ];
 
+  // Seed notifications use translation keys (English title/text kept as fallback)
+  const n = (
+    id: string,
+    userId: string,
+    kind: NonNullable<FleetData['notifications'][number]['kind']>,
+    titleKey: string,
+    textKey: string,
+    vars: Record<string, MsgVar>,
+    at: string,
+    read: boolean,
+    bookingId?: string
+  ) => ({ id, userId, kind, titleKey, textKey, vars, title: translate('en', titleKey, vars), text: translate('en', textKey, vars), time: '', at, read, bookingId });
+  const w = (b: Booking) => ({ win: { startDate: b.startDate, startTime: b.startTime, endDate: b.endDate, endTime: b.endTime } });
+  const bk = (id: string) => bookings.find(b => b.id === id)!;
+
   const notifications: FleetData['notifications'] = [
-    { id: 'n1', userId: 'u4', kind: 'request', title: 'New booking request', text: `Srey Neath requested Toyota Hiace · ${DateUtil.friendly(liveDate)} ${hh(laterStart)}–${hh(laterStart + 2)}`, time: 'Today 09:40', at: `${today} 09:40`, read: false, bookingId: 'BK-0011' },
-    { id: 'n2', userId: 'u4', kind: 'request', title: 'New booking request', text: 'Sokha Chan requested Ford Everest for tomorrow 08:00–12:00', time: 'Today 09:30', at: `${today} 09:30`, read: false, bookingId: 'BK-0010' },
-    { id: 'n3', userId: 'u7', kind: 'request', title: 'Approval needed', text: 'Sophea Lim requested Mazda CX-5 — managers need an Admin to approve their own bookings.', time: 'Today 10:05', at: `${today} 10:05`, read: false, bookingId: 'BK-0012' },
-    { id: 'n4', userId: 'u1', kind: 'approved', title: 'Booking approved', text: 'BK-0006 Toyota Camry Hybrid was approved by Sophea Lim.', time: 'Yesterday 15:30', at: `${d(-1)} 15:30`, read: false, bookingId: 'BK-0006' },
-    { id: 'n5', userId: 'u1', kind: 'rejected', title: 'Booking rejected', text: 'BK-0005 was rejected: vehicle reserved for priority delivery.', time: '3 days ago', at: `${d(-3)} 11:00`, read: true, bookingId: 'BK-0005' },
-    { id: 'n6', userId: 'u5', kind: 'assigned', title: 'New driving assignment', text: `Drive Piseth Roeun to Chroy Changvar Depot · ${DateUtil.friendly(liveDate)} ${hh(laterStart)}–${hh(laterStart + 3)}.`, time: 'Today 08:45', at: `${today} 08:45`, read: false, bookingId: 'BK-0007' },
-    { id: 'n7', userId: 'u6', kind: 'assigned', title: 'New driving assignment', text: 'Drive Piseth Roeun to Kandal Industrial Zone tomorrow 13:00–17:00.', time: 'Today 08:10', at: `${today} 08:10`, read: false, bookingId: 'BK-0009' },
-    { id: 'n8', userId: 'u7', kind: 'maintenance', title: 'Vehicle in service', text: 'Hyundai Staria VIP is in the workshop until tomorrow.', time: 'Today 07:00', at: `${today} 07:00`, read: true },
+    n('n1', 'u4', 'request', 'nt_request_title', 'nt_request_text', { name: 'Srey Neath', car: 'Toyota Hiace Commuter', win: w(bk('BK-0011')) }, `${today} 09:40`, false, 'BK-0011'),
+    n('n2', 'u4', 'request', 'nt_request_title', 'nt_request_text', { name: 'Sokha Chan', car: 'Ford Everest Titanium', win: w(bk('BK-0010')) }, `${today} 09:30`, false, 'BK-0010'),
+    n('n3', 'u7', 'request', 'nt_admin_needed_title', 'nt_admin_needed_text', { name: 'Sophea Lim', car: 'Mazda CX-5 GT' }, `${today} 10:05`, false, 'BK-0012'),
+    n('n4', 'u1', 'approved', 'nt_approved_title', 'nt_approved_text_self', { id: 'BK-0006', car: 'Toyota Camry Hybrid', by: 'Sophea Lim', driver: '' }, `${d(-1)} 15:30`, false, 'BK-0006'),
+    n('n5', 'u1', 'rejected', 'nt_rejected_title', 'nt_rejected_text', { id: 'BK-0005', reason: 'Vehicle reserved for priority delivery' }, `${d(-3)} 11:00`, true, 'BK-0005'),
+    n('n6', 'u5', 'assigned', 'nt_assigned_title', 'nt_assigned_text', { name: 'Piseth Roeun', dest: 'Chroy Changvar Depot', win: w(bk('BK-0007')) }, `${today} 08:45`, false, 'BK-0007'),
+    n('n7', 'u6', 'assigned', 'nt_assigned_title', 'nt_assigned_text', { name: 'Piseth Roeun', dest: 'Kandal Industrial Zone', win: w(bk('BK-0009')) }, `${today} 08:10`, false, 'BK-0009'),
+    n('n8', 'u7', 'maintenance', 'nt_maint_title', 'nt_maint_text', { car: 'Hyundai Staria VIP', date: { day: d(1) } }, `${today} 07:00`, true),
   ];
 
   return { users, cars, drivers, bookings, notifications };

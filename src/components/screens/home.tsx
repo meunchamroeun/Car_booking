@@ -36,7 +36,7 @@ function Greeting() {
   return (
     <div className="px-1 pb-3 pt-2">
       <p className="text-[13px] font-medium text-muted-foreground">
-        {new Date().toLocaleDateString(lang === 'kh' ? 'km-KH' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+        {DateUtil.formatDate(DateUtil.todayStr(), lang, 'long')}
       </p>
       <h1 className="mt-0.5 text-[24px] font-bold leading-tight tracking-tight">
         {t('hello', { greet: DateUtil.greeting(lang), name: currentUser.name.split(' ')[0] })}

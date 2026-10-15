@@ -1,4 +1,5 @@
-import { Language } from '@/types';
+import { Language, MsgVar } from '@/types';
+import { DateUtil } from '@/lib/date-utils';
 
 const en = {
   app_title: 'OONE Fleet',
@@ -21,7 +22,7 @@ const en = {
   role_desc_Employee: 'Request vehicles, track approvals, show your pass.',
   role_desc_Approver: 'Approve team requests and assign drivers.',
   role_desc_Driver: 'See assigned bookings, start and complete driving.',
-  role_desc_Admin: 'Manage vehicles, service schedule and drivers.',
+  role_desc_Admin: 'Manage vehicles, maintenance schedule and drivers.',
 
   // Status
   st_Pending: 'Pending',
@@ -34,7 +35,7 @@ const en = {
   st_available: 'Available',
   st_partly: 'Partly booked',
   st_full: 'Fully booked',
-  st_service: 'In service',
+  st_service: 'Maintenance',
   st_early: 'Returned early',
 
   // Common
@@ -94,7 +95,7 @@ const en = {
   fleet_today: 'Fleet today',
   kpi_available: 'Available',
   kpi_in_use: 'In use now',
-  kpi_service: 'In service',
+  kpi_service: 'Maintenance',
   kpi_pending: 'Pending',
   kpi_trips_today: 'Bookings today',
   kpi_done_week: 'Done this week',
@@ -155,11 +156,11 @@ const en = {
   lg_yours: 'Your time',
   lg_clash: 'Clash',
   lg_now: 'Now',
-  lg_service: 'In service',
+  lg_service: 'Maintenance',
   seg_free_desc: 'Nobody has booked this time.',
   seg_use: 'Use this time',
   bar_tap_hint: 'Tap the bar for details',
-  set_service: 'Service',
+  set_service: 'Maintenance',
   manage: 'Manage',
 
   // Booking sheet
@@ -181,7 +182,6 @@ const en = {
   already_booked: 'Already booked that day',
   slot_free: 'This slot is free',
   submit_request: 'Send request',
-  summary: '{car} · {date} · {start}–{end}',
   too_many_pax: 'Seats {n} max',
 
   // Trips
@@ -267,17 +267,17 @@ const en = {
 
   // Fleet admin
   fleet_title: 'Fleet',
-  fleet_sub: 'Vehicles, service schedule and drivers.',
+  fleet_sub: 'Vehicles, maintenance schedule and drivers.',
   tab_vehicles: 'Vehicles',
   tab_drivers: 'Drivers',
   odo: '{km} km',
-  set_service_title: 'Vehicle service',
+  set_service_title: 'Vehicle maintenance',
   mode_manual: 'Out now',
   mode_scheduled: 'Schedule',
   mode_manual_desc: 'Take the vehicle offline immediately.',
   mode_scheduled_desc: 'Block a future date range.',
-  issue: 'Issue / service',
-  issue_ph: 'e.g. 10,000 km periodic service',
+  issue: 'Maintenance reason',
+  issue_ph: 'e.g. 10,000 km periodic maintenance',
   workshop: 'Workshop',
   est_return: 'Expected back',
   from_date: 'From',
@@ -298,6 +298,7 @@ const en = {
   switch_hint: 'Switch role to see each experience.',
   reset_data: 'Reset demo data',
   photo_credits: 'Vehicle photo credits',
+  demo_data: 'demo data',
   reset_confirm: 'Reset all bookings to the original demo data?',
   stat_trips: 'Bookings',
   stat_pending: 'Pending',
@@ -313,9 +314,97 @@ const en = {
 
   // Toasts
   toast_switched: 'Signed in as {name} · {role}',
-  toast_in_service: 'This vehicle is in service and cannot be booked.',
+  toast_in_service: 'This vehicle is under maintenance and cannot be booked.',
   toast_reset: 'Demo data restored',
   toast_auto_ended: '{id} ended · {car} is available again',
+
+  // Rule messages (errors, confirmations, conflicts)
+  err_generic: 'Something went wrong. Please try again.',
+  err_booking_not_found: 'Booking not found.',
+  err_role_cannot_book: 'Your role cannot request vehicles.',
+  err_choose_vehicle: 'Please choose a vehicle.',
+  err_purpose: 'Please describe the purpose of the booking.',
+  err_past: 'You cannot book a past date.',
+  err_end_date: 'End date must be on or after the start date.',
+  err_end_time: 'End time must be after start time.',
+  err_seats: '{car} seats {n}. Choose a bigger vehicle.',
+  err_not_allowed_approve: 'You are not allowed to approve this request.',
+  err_assign_driver: 'Choose a driver before approving.',
+  err_driver_not_found: 'Driver not found.',
+  err_driver_off: '{name} is off duty.',
+  err_driver_busy: '{name} is already driving {start}–{end}.',
+  err_not_allowed_reject: 'You are not allowed to reject this request.',
+  err_reject_reason: 'Please give a reason so the requester knows what to change.',
+  err_cannot_cancel: 'This booking can no longer be cancelled.',
+  err_cannot_start: 'This booking cannot be started yet.',
+  err_cannot_complete: 'You cannot complete this booking.',
+  err_return_time: 'Return time must be after the booking start.',
+  err_odometer: "Odometer can't be lower than {km} km.",
+  err_maint_role: 'Only managers and fleet admins can change vehicle status.',
+  err_maint_reason: 'Describe the maintenance reason.',
+  err_maint_dates: 'Check the maintenance dates.',
+  err_vehicle_not_found: 'Vehicle not found.',
+  err_driver_role: 'Only fleet admins can manage drivers.',
+  conflict_maint: 'Under maintenance: {reason}',
+  conflict_booked: 'Already booked {win} by {name}.',
+  msg_requested: 'Request {id} sent for approval',
+  msg_approved: '{id} approved',
+  msg_approved_driver: '{id} approved · {name} assigned',
+  msg_approved_nodriver: '{id} approved · no driver (self-drive)',
+  msg_rejected: '{id} rejected',
+  msg_cancelled: '{id} cancelled · time released',
+  msg_started: '{id} · driving started',
+  msg_returned_early: 'Returned early · {h}h released for colleagues',
+  msg_completed: '{id} completed',
+  msg_maint_now: '{car} is now under maintenance',
+  msg_maint_scheduled: 'Maintenance scheduled for {car}',
+  msg_available_again: '{car} is available again',
+  msg_driver_on: '{name} is on duty',
+  msg_driver_off: '{name} is off duty',
+  auto_completed_note: 'Completed automatically at the booking end time.',
+  maint_affected: '{n} booking(s) in this window will be notified: {ids}',
+
+  // Notifications
+  nt_request_title: 'New booking request',
+  nt_request_text: '{name} requested {car} · {win}',
+  nt_admin_needed_title: 'Approval needed',
+  nt_admin_needed_text: '{name} requested {car}. Managers need a Fleet admin to approve their own bookings.',
+  nt_approved_title: 'Booking approved',
+  nt_approved_text_driver: '{id} · {car} approved by {by}. Driver: {driver}.',
+  nt_approved_text_nodriver: '{id} · {car} approved by {by}. No company driver was assigned, please drive yourself.',
+  nt_approved_text_self: '{id} · {car} approved by {by}. Self-drive.',
+  nt_assigned_title: 'New driving assignment',
+  nt_assigned_text: 'Drive {name} to {dest} · {win}.',
+  nt_rejected_title: 'Booking rejected',
+  nt_rejected_text: '{id} was rejected: "{reason}"',
+  nt_cancelled_title: 'Booking cancelled',
+  nt_cancelled_text: '{name} cancelled {id} · {car} · {win}.',
+  nt_started_title: 'Your driver is on the way',
+  nt_started_text: '{name} started driving for {id}.',
+  nt_early_title: 'Vehicle returned early',
+  nt_early_text: '{car} returned at {time} (planned {planned}). Free from {time} for others.',
+  nt_done_title: 'Booking completed',
+  nt_done_text: '{id} · {car} completed at {time}.',
+  nt_unavail_title: 'Vehicle unavailable',
+  nt_unavail_text: '{car} will be under maintenance ({reason}). Please book another vehicle.',
+  nt_ended_title: 'Booking ended',
+  nt_ended_text: '{id} · {car} reached its end time ({time}) and is available again.',
+  nt_maint_title: 'Vehicle under maintenance',
+  nt_maint_text: '{car} is in the workshop until {date}.',
+
+  // Accessibility labels and small hints
+  time_example: 'e.g. 09:30',
+  a11y_pick_time: '{label}: pick time',
+  a11y_hour: '{label} hour',
+  a11y_minute: '{label} minute',
+  a11y_prev_month: 'Previous month',
+  a11y_next_month: 'Next month',
+  a11y_view_photo: 'View photo: {car}',
+  a11y_colour_key: 'Colour key',
+  a11y_qr: 'QR code',
+  a11y_main_nav: 'Main menu',
+  a11y_view_mode: 'View',
+  a11y_time_slot: 'Time slot',
 };
 
 type Dict = Record<keyof typeof en, string>;
@@ -339,7 +428,7 @@ const kh: Partial<Dict> = {
   role_desc_Employee: 'ស្នើសុំរថយន្ត តាមដានការអនុម័ត និងបង្ហាញកាត។',
   role_desc_Approver: 'អនុម័តសំណើ និងចាត់តាំងអ្នកបើកបរ។',
   role_desc_Driver: 'មើលការកក់ដែលបានចាត់តាំង ចាប់ផ្តើម និងបញ្ចប់ការបើកបរ។',
-  role_desc_Admin: 'គ្រប់គ្រងរថយន្ត កាលវិភាគជួសជុល និងអ្នកបើកបរ។',
+  role_desc_Admin: 'គ្រប់គ្រងរថយន្ត កាលវិភាគថែទាំ និងអ្នកបើកបរ។',
 
   st_Pending: 'រង់ចាំ',
   st_Approved: 'បានអនុម័ត',
@@ -351,7 +440,7 @@ const kh: Partial<Dict> = {
   st_available: 'ទំនេរ',
   st_partly: 'កក់ខ្លះ',
   st_full: 'ពេញ',
-  st_service: 'កំពុងជួសជុល',
+  st_service: 'កំពុងថែទាំ',
   st_early: 'ប្រគល់មុនម៉ោង',
 
   today: 'ថ្ងៃនេះ',
@@ -405,7 +494,7 @@ const kh: Partial<Dict> = {
   fleet_today: 'កងយានយន្តថ្ងៃនេះ',
   kpi_available: 'ទំនេរ',
   kpi_in_use: 'កំពុងប្រើ',
-  kpi_service: 'ជួសជុល',
+  kpi_service: 'ថែទាំ',
   kpi_pending: 'រង់ចាំ',
   kpi_trips_today: 'ការកក់ថ្ងៃនេះ',
   kpi_done_week: 'បញ្ចប់សប្តាហ៍នេះ',
@@ -464,11 +553,11 @@ const kh: Partial<Dict> = {
   lg_yours: 'ម៉ោងរបស់អ្នក',
   lg_clash: 'ជាន់គ្នា',
   lg_now: 'ឥឡូវ',
-  lg_service: 'កំពុងជួសជុល',
+  lg_service: 'កំពុងថែទាំ',
   seg_free_desc: 'មិនទាន់មាននរណាកក់ម៉ោងនេះទេ។',
   seg_use: 'ប្រើម៉ោងនេះ',
   bar_tap_hint: 'ចុចលើរបារដើម្បីមើលព័ត៌មាន',
-  set_service: 'ជួសជុល',
+  set_service: 'ថែទាំ',
   manage: 'គ្រប់គ្រង',
 
   new_booking: 'កក់រថយន្ត',
@@ -569,15 +658,15 @@ const kh: Partial<Dict> = {
   f_done: 'រួចរាល់',
 
   fleet_title: 'កងយានយន្ត',
-  fleet_sub: 'យានយន្ត កាលវិភាគជួសជុល និងអ្នកបើកបរ។',
+  fleet_sub: 'យានយន្ត កាលវិភាគថែទាំ និងអ្នកបើកបរ។',
   tab_vehicles: 'យានយន្ត',
   tab_drivers: 'អ្នកបើកបរ',
-  set_service_title: 'ជួសជុលយានយន្ត',
+  set_service_title: 'ការថែទាំយានយន្ត',
   mode_manual: 'ឈប់ឥឡូវ',
   mode_scheduled: 'កំណត់ពេល',
   mode_manual_desc: 'ដករថយន្តចេញពីសេវាភ្លាមៗ។',
   mode_scheduled_desc: 'បិទកាលបរិច្ឆេទនាពេលអនាគត។',
-  issue: 'បញ្ហា / សេវា',
+  issue: 'មូលហេតុថែទាំ',
   issue_ph: 'ឧ. ថែទាំតាមកាលកំណត់ 10,000 គ.ម',
   workshop: 'រោងជាង',
   est_return: 'រំពឹងត្រឡប់',
@@ -598,6 +687,7 @@ const kh: Partial<Dict> = {
   switch_hint: 'ប្តូរតួនាទី ដើម្បីមើលបទពិសោធន៍នីមួយៗ។',
   reset_data: 'កំណត់ទិន្នន័យឡើងវិញ',
   photo_credits: 'ប្រភពរូបថតរថយន្ត',
+  demo_data: 'ទិន្នន័យសាកល្បង',
   reset_confirm: 'កំណត់ការកក់ទាំងអស់ទៅទិន្នន័យដើមវិញ?',
   stat_trips: 'ការកក់',
   stat_pending: 'រង់ចាំ',
@@ -612,9 +702,124 @@ const kh: Partial<Dict> = {
   earlier: 'មុននេះ',
 
   toast_switched: 'ចូលជា {name} · {role}',
-  toast_in_service: 'រថយន្តនេះកំពុងជួសជុល មិនអាចកក់បានទេ។',
+  toast_in_service: 'រថយន្តនេះកំពុងថែទាំ មិនអាចកក់បានទេ។',
   toast_reset: 'បានស្តារទិន្នន័យសាកល្បង',
   toast_auto_ended: '{id} បានបញ្ចប់ · {car} ទំនេរវិញហើយ',
+
+  // Rule messages
+  err_generic: 'មានបញ្ហាមួយ។ សូមព្យាយាមម្តងទៀត។',
+  err_booking_not_found: 'រកមិនឃើញការកក់។',
+  err_role_cannot_book: 'តួនាទីរបស់អ្នកមិនអាចស្នើសុំរថយន្តបានទេ។',
+  err_choose_vehicle: 'សូមជ្រើសរថយន្ត។',
+  err_purpose: 'សូមបញ្ចូលគោលបំណងនៃការកក់។',
+  err_past: 'មិនអាចកក់ថ្ងៃដែលកន្លងផុតហើយបានទេ។',
+  err_end_date: 'ថ្ងៃបញ្ចប់ត្រូវតែដូចឬក្រោយថ្ងៃចាប់ផ្តើម។',
+  err_end_time: 'ម៉ោងបញ្ចប់ត្រូវនៅក្រោយម៉ោងចាប់ផ្តើម។',
+  err_seats: '{car} មាន {n} កៅអី។ សូមជ្រើសរថយន្តធំជាងនេះ។',
+  err_not_allowed_approve: 'អ្នកមិនមានសិទ្ធិអនុម័តសំណើនេះទេ។',
+  err_assign_driver: 'សូមជ្រើសអ្នកបើកបរមុននឹងអនុម័ត។',
+  err_driver_not_found: 'រកមិនឃើញអ្នកបើកបរ។',
+  err_driver_off: '{name} កំពុងឈប់សម្រាក។',
+  err_driver_busy: '{name} កំពុងបើកបរនៅម៉ោង {start}–{end}។',
+  err_not_allowed_reject: 'អ្នកមិនមានសិទ្ធិបដិសេធសំណើនេះទេ។',
+  err_reject_reason: 'សូមផ្តល់មូលហេតុ ដើម្បីឲ្យអ្នកស្នើដឹងថាត្រូវកែអ្វី។',
+  err_cannot_cancel: 'ការកក់នេះមិនអាចលុបចោលបានទៀតទេ។',
+  err_cannot_start: 'ការកក់នេះមិនទាន់អាចចាប់ផ្តើមបានទេ។',
+  err_cannot_complete: 'អ្នកមិនអាចបញ្ចប់ការកក់នេះបានទេ។',
+  err_return_time: 'ម៉ោងប្រគល់ត្រូវនៅក្រោយម៉ោងចាប់ផ្តើម។',
+  err_odometer: 'គីឡូម៉ែត្រមិនអាចតិចជាង {km} គ.ម បានទេ។',
+  err_maint_role: 'មានតែអ្នកគ្រប់គ្រង និងអ្នកគ្រប់គ្រងកងយានយន្តប៉ុណ្ណោះ ដែលអាចប្តូរស្ថានភាពរថយន្តបាន។',
+  err_maint_reason: 'សូមបញ្ចូលមូលហេតុថែទាំ។',
+  err_maint_dates: 'សូមពិនិត្យកាលបរិច្ឆេទថែទាំ។',
+  err_vehicle_not_found: 'រកមិនឃើញរថយន្ត។',
+  err_driver_role: 'មានតែអ្នកគ្រប់គ្រងកងយានយន្តប៉ុណ្ណោះ ដែលអាចគ្រប់គ្រងអ្នកបើកបរបាន។',
+  conflict_maint: 'កំពុងថែទាំ: {reason}',
+  conflict_booked: 'បានកក់រួចហើយ {win} ដោយ {name}។',
+  msg_requested: 'បានផ្ញើសំណើ {id} ដើម្បីអនុម័ត',
+  msg_approved: 'បានអនុម័ត {id}',
+  msg_approved_driver: 'បានអនុម័ត {id} · ចាត់ {name}',
+  msg_approved_nodriver: 'បានអនុម័ត {id} · គ្មានអ្នកបើកបរ (បើកខ្លួនឯង)',
+  msg_rejected: 'បានបដិសេធ {id}',
+  msg_cancelled: 'បានលុប {id} · ម៉ោងត្រូវបានដោះលែង',
+  msg_started: '{id} · បានចាប់ផ្តើមបើកបរ',
+  msg_returned_early: 'បានប្រគល់មុនម៉ោង · ដោះលែង {h}ម៉ោង ឲ្យអ្នកផ្សេង',
+  msg_completed: 'បានបញ្ចប់ {id}',
+  msg_maint_now: '{car} កំពុងថែទាំឥឡូវនេះ',
+  msg_maint_scheduled: 'បានកំណត់ពេលថែទាំសម្រាប់ {car}',
+  msg_available_again: '{car} ទំនេរវិញហើយ',
+  msg_driver_on: '{name} កំពុងបម្រើការ',
+  msg_driver_off: '{name} ឈប់សម្រាក',
+  auto_completed_note: 'បានបញ្ចប់ដោយស្វ័យប្រវត្តិ នៅម៉ោងបញ្ចប់នៃការកក់។',
+  maint_affected: 'ការកក់ {n} ក្នុងរយៈពេលនេះនឹងទទួលការជូនដំណឹង: {ids}',
+
+  // Notifications
+  nt_request_title: 'សំណើកក់ថ្មី',
+  nt_request_text: '{name} បានស្នើសុំ {car} · {win}',
+  nt_admin_needed_title: 'ត្រូវការការអនុម័ត',
+  nt_admin_needed_text: '{name} បានស្នើសុំ {car}។ ការកក់របស់អ្នកគ្រប់គ្រង ត្រូវអនុម័តដោយអ្នកគ្រប់គ្រងកងយានយន្ត។',
+  nt_approved_title: 'ការកក់ត្រូវបានអនុម័ត',
+  nt_approved_text_driver: '{id} · {car} ត្រូវបានអនុម័តដោយ {by}។ អ្នកបើកបរ: {driver}។',
+  nt_approved_text_nodriver: '{id} · {car} ត្រូវបានអនុម័តដោយ {by}។ មិនបានចាត់អ្នកបើកបរទេ សូមបើកដោយខ្លួនឯង។',
+  nt_approved_text_self: '{id} · {car} ត្រូវបានអនុម័តដោយ {by}។ បើកខ្លួនឯង។',
+  nt_assigned_title: 'ភារកិច្ចបើកបរថ្មី',
+  nt_assigned_text: 'ដឹក {name} ទៅ {dest} · {win}។',
+  nt_rejected_title: 'ការកក់ត្រូវបានបដិសេធ',
+  nt_rejected_text: '{id} ត្រូវបានបដិសេធ: "{reason}"',
+  nt_cancelled_title: 'ការកក់ត្រូវបានលុបចោល',
+  nt_cancelled_text: '{name} បានលុប {id} · {car} · {win}។',
+  nt_started_title: 'អ្នកបើកបរកំពុងមក',
+  nt_started_text: '{name} បានចាប់ផ្តើមបើកបរសម្រាប់ {id}។',
+  nt_early_title: 'រថយន្តត្រូវបានប្រគល់មុនម៉ោង',
+  nt_early_text: '{car} ត្រូវបានប្រគល់នៅម៉ោង {time} (គ្រោង {planned})។ ទំនេរចាប់ពី {time} សម្រាប់អ្នកផ្សេង។',
+  nt_done_title: 'ការកក់បានបញ្ចប់',
+  nt_done_text: '{id} · {car} បានបញ្ចប់នៅម៉ោង {time}។',
+  nt_unavail_title: 'រថយន្តមិនអាចប្រើបាន',
+  nt_unavail_text: '{car} នឹងត្រូវថែទាំ ({reason})។ សូមកក់រថយន្តផ្សេង។',
+  nt_ended_title: 'ការកក់បានបញ្ចប់',
+  nt_ended_text: '{id} · {car} ដល់ម៉ោងបញ្ចប់ ({time}) ហើយទំនេរវិញ។',
+  nt_maint_title: 'រថយន្តកំពុងថែទាំ',
+  nt_maint_text: '{car} នៅក្នុងរោងជាងរហូតដល់ {date}។',
+
+  // Accessibility labels and hints
+  time_example: 'ឧ. 09:30',
+  a11y_pick_time: '{label}: ជ្រើសម៉ោង',
+  a11y_hour: '{label} ម៉ោង',
+  a11y_minute: '{label} នាទី',
+  a11y_prev_month: 'ខែមុន',
+  a11y_next_month: 'ខែបន្ទាប់',
+  a11y_view_photo: 'មើលរូបថត: {car}',
+  a11y_colour_key: 'អត្ថន័យពណ៌',
+  a11y_qr: 'កូដ QR',
+  a11y_main_nav: 'ម៉ឺនុយមេ',
+  a11y_view_mode: 'របៀបបង្ហាញ',
+  a11y_time_slot: 'ម៉ោង',
+
+  // Missing earlier
+  odo: '{km} គ.ម',
+  type_Sedan: 'សេដង់',
+  type_SUV: 'SUV',
+  type_Van: 'ឡានវ៉ាន់',
+  type_Pickup: 'ភីកអាប់',
 };
 
 export const I18N_DICTIONARY: Record<Language, Record<string, string>> = { en, kh: kh as Record<string, string> };
+
+/**
+ * Look up `key` in the chosen language (falls back to English) and fill in `{vars}`.
+ * `{ win }` values become a booking window ("Tomorrow · 09:00–12:00"), `{ day }` a date.
+ */
+export function translate(lang: Language, key: string, vars?: Record<string, MsgVar>): string {
+  let s = I18N_DICTIONARY[lang]?.[key] ?? I18N_DICTIONARY.en[key] ?? key;
+  if (vars) {
+    for (const [k, v] of Object.entries(vars)) {
+      const text =
+        typeof v === 'object' && v !== null
+          ? 'win' in v
+            ? DateUtil.window(v.win, lang)
+            : DateUtil.friendly(v.day, lang)
+          : String(v);
+      s = s.replaceAll(`{${k}}`, text);
+    }
+  }
+  return s;
+}

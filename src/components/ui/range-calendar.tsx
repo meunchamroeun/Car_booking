@@ -35,7 +35,7 @@ export function RangeCalendar({
   lang?: 'en' | 'kh';
   /** Called once both ends are chosen. */
   onDone?: () => void;
-  labels?: { pickStart: string; pickEnd: string; pickSingle?: string; booked: string; unavailable: string };
+  labels?: { pickStart: string; pickEnd: string; pickSingle?: string; booked: string; unavailable: string; prev?: string; next?: string };
 }) {
   const L = labels ?? { pickStart: 'Tap the start date', pickEnd: 'Tap the end date', booked: 'Car partly booked', unavailable: 'Unavailable' };
   const [picking, setPicking] = React.useState<'start' | 'end'>('start');
@@ -52,9 +52,10 @@ export function RangeCalendar({
   ];
   while (cells.length % 7) cells.push(null);
 
-  const locale = lang === 'kh' ? 'km-KH' : 'en-GB';
-  const monthLabel = first.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
-  const weekdays = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 + i).toLocaleDateString(locale, { weekday: 'narrow' }));
+  const names = DateUtil.names(lang);
+  const monthLabel = `${names.monthLong[m - 1]} ${y}`;
+  // Monday-first column headers
+  const weekdays = [1, 2, 3, 4, 5, 6, 0].map(i => names.dayNarrow[i]);
   const shift = (n: number) => {
     const d = new Date(y, m - 1 + n, 1);
     setMonth(`${d.getFullYear()}-${DateUtil.pad(d.getMonth() + 1)}`);
@@ -83,14 +84,14 @@ export function RangeCalendar({
   return (
     <div className="rounded-2xl border bg-card p-3" onMouseLeave={() => setHover(null)}>
       <div className="mb-2 flex items-center justify-between">
-        <button type="button" onClick={() => shift(-1)} disabled={!canPrev} className="flex size-9 items-center justify-center rounded-full hover:bg-muted disabled:opacity-30" aria-label="Previous month">
+        <button type="button" onClick={() => shift(-1)} disabled={!canPrev} className="flex size-9 items-center justify-center rounded-full hover:bg-muted disabled:opacity-30" aria-label={L.prev ?? 'Previous month'}>
           <ChevronLeft className="size-5" />
         </button>
         <div className="text-center">
           <p className="text-[14.5px] font-bold">{monthLabel}</p>
           <p className="text-[11.5px] font-medium text-primary">{mode === 'single' ? L.pickSingle ?? L.pickStart : picking === 'start' ? L.pickStart : L.pickEnd}</p>
         </div>
-        <button type="button" onClick={() => shift(1)} className="flex size-9 items-center justify-center rounded-full hover:bg-muted" aria-label="Next month">
+        <button type="button" onClick={() => shift(1)} className="flex size-9 items-center justify-center rounded-full hover:bg-muted" aria-label={L.next ?? 'Next month'}>
           <ChevronRight className="size-5" />
         </button>
       </div>

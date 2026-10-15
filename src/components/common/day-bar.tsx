@@ -272,8 +272,9 @@ export const legendLabels = (t: (k: string) => string): Record<LegendKey, string
 
 /** Colour key for the availability bar. */
 export function DayBarLegend({ items, labels, className }: { items: LegendKey[]; labels: Record<LegendKey, string>; className?: string }) {
+  const { t } = useApp();
   return (
-    <ul className={cn('flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11.5px] font-medium text-muted-foreground', className)} aria-label="Colour key">
+    <ul className={cn('flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11.5px] font-medium text-muted-foreground', className)} aria-label={t('a11y_colour_key')}>
       {items.map(k => (
         <li key={k} className="flex items-center gap-1.5">
           <span className="flex w-4 justify-center">{SWATCH[k]}</span>

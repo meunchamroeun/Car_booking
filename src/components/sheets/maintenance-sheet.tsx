@@ -148,7 +148,7 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
                   markDay={markDay}
                   onChange={d => setEstimated(d)}
                   onDone={() => setPicker(null)}
-                  labels={{ pickStart: t('cal_pick_start'), pickEnd: t('cal_pick_end'), pickSingle: t('cal_pick_single'), booked: t('cal_has_booking'), unavailable: t('unavailable') }}
+                  labels={{ pickStart: t('cal_pick_start'), pickEnd: t('cal_pick_end'), pickSingle: t('cal_pick_single'), booked: t('cal_has_booking'), unavailable: t('unavailable'), prev: t('a11y_prev_month'), next: t('a11y_next_month') }}
                 />
               )}
             </div>
@@ -168,7 +168,7 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
                   markDay={markDay}
                   onChange={(s, e) => (setFrom(s), setTo(e))}
                   onDone={() => setPicker(null)}
-                  labels={{ pickStart: t('cal_pick_start'), pickEnd: t('cal_pick_end'), booked: t('cal_has_booking'), unavailable: t('unavailable') }}
+                  labels={{ pickStart: t('cal_pick_start'), pickEnd: t('cal_pick_end'), booked: t('cal_has_booking'), unavailable: t('unavailable'), prev: t('a11y_prev_month'), next: t('a11y_next_month') }}
                 />
               )}
               <div className="grid grid-cols-2 gap-2">
@@ -187,7 +187,7 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
           {affected.length > 0 && (
             <p className="flex items-start gap-2 rounded-xl bg-warning-soft p-3 text-[12.5px] font-medium text-warning">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-              {affected.length} booking(s) in this window will be notified: {affected.map(b => b.id).join(', ')}
+              {t('maint_affected', { n: affected.length, ids: affected.map(b => b.id).join(', ') })}
             </p>
           )}
         </div>
