@@ -328,9 +328,9 @@ function VehicleCard({ car }: { car: Car }) {
   const anyWin = inService ? null : (selectedSlot === 'all' ? win : suggestWindow(app, car.id, 'all'));
   const canBook = can(currentUser, 'booking.create');
   const canManage = can(currentUser, 'vehicle.maintenance');
-  // The whole card books the car (the button just shows which slot)
-  const bookable = canBook && !!win;
-  const book = () => win && openBooking(car.id, win[0], win[1]);
+  const targetWin = win ?? anyWin;
+  const bookable = canBook && !!targetWin;
+  const book = () => targetWin && openBooking(car.id, targetWin[0], targetWin[1]);
 
   const status = inService
     ? { tone: 'warning' as const, label: t('st_service') }
@@ -346,7 +346,7 @@ function VehicleCard({ car }: { car: Car }) {
       {...(bookable && {
         role: 'button',
         tabIndex: 0,
-        'aria-label': `${t('book_short')} ${car.name} ${win![0]}–${win![1]}`,
+        'aria-label': `${t('book_short')} ${car.name} ${targetWin![0]}–${targetWin![1]}`,
         onClick: book,
         onKeyDown: (e: React.KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), book()),
       })}
@@ -497,7 +497,13 @@ function VehicleCard({ car }: { car: Car }) {
             </Button>
           )}
           {canBook && (
-            <Button size="sm" className="h-10 flex-1" disabled={!win} onClick={e => (e.stopPropagation(), book())}>
+            <Button
+              size="sm"
+              className="h-10 flex-1"
+              variant={!win && anyWin ? 'outline' : 'default'}
+              disabled={!targetWin}
+              onClick={e => (e.stopPropagation(), book())}
+            >
               {win ? (
                 <span className="flex items-center gap-1.5">
                   {t('book_short')}
@@ -506,6 +512,11 @@ function VehicleCard({ car }: { car: Car }) {
                   <span className="tabular">
                     {win[0]}–{win[1]}
                   </span>
+                </span>
+              ) : anyWin ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="opacity-75">{selectedSlot === 'morning' ? (lang === 'kh' ? 'ពេញពេលព្រឹក · កក់' : 'Morning full · Book') : (lang === 'kh' ? 'ពេញពេលរសៀល · កក់' : 'Afternoon full · Book')}</span>
+                  <span className="tabular font-semibold">{anyWin[0]}–{anyWin[1]}</span>
                 </span>
               ) : (
                 t('unavailable')
