@@ -279,6 +279,7 @@ const en = {
   mark_read: 'Mark all read',
   notif_all: 'All',
   notif_unread: 'Unread',
+  notif_unread_n: '{n} unread',
   notif_view: 'View booking',
   earlier: 'Earlier',
 
@@ -549,6 +550,7 @@ const kh: Partial<Dict> = {
   mark_read: 'សម្គាល់ថាបានអាន',
   notif_all: 'ទាំងអស់',
   notif_unread: 'មិនទាន់អាន',
+  notif_unread_n: 'មិនទាន់អាន {n}',
   notif_view: 'មើលការកក់',
   earlier: 'មុននេះ',
 

@@ -55,27 +55,32 @@ export function NotificationsSheet({ open }: { open: boolean }) {
   };
 
   return (
-    <Sheet open={open} onOpenChange={o => !o && closeSheet()} title={t('notifications')}>
-      <div className="sticky top-0 z-10 -mx-5 flex items-center gap-2 bg-background px-5 pb-3">
-        <Segmented
-          size="sm"
-          className="flex-1"
-          value={filter}
-          onChange={setFilter}
-          options={[
-            { value: 'all', label: t('notif_all') },
-            { value: 'unread', label: t('notif_unread'), count: unreadCount },
-          ]}
-        />
+    <Sheet
+      fullScreen
+      open={open}
+      onOpenChange={o => !o && closeSheet()}
+      title={t('notifications')}
+      description={unreadCount ? t('notif_unread_n', { n: unreadCount }) : t('all_caught_up')}
+      headerAction={
         <button
           type="button"
           onClick={markNotificationsRead}
           disabled={!unreadCount}
-          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[12.5px] font-semibold text-primary transition-colors hover:bg-primary-soft disabled:text-muted-foreground disabled:opacity-60"
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[12.5px] font-semibold text-primary transition-colors hover:bg-primary-soft disabled:text-muted-foreground disabled:opacity-50"
         >
           <CheckCheck className="size-4" /> {t('mark_read')}
         </button>
-      </div>
+      }
+    >
+      <Segmented
+        className="mb-4"
+        value={filter}
+        onChange={setFilter}
+        options={[
+          { value: 'all', label: t('notif_all'), count: mine.length },
+          { value: 'unread', label: t('notif_unread'), count: unreadCount },
+        ]}
+      />
 
       {list.length === 0 ? (
         <EmptyState icon={<BellOff />} title={filter === 'unread' ? t('all_caught_up') : t('no_notifs')} className="mt-2" />
@@ -95,37 +100,42 @@ export function NotificationsSheet({ open }: { open: boolean }) {
                       <button
                         type="button"
                         onClick={() => openItem(n)}
-                        className={cn('relative flex w-full gap-3 px-3.5 py-3 text-left transition-colors hover:bg-muted/50', !n.read && 'bg-primary-soft/40')}
+                        className={cn('block w-full px-4 py-3.5 text-left transition-colors hover:bg-muted/50', !n.read && 'bg-primary-soft/40')}
                       >
-                        {!n.read && <span className="absolute left-1.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-primary" aria-label="unread" />}
-                        <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl', k.tone)}>
-                          <k.icon className="size-[18px]" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-baseline justify-between gap-2">
-                            <span className={cn('truncate text-[14px]', n.read ? 'font-medium' : 'font-bold')}>{n.title}</span>
-                            <span className="shrink-0 text-[11.5px] tabular text-muted-foreground">{n.at ? DateUtil.relative(n.at, lang) : n.time}</span>
+                        <span className="flex gap-3">
+                          <span className={cn('relative flex size-11 shrink-0 items-center justify-center rounded-2xl', k.tone)}>
+                            <k.icon className="size-5" />
+                            {!n.read && <span className="absolute -right-0.5 -top-0.5 size-3 rounded-full border-2 border-card bg-primary" aria-label="unread" />}
                           </span>
-                          <span className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-muted-foreground">{n.text}</span>
-
-                          {b && car && (
-                            <span className="mt-2 flex items-center gap-2.5 rounded-xl border bg-background p-2">
-                              <CarPhoto car={car} className="h-9 w-14 shrink-0 rounded-lg" />
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-[12.5px] font-semibold text-foreground">
-                                  {car.name} <span className="font-mono text-[11px] font-normal text-muted-foreground">{b.id}</span>
-                                </span>
-                                <span className="block truncate text-[11.5px] tabular text-muted-foreground">{DateUtil.window(b, lang)}</span>
-                              </span>
-                              <BookingStatusBadge b={b} />
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-baseline justify-between gap-2">
+                              <span className={cn('truncate text-[14.5px]', n.read ? 'font-medium' : 'font-bold')}>{n.title}</span>
+                              <span className="shrink-0 text-[11.5px] tabular text-muted-foreground">{n.at ? DateUtil.relative(n.at, lang) : n.time}</span>
                             </span>
-                          )}
-                          {action && (
-                            <span className="mt-1.5 flex items-center gap-0.5 text-[12.5px] font-semibold text-primary">
-                              {action} <ChevronRight className="size-3.5" />
-                            </span>
-                          )}
+                            <span className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-muted-foreground">{n.text}</span>
+                          </span>
                         </span>
+
+                        {/* Related booking — full width so car name and time aren't cut off */}
+                        {b && car && (
+                          <span className="mt-2.5 flex items-center gap-3 rounded-xl border bg-background p-2.5">
+                            <CarPhoto car={car} className="h-12 w-[72px] shrink-0 rounded-lg" />
+                            <span className="min-w-0 flex-1">
+                              <span className="flex items-start justify-between gap-2">
+                                <span className="min-w-0 text-[13.5px] font-semibold leading-snug text-foreground">{car.name}</span>
+                                <BookingStatusBadge b={b} />
+                              </span>
+                              <span className="mt-0.5 block text-[12px] tabular text-muted-foreground">
+                                <span className="font-mono">{b.id}</span> · {DateUtil.window(b, lang)}
+                              </span>
+                            </span>
+                          </span>
+                        )}
+                        {action && (
+                          <span className="mt-2 flex items-center justify-end gap-0.5 text-[12.5px] font-semibold text-primary">
+                            {action} <ChevronRight className="size-3.5" />
+                          </span>
+                        )}
                       </button>
                     </li>
                   );
