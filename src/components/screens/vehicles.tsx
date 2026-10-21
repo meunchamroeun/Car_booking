@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarDays, CarFront, ChevronRight, Clock, LayoutList, Search, Users, Wrench } from 'lucide-react';
+import { CalendarDays, CarFront, ChevronRight, Clock, LayoutList, Users, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { can } from '@/lib/permissions';
@@ -11,7 +11,6 @@ import { PageHeader, Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
 import { Segmented } from '@/components/ui/segmented';
 import { EmptyState } from '@/components/ui/empty';
 import { CarPhoto } from '@/components/common/car-photo';
@@ -27,7 +26,7 @@ const SLOT_RANGE = {
 
 export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
   const app = useApp();
-  const { t, viewMode, setViewMode, selectedDate, setSelectedDate, selectedSlot, setSelectedSlot, searchQuery, setSearchQuery, cars, lang } = app;
+  const { t, viewMode, setViewMode, selectedDate, setSelectedDate, selectedSlot, setSelectedSlot, cars, lang } = app;
 
   const [calendarOpen, setCalendarOpen] = React.useState(false);
   const today = React.useMemo(() => DateUtil.todayStr(), []);
@@ -35,20 +34,15 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
   const isCustom = selectedDate !== today && selectedDate !== tomorrow;
 
   const filtered = React.useMemo(() => {
-    return cars
-      .filter(c => {
-        const q = searchQuery.trim().toLowerCase();
-        if (q && !c.name.toLowerCase().includes(q) && !c.plate.toLowerCase().includes(q)) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        const aAvail = !app.isCarInMaintenance(a.id, selectedDate) && !!suggestWindow(app, a.id);
-        const bAvail = !app.isCarInMaintenance(b.id, selectedDate) && !!suggestWindow(app, b.id);
-        if (aAvail && !bAvail) return -1;
-        if (!aAvail && bAvail) return 1;
-        return 0;
-      });
-  }, [cars, searchQuery, app, selectedDate, selectedSlot]);
+    // Free cars first, then the ones that can't be booked
+    return [...cars].sort((a, b) => {
+      const aAvail = !app.isCarInMaintenance(a.id, selectedDate) && !!suggestWindow(app, a.id);
+      const bAvail = !app.isCarInMaintenance(b.id, selectedDate) && !!suggestWindow(app, b.id);
+      if (aAvail && !bAvail) return -1;
+      if (!aAvail && bAvail) return 1;
+      return 0;
+    });
+  }, [cars, app, selectedDate, selectedSlot]);
 
   return (
     <div id={embedded ? 'vehicles' : undefined} className={embedded ? 'scroll-mt-20 !mt-5 first:!mt-0' : ''}>
@@ -164,19 +158,11 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
             );
           })}
         </div>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder={t('search_hint')} className="h-9 rounded-xl pl-8 text-[13px]" aria-label={t('search_hint')} />
-        </div>
       </div>
 
       <div className="mt-4">
         {filtered.length === 0 ? (
-          <EmptyState
-            icon={<CarFront />}
-            title={searchQuery ? t('no_match_title') : t('no_results')}
-            desc={searchQuery ? t('no_match_desc') : undefined}
-          />
+          <EmptyState icon={<CarFront />} title={t('no_results')} />
         ) : viewMode === 'cards' ? (
           <div className="space-y-3">
             {filtered.map(c => (
