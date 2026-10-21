@@ -17,7 +17,7 @@ import { TimeField } from '@/components/ui/time-field';
 import { RangeCalendar } from '@/components/ui/range-calendar';
 import { DateBox } from '@/components/ui/date-box';
 import { BOOKING_SLOTS, SLOT_ORDER } from '@/lib/slots';
-import { can } from '@/lib/permissions';
+import { can, needsReapproval } from '@/lib/permissions';
 import { DriverSelect } from '@/components/common/driver-select';
 
 const SLOTS = SLOT_ORDER.map(key => ({ key, ...BOOKING_SLOTS[key] }));
@@ -136,6 +136,8 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
     ? `${DateUtil.friendly(date, lang)} ${start} → ${DateUtil.friendly(endDate, lang)} ${end}`
     : `${DateUtil.friendly(date, lang)} · ${start}–${end}`;
 
+  // Staff changing an approved booking's car / time / driver need → it goes back for approval
+  const reapprove = !!editing && !!car && needsReapproval(currentUser, editing, { carId: car.id, date, endDate, startTime: start, endTime: end, needDriver });
   const missing = timeProblem ?? (!purpose.trim() ? t('pick_purpose') : pickDriver && needDriver && !driverId ? t('err_assign_driver') : null);
 
   const submit = () => {
@@ -153,9 +155,17 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
       onOpenChange={o => !o && closeSheet()}
       title={editing ? `${t('edit_title')} · ${editing.id}` : t('plan_title')}
       footer={
-        <Button size="lg" className="w-full" disabled={!!missing} onClick={submit}>
-          {editing ? t('save_changes') : t('book_now')}
-        </Button>
+        <div className="space-y-2">
+          {reapprove && (
+            <p className="flex items-start gap-1.5 rounded-lg bg-warning-soft px-2.5 py-2 text-[12px] font-medium leading-snug text-warning">
+              <AlertTriangle className="mt-px size-3.5 shrink-0" />
+              {t('edit_reapprove_note')}
+            </p>
+          )}
+          <Button size="lg" className="w-full" disabled={!!missing} onClick={submit}>
+            {editing ? (reapprove ? t('save_reapprove') : t('save_changes')) : t('book_now')}
+          </Button>
+        </div>
       }
     >
       {/* 1. The chosen car */}

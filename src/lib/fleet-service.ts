@@ -1,7 +1,7 @@
 import { Booking, Car, FleetData, Msg, MsgVar, NotificationItem, User } from '@/types';
 import { translate } from '@/lib/i18n';
 import { DateUtil } from '@/lib/date-utils';
-import { can, canCancel, canCompleteTask, canEdit, canReturnEarly, canReview, canStartTask } from '@/lib/permissions';
+import { can, canCancel, canCompleteTask, canEdit, canReturnEarly, canReview, canStartTask, needsReapproval } from '@/lib/permissions';
 
 /**
  * Business logic for the fleet booking app, written as pure functions.
@@ -233,9 +233,11 @@ export function updateBooking(data: FleetData, actor: User, id: string, input: U
   if (!conflict.ok) throw new ServiceError(conflict.msg);
 
   const win = { startDate: input.date, startTime: input.startTime, endDate, endTime: input.endTime };
+  // Staff changing car / dates / times / driver need on an approved booking → back to Pending
+  const reapprove = needsReapproval(actor, b, input);
   // An approved booking with a company driver needs a free, active driver for the new time
   let driverId: string | null = null;
-  if (b.status === 'Approved' && input.needDriver) {
+  if (b.status === 'Approved' && !reapprove && input.needDriver) {
     driverId = input.driverId === undefined ? b.driverId : input.driverId;
     if (!driverId) fail('err_assign_driver');
     const driver = data.drivers.find(x => x.id === driverId) ?? fail('err_driver_not_found');
@@ -246,15 +248,24 @@ export function updateBooking(data: FleetData, actor: User, id: string, input: U
 
   const vars = { name: actor.name, id, car: carLabel(data, car.id), win: winOf(win) };
   const byRequester = actor.id === b.requesterId;
+  const oldDriverUser = reapprove ? driverUserId(data, b.driverId) : null;
   const newDriverUser = driverId && driverId !== b.driverId ? driverUserId(data, driverId) : null;
   const notifs = [
     // Manager changed it → tell the requester; requester changed a pending request → tell the reviewers
     ...notify(byRequester ? (actor.role === 'Approver' ? admins(data) : reviewers(data, actor.id)) : [b.requesterId], {
       kind: byRequester ? 'request' : 'info',
       bookingId: id,
-      titleKey: byRequester ? 'nt_req_edited_title' : 'nt_edited_title',
-      textKey: byRequester ? 'nt_req_edited_text' : 'nt_edited_text',
+      titleKey: reapprove ? 'nt_reapprove_title' : byRequester ? 'nt_req_edited_title' : 'nt_edited_title',
+      textKey: reapprove ? 'nt_reapprove_text' : byRequester ? 'nt_req_edited_text' : 'nt_edited_text',
       vars,
+    }),
+    // The driver who was assigned is no longer needed until it is approved again
+    ...notify(oldDriverUser ? [oldDriverUser] : [], {
+      kind: 'info',
+      bookingId: id,
+      titleKey: 'nt_unassigned_title',
+      textKey: 'nt_unassigned_text',
+      vars: { id },
     }),
     ...notify(newDriverUser ? [newDriverUser] : [], {
       kind: 'assigned',
@@ -277,11 +288,15 @@ export function updateBooking(data: FleetData, actor: User, id: string, input: U
         originalEndTime: input.endTime,
         purpose: input.purpose.trim(),
         needDriver: input.needDriver,
-        ...(b.status === 'Approved' ? { driverId, taskStatus: driverId ? ('Assigned' as const) : null } : {}),
+        ...(reapprove
+          ? { status: 'Pending' as const, approverId: null, decisionAt: null, driverId: null, taskStatus: null }
+          : b.status === 'Approved'
+            ? { driverId, taskStatus: driverId ? ('Assigned' as const) : null }
+            : {}),
       }),
       notifications: [...notifs, ...data.notifications],
     },
-    message: msg('msg_updated', { id }),
+    message: reapprove ? msg('msg_updated_reapprove', { id }) : msg('msg_updated', { id }),
   };
 }
 

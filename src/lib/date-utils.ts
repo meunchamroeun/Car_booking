@@ -123,6 +123,15 @@ export const DateUtil = {
     return `${this.todayStr()} ${this.nowTimeStr()}`;
   },
 
+  /** Time between two clock times in words: "45min", "1h", "1h 30min" (kh: "45 នាទី", "1 ម៉ោង 30 នាទី"). */
+  spanLabel(startStr: string, endStr: string, lang: 'en' | 'kh' = 'en'): string {
+    const mins = Math.max(0, this.toMins(endStr) - this.toMins(startStr));
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const [hu, mu] = lang === 'kh' ? [' ម៉ោង', ' នាទី'] : ['h', 'min'];
+    return [h ? `${h}${hu}` : '', m ? `${m}${mu}` : ''].filter(Boolean).join(' ') || `0${mu}`;
+  },
+
   diffHours(startStr: string, endStr: string): string {
     const diff = Math.max(0, this.toMins(endStr) - this.toMins(startStr));
     return diff % 60 === 0 ? String(diff / 60) : (diff / 60).toFixed(1);

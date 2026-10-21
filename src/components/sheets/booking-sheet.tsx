@@ -131,10 +131,19 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
         </div>
       )}
 
+      {/* Why it was rejected / cancelled: who and when, then the reason in plain readable text */}
       {(b.rejectReason || b.cancelReason) && (
-        <div className="mt-3 rounded-xl bg-destructive-soft p-3 text-[13px] text-destructive">
-          <p className="font-semibold">{b.rejectReason ? t('rejected_by', { name: approver?.name ?? '' }) : t('cancel_note')}</p>
-          <p className="mt-0.5 opacity-90">{b.rejectReason ?? b.cancelReason}</p>
+        <div className="mt-3 rounded-xl border border-destructive/20 bg-destructive-soft/60 p-3">
+          <div className="flex items-center gap-2">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+              <XCircle className="size-3.5" />
+            </span>
+            <p className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-destructive">
+              {b.rejectReason ? t('rejected_by', { name: approver?.name ?? '' }) : t('cancel_note')}
+            </p>
+            {b.rejectReason && b.decisionAt && <span className="shrink-0 text-[11px] tabular text-muted-foreground">{DateUtil.relative(b.decisionAt, lang)}</span>}
+          </div>
+          <p className="mt-2 border-l-2 border-destructive/40 pl-2.5 text-[13px] leading-snug text-foreground/85">{b.rejectReason ?? b.cancelReason}</p>
         </div>
       )}
 

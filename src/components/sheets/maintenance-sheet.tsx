@@ -21,7 +21,8 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
   const [editing, setEditing] = React.useState(false);
   const [mode, setMode] = React.useState<'manual' | 'scheduled'>('manual');
   const [reason, setReason] = React.useState('');
-  const [estimated, setEstimated] = React.useState(DateUtil.tomorrowStr());
+  // Expected return is optional: empty means "not known yet"
+  const [estimated, setEstimated] = React.useState('');
   const [from, setFrom] = React.useState(DateUtil.tomorrowStr());
   const [to, setTo] = React.useState(DateUtil.tomorrowStr());
   const [fromTime, setFromTime] = React.useState('08:00');
@@ -35,7 +36,7 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
     setEditing(!m);
     setMode(defaultMode ?? m?.mode ?? 'manual');
     setReason(m?.reason ?? '');
-    setEstimated(m?.estimatedDate ?? DateUtil.tomorrowStr());
+    setEstimated(m?.estimatedDate ?? '');
     setFrom(m?.startDate ?? DateUtil.tomorrowStr());
     setTo(m?.endDate ?? DateUtil.tomorrowStr());
     setFromTime(m?.startTime ?? '08:00');
@@ -56,7 +57,7 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
   const affected = bookings.filter(b => b.carId === car.id && (b.status === 'Approved' || b.status === 'Pending') && b.startDate >= range[0] && b.startDate <= range[1]);
 
   const save = () =>
-    setMaintenance(car.id, mode === 'manual' ? { mode, reason, estimatedDate: estimated } : { mode, reason, startDate: from, endDate: to, startTime: fromTime, endTime: toTime });
+    setMaintenance(car.id, mode === 'manual' ? { mode, reason, estimatedDate: estimated || undefined } : { mode, reason, startDate: from, endDate: to, startTime: fromTime, endTime: toTime });
 
   return (
     <Sheet
@@ -103,7 +104,7 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
           <p className="font-semibold text-warning">{m.reason}</p>
           <p className="mt-1 text-foreground/80">
             {m.mode === 'manual'
-              ? `${t('est_return')}: ${m.estimatedDate ? DateUtil.friendly(m.estimatedDate, lang) : '—'}`
+              ? `${t('est_return')}: ${m.estimatedDate ? DateUtil.friendly(m.estimatedDate, lang) : t('est_unknown')}`
               : `${DateUtil.friendly(m.startDate!, lang)} ${m.startTime} → ${DateUtil.friendly(m.endDate!, lang)} ${m.endTime}`}
           </p>
           <p className="mt-2 text-[12px] text-muted-foreground">
@@ -128,12 +129,21 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
           </Field>
           {mode === 'manual' ? (
             <div className="space-y-2">
-              <DateBox label={t('est_return')} value={estimated} lang={lang} active={picker === 'dates'} onClick={() => togglePicker('dates')} />
+              <DateBox
+                label={t('est_return')}
+                value={estimated}
+                lang={lang}
+                active={picker === 'dates'}
+                onClick={() => togglePicker('dates')}
+                placeholder={t('est_unknown')}
+                onClear={() => (setEstimated(''), setPicker(null))}
+                clearLabel={t('est_clear')}
+              />
               {picker === 'dates' && (
                 <RangeCalendar
                   mode="single"
-                  start={estimated}
-                  end={estimated}
+                  start={estimated || DateUtil.todayStr()}
+                  end={estimated || DateUtil.todayStr()}
                   min={DateUtil.todayStr()}
                   maxDays={90}
                   lang={lang}

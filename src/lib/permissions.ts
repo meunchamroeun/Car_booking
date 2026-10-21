@@ -67,16 +67,32 @@ export function canCancel(user: User, b: Booking): boolean {
 
 /**
  * Who may change a booking's car, dates, times, purpose and driver:
- *  - the requester, while it is still Pending;
- *  - a manager (Admin on any booking, Approver on others' bookings) while Pending,
- *    or Approved but not started yet.
+ *  - the requester: Pending, or Approved but not started yet (bigger changes need approval again);
+ *  - a manager (Admin on any booking, Approver on others' bookings): the same states.
  */
 export function canEdit(user: User, b: Booking): boolean {
-  if (b.requesterId === user.id && b.status === 'Pending') return true;
-  if (!can(user, 'booking.approve')) return false;
-  if (b.requesterId === user.id && user.role !== 'Admin') return false;
+  if (b.requesterId !== user.id) {
+    if (!can(user, 'booking.approve')) return false;
+  }
   if (b.status === 'Pending') return true;
   return b.status === 'Approved' && b.taskStatus !== 'In Progress' && DateUtil.stamp(b.startDate, b.startTime) > DateUtil.nowStamp();
+}
+
+/** Staff changing their approved booking's car, dates, times or driver need → it goes back for approval. */
+export function needsReapproval(
+  user: User,
+  b: Booking,
+  next: { carId: string; date: string; endDate?: string; startTime: string; endTime: string; needDriver: boolean }
+): boolean {
+  if (b.status !== 'Approved' || b.requesterId !== user.id || user.role === 'Admin') return false;
+  return (
+    next.carId !== b.carId ||
+    next.date !== b.startDate ||
+    (next.endDate || next.date) !== (b.endDate || b.startDate) ||
+    next.startTime !== b.startTime ||
+    next.endTime !== b.endTime ||
+    next.needDriver !== b.needDriver
+  );
 }
 
 /** Approvers can't approve their own request — an Admin must. */

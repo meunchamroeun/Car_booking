@@ -8,8 +8,10 @@ import { isLive } from '@/lib/selectors';
 export function bookingTone(b: Booking): BadgeTone {
   if (b.status === 'Approved') return isLive(b) ? 'info' : 'success';
   if (b.status === 'Pending') return 'warning';
-  if (b.status === 'Rejected') return 'danger';
-  if (b.status === 'Completed') return 'neutral';
+  // Rejected and Cancelled both end the request, so they share the same red
+  if (b.status === 'Rejected' || b.status === 'Cancelled') return 'danger';
+  // Finished bookings (incl. returned early) read as done: green
+  if (b.status === 'Completed') return 'success';
   return 'neutral';
 }
 

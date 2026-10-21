@@ -69,7 +69,7 @@ export function ReturnSheet({ open, id, mode }: { open: boolean; id?: string; mo
         {early && (
           <p className="flex items-center gap-2 rounded-xl bg-success-soft px-3 py-2.5 text-[13px] font-medium text-success">
             <Sparkles className="size-4 shrink-0" />
-            {t('release_hint', { time: planned, h: DateUtil.diffHours(time, planned) })}
+            {t('release_hint', { time: planned, dur: DateUtil.spanLabel(time, planned, lang) })}
           </p>
         )}
         <Field label={t('notes')} htmlFor="rt-notes">
