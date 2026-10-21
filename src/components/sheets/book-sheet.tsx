@@ -13,14 +13,19 @@ import { CarPhoto } from '@/components/common/car-photo';
 import { cn } from '@/lib/utils';
 import { CalendarPopup } from '@/components/ui/calendar-popup';
 import { TimeRangeTrack } from '@/components/ui/time-range-track';
+import { DateTimeBox } from '@/components/ui/date-time-box';
+import { DateKeyIn } from '@/components/ui/date-key-in';
 import { TimeField } from '@/components/ui/time-field';
-import { DateBox } from '@/components/ui/date-box';
+import { TimeSpin } from '@/components/ui/time-spin';
+import { TimeWheelPicker } from '@/components/ui/time-wheel-picker';
 import { RangeCalendar } from '@/components/ui/range-calendar';
 import { BOOKING_SLOTS, SLOT_ORDER } from '@/lib/slots';
 import { can, needsReapproval } from '@/lib/permissions';
 import { DriverSelect } from '@/components/common/driver-select';
 
 const SLOTS = SLOT_ORDER.map(key => ({ key, ...BOOKING_SLOTS[key] }));
+/** Minutes since midnight → "HH:MM". */
+const spinTime = (m: number) => `${DateUtil.pad(Math.floor(m / 60))}:${DateUtil.pad(m % 60)}`;
 /** Order of the quick slot chips: Full day, Morning, Afternoon. */
 const QUICK_SLOTS = (['full_day', 'morning', 'afternoon'] as const).map(key => ({ key, ...BOOKING_SLOTS[key] }));
 
@@ -44,6 +49,8 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   const [date, setDate] = React.useState(today); // start date
   const [endDate, setEndDate] = React.useState(today);
   const [picker, setPicker] = React.useState<'dates' | 'from' | 'to' | null>(null);
+  // Which time the wheel picker popup is changing
+  const [timePick, setTimePick] = React.useState<'start' | 'end' | null>(null);
   // Quick picks (Today / Tomorrow / slots) stay hidden until "Quick pick" is tapped
   const [showQuick, setShowQuick] = React.useState(false);
   // Chosen time window; the Morning/Afternoon/Full day buttons are shortcuts that fill it
@@ -56,6 +63,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   React.useEffect(() => {
     if (!open) return;
     setShowQuick(false);
+    setTimePick(null);
     if (editing) {
       setCarId(editing.carId);
       setChangingCar(false);
@@ -94,7 +102,6 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
 
   const car = cars.find(c => c.id === carId);
   const tomorrow = DateUtil.addDays(today, 1);
-  const dm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
   const { start, end } = range;
   const multiDay = endDate !== date;
   // Slot chip matching the chosen times (for several days: start time on the first day, end time on the last)
@@ -147,6 +154,13 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   // Staff changing an approved booking's car / time / driver need → it goes back for approval
   const reapprove = !!editing && !!car && needsReapproval(currentUser, editing, { carId: car.id, date, endDate, startTime: start, endTime: end, needDriver });
   const otherDay = multiDay || (date !== today && date !== tomorrow);
+  // Start moved past the end → push the end so the booking keeps at least 30 minutes
+  const changeStart = (v: string) =>
+    setRange(r => {
+      const sm = DateUtil.toMins(v);
+      return { start: v, end: DateUtil.toMins(r.end) - sm < 30 ? spinTime(Math.min(sm + 60, 23 * 60 + 45)) : r.end };
+    });
+  const changeEnd = (v: string) => setRange(r => ({ ...r, end: v }));
   const missing = timeProblem ?? (!purpose.trim() ? t('pick_purpose') : pickDriver && needDriver && !driverId ? t('err_assign_driver') : null);
 
   const submit = () => {
@@ -270,18 +284,18 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                 </button>
               );
             })}
-            <button
-              type="button"
-              onClick={() => setPicker('dates')}
-              aria-label={t('select_date')}
-              className={cn(
-                'flex h-8 min-w-0 items-center justify-center gap-1.5 rounded-[10px] px-2 text-[12.5px] tabular transition-all',
-                otherDay ? 'bg-primary font-semibold text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
-              )}
-            >
-              <CalendarDays className="size-4 shrink-0" />
-              <span className="truncate">{multiDay ? `${dm(date)}–${dm(endDate)}` : `${dm(date)}/${date.slice(0, 4)}`}</span>
-            </button>
+            {/* Type the date (dd/mm/yyyy) or tap the icon for the calendar */}
+            <DateKeyIn
+              value={date}
+              min={today}
+              active={otherDay}
+              open={picker === 'dates'}
+              onChange={d => (setDate(d), setEndDate(d), setPicker(null))}
+              onToggle={() => setPicker(p => (p === 'dates' ? null : 'dates'))}
+              label={t('key_in_date')}
+              placeholder={t('date_ph')}
+              pickLabel={t('select_date')}
+            />
           </div>
           <div className="no-scrollbar mt-2 flex gap-[3px] overflow-x-auto" role="radiogroup" aria-label={t('a11y_time_slot')}>
             {QUICK_SLOTS.map(s => {
@@ -315,12 +329,33 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
 
         {/* Start / end date, then the time: drag on the day track, or From/To for several days */}
         <div className="space-y-2">
+          {/* Start / End date: type it, or tap the calendar icon */}
           <div className="grid grid-cols-2 gap-2">
-            <DateBox label={t('start_date')} value={date} lang={lang} active={picker === 'dates'} onClick={() => setPicker(p => (p === 'dates' ? null : 'dates'))} />
-            <DateBox label={t('end_date')} value={endDate} lang={lang} active={picker === 'dates'} onClick={() => setPicker(p => (p === 'dates' ? null : 'dates'))} />
+            <DateTimeBox
+              label={t('start_date')}
+              date={date}
+              min={today}
+              onDate={d => (setDate(d), d > endDate && setEndDate(d))}
+              onCalendar={() => setPicker(p => (p === 'dates' ? null : 'dates'))}
+              active={picker === 'dates'}
+              dateLabel={t('date')}
+              calendarLabel={t('select_date')}
+            />
+            <DateTimeBox
+              label={t('end_date')}
+              date={endDate}
+              min={date}
+              onDate={d => setEndDate(d)}
+              onCalendar={() => setPicker(p => (p === 'dates' ? null : 'dates'))}
+              active={picker === 'dates'}
+              invalid={DateUtil.stamp(endDate, end) <= DateUtil.stamp(date, start)}
+              dateLabel={t('date')}
+              calendarLabel={t('select_date')}
+            />
           </div>
           {multiDay ? (
             <>
+              {/* Several days: start time on the first day, end time on the last */}
               <div className="grid grid-cols-2 gap-2">
                 <TimeField label={t('start_time')} value={start} open={picker === 'from'} onOpenChange={o => setPicker(o ? 'from' : null)} onChange={v => setRange(r => ({ ...r, start: v }))} />
                 <TimeField label={t('end_time')} value={end} open={picker === 'to'} onOpenChange={o => setPicker(o ? 'to' : null)} onChange={v => setRange(r => ({ ...r, end: v }))} invalid={DateUtil.stamp(endDate, end) <= DateUtil.stamp(date, start)} />
@@ -331,11 +366,23 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
             </>
           ) : (
             <div className="rounded-xl bg-muted/50 px-3 pb-2.5 pt-2">
-              <div className="mb-1.5 flex items-baseline justify-between">
-                <span className="text-[14px] font-semibold tabular">
-                  {start} – {end}
+              <div className="mb-1.5 flex items-center justify-between">
+                {/* Scroll / drag up-down or type to change the times */}
+                <span className="flex items-center text-[14px] font-semibold">
+                  {/* Tap a time for a small hour : minute dropdown (scroll / drag also work) */}
+                  <TimeWheelPicker open={timePick === 'start'} onOpenChange={o => setTimePick(o ? 'start' : null)} value={start} onChange={changeStart} title={t('start_time')} labels={{ hour: t('a11y_hour', { label: '' }), minute: t('a11y_minute', { label: '' }) }}>
+                    <span className="inline-flex">
+                      <TimeSpin value={start} label={t('start_time')} onChange={changeStart} onOpen={() => setTimePick('start')} active={timePick === 'start'} max={23 * 60} />
+                    </span>
+                  </TimeWheelPicker>
+                  <span className="px-0.5 text-muted-foreground">–</span>
+                  <TimeWheelPicker open={timePick === 'end'} onOpenChange={o => setTimePick(o ? 'end' : null)} value={end} onChange={changeEnd} title={t('end_time')} labels={{ hour: t('a11y_hour', { label: '' }), minute: t('a11y_minute', { label: '' }) }}>
+                    <span className="inline-flex">
+                      <TimeSpin value={end} label={t('end_time')} onChange={changeEnd} onOpen={() => setTimePick('end')} active={timePick === 'end'} min={DateUtil.toMins(start) + 30} />
+                    </span>
+                  </TimeWheelPicker>
                 </span>
-                <span className="text-[11px] font-medium tabular text-muted-foreground">{DateUtil.duration(date, start, endDate, end, lang)}</span>
+                <span className="text-[11px] font-medium tabular text-muted-foreground">{DateUtil.spanLabel(start, end, lang)}</span>
               </div>
               <TimeRangeTrack
                 start={start}
@@ -474,7 +521,7 @@ function Step({
   return (
     <section className={cn('py-3.5 first:pt-1', !last && 'border-b border-dashed')}>
       <div className="mb-2.5 flex items-center justify-between gap-2">
-        <span className="flex items-center gap-2 text-[13.5px] font-semibold">
+        <span className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[13.5px] font-semibold">
           <span className="flex items-center gap-1.5 text-foreground/85 [&_svg]:size-4 [&_svg]:text-muted-foreground">
             {icon}
             {label}
@@ -482,7 +529,7 @@ function Step({
           </span>
           {extra}
         </span>
-        {value && <span className="max-w-[50%] truncate text-[12.5px] font-semibold text-primary">{value}</span>}
+        {value && <span className="min-w-0 truncate text-[12.5px] font-semibold text-primary">{value}</span>}
       </div>
       {children}
     </section>

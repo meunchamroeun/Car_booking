@@ -9,7 +9,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 const HOURS = Array.from({ length: 24 }, (_, i) => pad(i));
 const MINUTES = ['00', '15', '30', '45'];
 // Pixel sizes (not rem) so scroll maths match exactly regardless of root font size
-const ITEM_H = 40;
+export const ITEM_H = 40;
 const WHEEL_H = 200;
 
 /** Turn what the user typed into "HH:MM": "930" → "09:30", "9" → "09:00", "17.5" → "17:05". */
@@ -154,18 +154,25 @@ export function TimeField({
 }
 
 /** One scroll-snapping column. Scroll, tap a row, or use arrow keys. */
-function Wheel({
+export function Wheel({
   items,
   value,
   onChange,
   ariaLabel,
   loop = false,
+  itemH = ITEM_H,
+  wheelH = WHEEL_H,
+  textClass = 'text-[20px]',
 }: {
   items: string[];
   value: string;
   onChange: (v: string) => void;
   ariaLabel: string;
   loop?: boolean;
+  /** Row / column height in px (smaller for compact dropdowns). */
+  itemH?: number;
+  wheelH?: number;
+  textClass?: string;
 }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const settle = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -195,7 +202,7 @@ function Wheel({
   React.useEffect(() => {
     const el = ref.current;
     if (!el || isUserScrolling.current) return;
-    const target = activeIdx * ITEM_H;
+    const target = activeIdx * itemH;
     if (Math.abs(el.scrollTop - target) > 2) {
       el.scrollTo({ top: target, behavior: el.dataset.ready ? 'smooth' : 'auto' });
     }
@@ -209,14 +216,14 @@ function Wheel({
       isUserScrolling.current = false;
       const el = ref.current;
       if (!el) return;
-      const rawIdx = Math.round(el.scrollTop / ITEM_H);
+      const rawIdx = Math.round(el.scrollTop / itemH);
       const normalizedIdx = loop ? ((rawIdx % N) + N) % N : Math.min(N - 1, Math.max(0, rawIdx));
       if (items[normalizedIdx] !== value) {
         onChange(items[normalizedIdx]);
       }
       // Re-center scrollTop silently if scrolled near edges
       if (loop && (rawIdx < N || rawIdx >= (REPEATS - 1) * N)) {
-        const resetTarget = (repeatOffset + normalizedIdx) * ITEM_H;
+        const resetTarget = (repeatOffset + normalizedIdx) * itemH;
         el.scrollTo({ top: resetTarget, behavior: 'instant' as ScrollBehavior });
       }
     }, 90);
@@ -237,7 +244,7 @@ function Wheel({
         onChange(items[nextIdx]);
       }}
       className="no-scrollbar relative z-10 flex-1 snap-y snap-mandatory overflow-y-auto overscroll-contain outline-none"
-      style={{ height: WHEEL_H, paddingBlock: (WHEEL_H - ITEM_H) / 2 }}
+      style={{ height: wheelH, paddingBlock: (wheelH - itemH) / 2 }}
     >
       {displayItems.map(({ key, it }) => (
         <div
@@ -245,9 +252,10 @@ function Wheel({
           role="option"
           aria-selected={it === value}
           onClick={() => onChange(it)}
-          style={{ height: ITEM_H }}
+          style={{ height: itemH }}
           className={cn(
-            'flex cursor-pointer snap-center items-center justify-center text-[20px] tabular transition-all',
+            'flex cursor-pointer snap-center items-center justify-center tabular transition-all',
+            textClass,
             it === value ? 'font-bold text-primary' : 'font-medium text-muted-foreground/60'
           )}
         >

@@ -25,6 +25,8 @@ export function CalendarPopup({
         <Dialog.Overlay className="fixed inset-0 z-[80] bg-black/35 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <Dialog.Content
           aria-describedby={undefined}
+          // Don't focus an input on open (it would pop up the phone keyboard); focus the panel instead
+          onOpenAutoFocus={e => (e.preventDefault(), (e.currentTarget as HTMLElement).focus())}
           className="fixed left-1/2 top-1/2 z-[81] w-[min(360px,calc(100vw-24px))] -translate-x-1/2 -translate-y-1/2 rounded-2xl shadow-float outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
         >
           <Dialog.Title className="sr-only">{title}</Dialog.Title>
