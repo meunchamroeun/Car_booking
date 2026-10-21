@@ -1,26 +1,29 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarClock, CarFront, Check, CheckCircle2, ClipboardCheck, Copy, ExternalLink, FileText, MapPin, Phone, RotateCcw, Route, UserRound, X, XCircle } from 'lucide-react';
+import { CalendarClock, CarFront, Check, CheckCircle2, ClipboardCheck, Copy, ExternalLink, FileText, Pencil, Phone, RotateCcw, Route, UserRound, X, XCircle } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { isLive } from '@/lib/selectors';
 import { DateUtil } from '@/lib/date-utils';
-import { canCancel, canCompleteTask, canReturnEarly, canReview, canShowPass, canStartTask } from '@/lib/permissions';
+import { canCancel, canCompleteTask, canEdit, canReturnEarly, canReview, canStartTask } from '@/lib/permissions';
 import { Booking } from '@/types';
 import { InfoRow, Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/input';
 import { BookingStatusBadge } from '@/components/common/status';
 import { CarPhoto } from '@/components/common/car-photo';
 import { cn } from '@/lib/utils';
-import qrcode from 'qrcode-generator';
-import { passToken, passUrl } from '@/lib/pass';
 import { haptic } from '@/lib/telegram';
 
 export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
   const app = useApp();
   const { bookings, cars, users, drivers, currentUser, t, lang, closeSheet, openSheet, cancelBooking, startTask } = app;
   const [confirmCancel, setConfirmCancel] = React.useState(false);
-  React.useEffect(() => setConfirmCancel(false), [open, id]);
+  const [cancelNote, setCancelNote] = React.useState('');
+  React.useEffect(() => {
+    setConfirmCancel(false);
+    setCancelNote('');
+  }, [open, id]);
 
   const b = bookings.find(x => x.id === id);
   if (!b) return null;
@@ -56,12 +59,23 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
         <RotateCcw /> {t('return_early')}
       </Button>
     );
+  if (canEdit(currentUser, b))
+    actions.push(
+      <Button key="edit" variant="outline" className={cn(actions.length ? '' : 'flex-1')} onClick={() => openSheet({ type: 'book', editId: b.id })}>
+        <Pencil /> {t('edit')}
+      </Button>
+    );
   if (canCancel(currentUser, b))
     actions.push(
       confirmCancel ? (
-        <Button key="cancel" variant="destructive" className="flex-1" onClick={() => cancelBooking(b.id)}>
-          {t('confirm')}
-        </Button>
+        <React.Fragment key="cancel">
+          <Button variant="outline" className="flex-1" onClick={() => setConfirmCancel(false)}>
+            {t('keep_booking')}
+          </Button>
+          <Button variant="destructive" className="flex-1" onClick={() => cancelBooking(b.id, cancelNote)}>
+            <XCircle /> {t('confirm_cancel')}
+          </Button>
+        </React.Fragment>
       ) : (
         <Button key="cancel" variant="destructive-soft" className={cn(actions.length ? '' : 'flex-1')} onClick={() => setConfirmCancel(true)}>
           <XCircle /> {t('cancel_booking')}
@@ -81,18 +95,33 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
       footer={
         actions.length > 0 && (
           <div className="space-y-2">
-            {confirmCancel && <p className="text-center text-[12.5px] font-medium text-destructive">{t('cancel_confirm')}</p>}
-            <div className="flex gap-2">{actions}</div>
+            {/* Cancelling: optional note, sent to the manager / driver and kept on the booking */}
+            {confirmCancel && (
+              <div className="space-y-1.5 animate-in fade-in-0 slide-in-from-bottom-1">
+                <p className="text-[12.5px] font-medium text-destructive">{t('cancel_confirm')}</p>
+                <Textarea
+                  value={cancelNote}
+                  onChange={e => setCancelNote(e.target.value)}
+                  placeholder={t('cancel_note_ph')}
+                  aria-label={t('cancel_note')}
+                  maxLength={200}
+                  rows={2}
+                  autoFocus
+                  className="min-h-0 text-[13px]"
+                />
+              </div>
+            )}
+            <div className="flex gap-2">{confirmCancel ? actions.filter(a => (a as React.ReactElement).key === 'cancel') : actions}</div>
           </div>
         )
       }
     >
       <div className="mb-3 flex items-center justify-between">
         <BookingStatusBadge b={b} />
-        <span className="text-[12px] text-muted-foreground">{b.createdAt}</span>
+        <span className="text-[12px] tabular text-muted-foreground">{DateUtil.relative(b.createdAt, lang)}</span>
       </div>
 
-      {canShowPass(currentUser, b) ? <Pass b={b} /> : (
+      {(
         <div className="flex items-center gap-3 rounded-2xl bg-muted p-3">
           <CarPhoto car={car} zoomable className="h-16 w-24 shrink-0 rounded-xl" />
           <div className="min-w-0">
@@ -104,7 +133,7 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
 
       {(b.rejectReason || b.cancelReason) && (
         <div className="mt-3 rounded-xl bg-destructive-soft p-3 text-[13px] text-destructive">
-          <p className="font-semibold">{b.rejectReason ? t('rejected_by', { name: approver?.name ?? '' }) : t('st_Cancelled')}</p>
+          <p className="font-semibold">{b.rejectReason ? t('rejected_by', { name: approver?.name ?? '' }) : t('cancel_note')}</p>
           <p className="mt-0.5 opacity-90">{b.rejectReason ?? b.cancelReason}</p>
         </div>
       )}
@@ -118,11 +147,6 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
             <span className="ml-1.5 text-[12px] font-medium text-muted-foreground line-through">{b.originalEndTime}</span>
           )}
         </InfoRow>
-        {b.destination && (
-          <InfoRow icon={<MapPin />} label={t('route')}>
-            {t('depot')} → {b.destination}
-          </InfoRow>
-        )}
         {!isMine && requester && (
           <InfoRow icon={<UserRound />} label={t('requester')}>
             <span className="flex items-center justify-between gap-2">
@@ -153,7 +177,6 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
         </InfoRow>
         <InfoRow icon={<FileText />} label={t('purpose')}>
           <span className="font-medium">{b.purpose}</span>
-          <span className="block text-[12.5px] font-normal text-muted-foreground">{t('pax', { n: b.passengers })}</span>
         </InfoRow>
         {(b.completionNotes || b.autoCompleted) && (
           <InfoRow icon={<FileText />} label={t('notes')}>
@@ -175,7 +198,7 @@ function Progress({ b, approverName, requesterName }: { b: Booking; approverName
   const { t, lang, users, currentUser } = useApp();
   const rawReqName = requesterName ?? users.find(u => u.id === b.requesterId)?.name;
   const isMine = b.requesterId === currentUser?.id;
-  const reqName = rawReqName ? (isMine ? `${rawReqName} (${t('you')})` : rawReqName) : undefined;
+  const reqName = rawReqName || undefined;
   const rejected = b.status === 'Rejected';
   const cancelled = b.status === 'Cancelled';
   const steps: { label: string; at?: string | null; done: boolean; bad?: boolean }[] = [
@@ -250,162 +273,6 @@ function Progress({ b, approverName, requesterName }: { b: Booking; approverName
         })}
       </ol>
     </div>
-  );
-}
-
-/** Digital vehicle pass with a scannable QR for the guard house. */
-function Pass({ b }: { b: Booking }) {
-  const { cars, users, drivers, t, lang } = useApp();
-  const car = cars.find(c => c.id === b.carId)!;
-  const requester = users.find(u => u.id === b.requesterId);
-  // The QR opens <app>/?pass=… on any phone, which shows whether the pass is valid right now
-  const url = passUrl(passToken(b, car, requester, drivers.find(d => d.id === b.driverId)?.name));
-  return (
-    <div className="hero-pattern overflow-hidden rounded-[22px] bg-navy text-navy-foreground">
-      <div className="flex items-center justify-between px-4 pt-4">
-        <div>
-          <p className="text-[11.5px] font-semibold uppercase tracking-wider text-white/55">{t('pass_title')}</p>
-          <p className="text-[17px] font-bold">{car.name}</p>
-          <p className="font-mono text-[12.5px] text-white/70">{car.plate}</p>
-        </div>
-        <CarPhoto car={car} zoomable className="h-16 w-24 shrink-0 rounded-xl ring-1 ring-white/20" />
-      </div>
-      <HoldQr url={url} />
-      <p className="px-4 pt-2 text-center text-[11.5px] text-white/60">{t('pass_hint')}</p>
-      <p className="pt-0.5 text-center text-[11.5px] font-semibold text-[hsl(var(--accent))]">{t('pass_hold_hint')}</p>
-      <div className="relative mt-3 border-t border-dashed border-white/20 px-4 py-3">
-        <span className="absolute -left-3 -top-3 size-6 rounded-full bg-background" />
-        <span className="absolute -right-3 -top-3 size-6 rounded-full bg-background" />
-        <div className="grid grid-cols-3 gap-2 text-[12px]">
-          <div>
-            <p className="text-white/55">{t('date')}</p>
-            <p className="font-semibold">
-              {DateUtil.longDate(b.startDate, lang)}
-              {b.endDate && b.endDate !== b.startDate && ` → ${DateUtil.longDate(b.endDate, lang)}`}
-            </p>
-          </div>
-          <div>
-            <p className="text-white/55">{t('schedule')}</p>
-            <p className="font-semibold tabular">
-              {b.startTime}–{b.endTime}
-            </p>
-          </div>
-          <div className="min-w-0">
-            <p className="text-white/55">{t('passenger')}</p>
-            <p className="truncate font-semibold">{requester?.name}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** The QR; press and hold it (or right-click) to see the link it holds, copy it or open it. */
-function HoldQr({ url }: { url: string }) {
-  const { t } = useApp();
-  const [show, setShow] = React.useState(false);
-  const [copied, setCopied] = React.useState(false);
-  const timer = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  const reveal = () => {
-    setShow(true);
-    setCopied(false);
-    haptic('success');
-  };
-  const start = () => {
-    clearTimeout(timer.current);
-    timer.current = setTimeout(reveal, 450);
-  };
-  const cancel = () => clearTimeout(timer.current);
-  React.useEffect(() => cancel, []);
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      // Older webviews: copy through a hidden text box
-      const ta = Object.assign(document.createElement('textarea'), { value: url });
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      ta.remove();
-    }
-    setCopied(true);
-    haptic('success');
-  };
-
-  return (
-    <div
-      className="relative mx-4 mt-3 flex select-none items-center justify-center rounded-2xl bg-white p-3 [-webkit-touch-callout:none]"
-      onPointerDown={show ? undefined : start}
-      onPointerUp={cancel}
-      onPointerLeave={cancel}
-      onPointerCancel={cancel}
-      onContextMenu={e => (e.preventDefault(), reveal())}
-    >
-      <QrCode value={url} />
-      {show && (
-        <div className="absolute inset-0 flex flex-col rounded-2xl bg-white/95 p-3 text-[#162447] backdrop-blur-sm animate-in fade-in-0 zoom-in-95 duration-150">
-          <div className="flex items-center justify-between">
-            <p className="text-[12px] font-semibold uppercase tracking-wide text-[#5B657E]">{t('pass_link')}</p>
-            <button
-              type="button"
-              onClick={() => setShow(false)}
-              aria-label={t('close')}
-              className="flex size-7 items-center justify-center rounded-full text-[#5B657E] hover:bg-black/5"
-            >
-              <X className="size-4" />
-            </button>
-          </div>
-          <p className="mt-1 min-h-0 flex-1 select-text overflow-y-auto break-all rounded-xl bg-[#162447]/[0.06] px-2.5 py-2 font-mono text-[11px] leading-snug">{url}</p>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={copy}
-              className={cn(
-                'flex h-10 items-center justify-center gap-1.5 rounded-xl text-[13px] font-semibold transition-colors',
-                copied ? 'bg-success-soft text-success' : 'bg-[#162447]/[0.08] hover:bg-[#162447]/[0.12]'
-              )}
-            >
-              {copied ? <Check className="size-4" strokeWidth={3} /> : <Copy className="size-4" />}
-              {copied ? t('copied') : t('copy_link')}
-            </button>
-            <a
-              href={url}
-              target="_blank"
-              rel="noreferrer"
-              className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#162447] text-[13px] font-semibold text-white hover:bg-[#162447]/90"
-            >
-              <ExternalLink className="size-4" />
-              {t('open_link')}
-            </a>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Real, scannable QR code (qrcode-generator), drawn as crisp SVG squares. */
-function QrCode({ value }: { value: string }) {
-  const { t } = useApp();
-  const { cells, n } = React.useMemo(() => {
-    const qr = qrcode(0, 'M'); // version picked automatically, medium error correction
-    qr.addData(value);
-    qr.make();
-    const count = qr.getModuleCount();
-    const out: [number, number][] = [];
-    for (let y = 0; y < count; y++) for (let x = 0; x < count; x++) if (qr.isDark(y, x)) out.push([x, y]);
-    return { cells: out, n: count };
-  }, [value]);
-  // 2-module quiet zone around the code so scanners can find it
-  return (
-    <svg viewBox={`-2 -2 ${n + 4} ${n + 4}`} className="size-44" shapeRendering="crispEdges" role="img" aria-label={t('a11y_qr')}>
-      <rect x={-2} y={-2} width={n + 4} height={n + 4} fill="#fff" />
-      {cells.map(([x, y]) => (
-        <rect key={`${x}-${y}`} x={x} y={y} width="1.02" height="1.02" fill="#162447" />
-      ))}
-    </svg>
   );
 }
 

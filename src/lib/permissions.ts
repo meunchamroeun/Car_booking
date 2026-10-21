@@ -61,7 +61,22 @@ export const ROLE_DEFAULT_TAB: Record<UserRole, AppTab> = {
 export function canCancel(user: User, b: Booking): boolean {
   if (b.requesterId !== user.id) return false;
   if (b.status === 'Pending') return true;
-  return b.status === 'Approved' && b.taskStatus !== 'In Progress';
+  // Once the booked time has started the car is out: use Return early instead
+  return b.status === 'Approved' && b.taskStatus !== 'In Progress' && DateUtil.stamp(b.startDate, b.startTime) > DateUtil.nowStamp();
+}
+
+/**
+ * Who may change a booking's car, dates, times, purpose and driver:
+ *  - the requester, while it is still Pending;
+ *  - a manager (Admin on any booking, Approver on others' bookings) while Pending,
+ *    or Approved but not started yet.
+ */
+export function canEdit(user: User, b: Booking): boolean {
+  if (b.requesterId === user.id && b.status === 'Pending') return true;
+  if (!can(user, 'booking.approve')) return false;
+  if (b.requesterId === user.id && user.role !== 'Admin') return false;
+  if (b.status === 'Pending') return true;
+  return b.status === 'Approved' && b.taskStatus !== 'In Progress' && DateUtil.stamp(b.startDate, b.startTime) > DateUtil.nowStamp();
 }
 
 /** Approvers can't approve their own request — an Admin must. */
@@ -80,6 +95,8 @@ export function canReturnEarly(user: User, b: Booking): boolean {
   if (b.status !== 'Approved') return false;
   const today = DateUtil.todayStr();
   if (b.startDate > today || (b.endDate || b.startDate) < today) return false;
+  // Only once the booking has started; before that it can be cancelled instead
+  if (DateUtil.stamp(b.startDate, b.startTime) > DateUtil.nowStamp()) return false;
   return b.requesterId === user.id || can(user, 'fleet.manage');
 }
 
@@ -97,6 +114,3 @@ export function canCompleteTask(user: User, b: Booking): boolean {
   return user.role === 'Driver' && b.driverId === user.driverId && b.taskStatus === 'In Progress';
 }
 
-export function canShowPass(user: User, b: Booking): boolean {
-  return b.status === 'Approved' && (b.requesterId === user.id || b.driverId === user.driverId);
-}

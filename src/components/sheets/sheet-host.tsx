@@ -28,7 +28,7 @@ export function SheetHost() {
     <>
       <BookSheet open={is('book')} init={l.book ?? {}} />
       <BookingSheet open={is('booking')} id={l.booking?.id} />
-      <ReviewSheet open={is('review')} id={l.review?.id} />
+      <ReviewSheet open={is('review')} id={l.review?.id} startMode={l.review?.mode} />
       <ReturnSheet open={is('return')} id={l.return?.id} mode={l.return?.mode ?? 'early'} />
       <MaintenanceSheet open={is('maintenance')} carId={l.maintenance?.carId} defaultMode={l.maintenance?.mode} />
       <NotificationsSheet open={is('notifications')} />

@@ -10,22 +10,29 @@ import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { CarPhoto } from '@/components/common/car-photo';
-import { DayBar, DayBarLegend, legendLabels } from '@/components/common/day-bar';
 import { cn } from '@/lib/utils';
+import { TimeRangeTrack } from '@/components/ui/time-range-track';
+import { CalendarPopup } from '@/components/ui/calendar-popup';
 import { TimeField } from '@/components/ui/time-field';
 import { RangeCalendar } from '@/components/ui/range-calendar';
 import { DateBox } from '@/components/ui/date-box';
 import { BOOKING_SLOTS, SLOT_ORDER } from '@/lib/slots';
+import { can } from '@/lib/permissions';
+import { DriverSelect } from '@/components/common/driver-select';
 
 const SLOTS = SLOT_ORDER.map(key => ({ key, ...BOOKING_SLOTS[key] }));
 
 /**
  * Booking sheet opened from a vehicle's "Book" button.
  * The car is already chosen, so staff only answer: date & time → purpose → who drives → Book now.
+ * With `editId` it edits that booking instead (same form, filled in, "Save changes").
  */
-export function BookSheet({ open, init }: { open: boolean; init: { carId?: string; date?: string; start?: string; end?: string } }) {
+export function BookSheet({ open, init }: { open: boolean; init: { carId?: string; date?: string; start?: string; end?: string; editId?: string } }) {
   const app = useApp();
-  const { t, lang, cars, users, currentUser, checkConflict, isCarInMaintenance, closeSheet, createBooking } = app;
+  const { t, lang, cars, users, currentUser, checkConflict, isCarInMaintenance, closeSheet, createBooking, updateBooking } = app;
+  const editing = init.editId ? app.bookings.find(b => b.id === init.editId) : undefined;
+  // Managers changing an approved booking that has a company driver can also swap the driver
+  const pickDriver = !!editing && editing.status === 'Approved' && can(currentUser, 'booking.approve');
 
   const today = DateUtil.todayStr();
   const nowMins = DateUtil.toMins(DateUtil.nowTimeStr());
@@ -39,10 +46,23 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   const [range, setRange] = React.useState<{ start: string; end: string }>({ start: '08:00', end: '12:00' });
   const [purpose, setPurpose] = React.useState('');
   const [needDriver, setNeedDriver] = React.useState(false);
+  const [driverId, setDriverId] = React.useState<string | null>(null);
 
   // Reset each time the sheet opens, starting from the vehicle card's date and suggested time
   React.useEffect(() => {
     if (!open) return;
+    if (editing) {
+      setCarId(editing.carId);
+      setChangingCar(false);
+      setDate(editing.startDate);
+      setEndDate(editing.endDate || editing.startDate);
+      setPicker(null);
+      setRange({ start: editing.startTime, end: editing.endTime });
+      setPurpose(editing.purpose);
+      setNeedDriver(editing.needDriver);
+      setDriverId(editing.driverId);
+      return;
+    }
     const d = init.date && init.date >= today ? init.date : today;
     const carForSlot = init.carId ?? cars.find(c => !isCarInMaintenance(c.id, d))?.id ?? cars[0].id;
     const nowM = DateUtil.toMins(DateUtil.nowTimeStr());
@@ -71,21 +91,19 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   const { start, end } = range;
   const multiDay = endDate !== date;
   const preset = multiDay ? undefined : SLOTS.find(s => s.start === start && s.end === end);
-  const tomorrow = React.useMemo(() => DateUtil.addDays(today, 1), [today]);
-  const isCustom = (date !== today && date !== tomorrow) || date !== endDate;
 
 
   const slotProblem = (s: string, e: string): string | null => {
     if (DateUtil.toMins(e) <= DateUtil.toMins(s)) return t('time_passed');
     if (date === today && DateUtil.toMins(e) <= nowMins) return t('time_passed');
     if (!car) return null;
-    const c = checkConflict(car.id, date, s, e);
+    const c = checkConflict(car.id, date, s, e, editing?.id);
     return c.ok ? null : c.reason;
   };
 
   // When the car or date changes, jump to the first preset that still works
   React.useEffect(() => {
-    if (!open || multiDay || !preset || !slotProblem(start, end)) return;
+    if (!open || editing || multiDay || !preset || !slotProblem(start, end)) return;
     const ok = SLOTS.find(s => !slotProblem(s.start, s.end));
     if (ok) setRange({ start: ok.start, end: ok.end });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -97,25 +115,35 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
     if (DateUtil.stamp(endDate, end) <= DateUtil.nowStamp()) return t('time_passed');
     if (DateUtil.dayDiff(date, endDate) > 14) return t('max_days');
     if (!car) return null;
-    const c = checkConflict(car.id, date, start, end, undefined, endDate);
+    const c = checkConflict(car.id, date, start, end, editing?.id, endDate);
     return c.ok ? null : c.reason;
   })();
   // Existing bookings for this car on any day of the window
   const booked = car
     ? DateUtil.dateRange(date, endDate)
         .flatMap(d => occupyingBookings(app, car.id, d))
-        .filter((b, i, all) => b.status === 'Approved' && all.findIndex(x => x.id === b.id) === i)
+        .filter((b, i, all) => b.status === 'Approved' && b.id !== editing?.id && all.findIndex(x => x.id === b.id) === i)
         .map(b => app.bookings.find(x => x.id === b.id)!)
     : [];
-  const barBookings = car ? occupyingBookings(app, car.id, date).filter(b => b.status === 'Approved') : [];
+  // Blocks shown on the one-day time track
+  const dayBooked = car ? occupyingBookings(app, car.id, date).filter(b => b.id !== editing?.id).map(b => ({ id: b.id, start: b.startTime, end: b.endTime })) : [];
+  const dayPending = car
+    ? app.bookings
+        .filter(b => b.carId === car.id && b.status === 'Pending' && b.id !== editing?.id && b.startDate <= date && date <= (b.endDate || b.startDate))
+        .map(b => ({ id: b.id, start: b.startDate < date ? '00:00' : b.startTime, end: (b.endDate || b.startDate) > date ? '23:59' : b.endTime }))
+    : [];
   const windowText = multiDay
     ? `${DateUtil.friendly(date, lang)} ${start} → ${DateUtil.friendly(endDate, lang)} ${end}`
     : `${DateUtil.friendly(date, lang)} · ${start}–${end}`;
 
-  const missing = timeProblem ?? (!purpose.trim() ? t('pick_purpose') : null);
+  const missing = timeProblem ?? (!purpose.trim() ? t('pick_purpose') : pickDriver && needDriver && !driverId ? t('err_assign_driver') : null);
 
   const submit = () => {
     if (missing || !car) return;
+    if (editing) {
+      updateBooking(editing.id, { carId: car.id, date, endDate, startTime: start, endTime: end, purpose, needDriver, ...(pickDriver ? { driverId: needDriver ? driverId : null } : {}) });
+      return;
+    }
     createBooking({ carId: car.id, date, endDate, startTime: start, endTime: end, purpose, destination: '', passengers: 1, needDriver });
   };
 
@@ -123,19 +151,11 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
     <Sheet
       open={open}
       onOpenChange={o => !o && closeSheet()}
-      title={t('plan_title')}
+      title={editing ? `${t('edit_title')} · ${editing.id}` : t('plan_title')}
       footer={
-        <div className="space-y-2">
-          {car && !timeProblem && (
-            <p className="truncate text-center text-[12.5px] text-muted-foreground">
-              {car.name} · <span className="tabular">{windowText}</span> · {needDriver ? t('with_driver') : t('self_drive')}
-            </p>
-          )}
-          <Button size="lg" className="w-full" disabled={!!missing} onClick={submit}>
-            {t('book_now')}
-          </Button>
-          {missing && <p className="text-center text-[12.5px] font-medium text-muted-foreground">{missing}</p>}
-        </div>
+        <Button size="lg" className="w-full" disabled={!!missing} onClick={submit}>
+          {editing ? t('save_changes') : t('book_now')}
+        </Button>
       }
     >
       {/* 1. The chosen car */}
@@ -189,201 +209,74 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
       {/* 2. Date & time */}
       <Step n={2} icon={<CalendarDays />} label={`${t('plan_date')} & ${t('plan_time')}`} value={windowText} done={!timeProblem}>
         {/* Date Selector: Today | Tomorrow | Select Date */}
-        <div className="grid grid-cols-3 gap-1 rounded-2xl bg-muted/60 p-1 text-[13px]" role="radiogroup" aria-label={t('date')}>
-          {/* Today */}
-          <button
-            type="button"
-            onClick={() => {
-              setDate(today);
-              setEndDate(today);
-              setPicker(null);
-            }}
-            className={cn(
-              'flex h-[44px] flex-col items-center justify-center rounded-xl transition-all',
-              date === today && !multiDay && picker !== 'dates'
-                ? 'bg-background text-foreground shadow-xs font-semibold'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <span className="leading-tight text-[12.5px]">{t('today')}</span>
-            <span className="text-[10px] opacity-70 tabular leading-none">{DateUtil.formatDate(today, lang)}</span>
-          </button>
-
-          {/* Tomorrow */}
-          <button
-            type="button"
-            onClick={() => {
-              setDate(tomorrow);
-              setEndDate(tomorrow);
-              setPicker(null);
-            }}
-            className={cn(
-              'flex h-[44px] flex-col items-center justify-center rounded-xl transition-all',
-              date === tomorrow && !multiDay && picker !== 'dates'
-                ? 'bg-background text-foreground shadow-xs font-semibold'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <span className="leading-tight text-[12.5px]">{t('tomorrow')}</span>
-            <span className="text-[10px] opacity-70 tabular leading-none">{DateUtil.formatDate(tomorrow, lang)}</span>
-          </button>
-
-          {/* Select / Key in date */}
-          <button
-            type="button"
-            onClick={() => setPicker(p => (p === 'dates' ? null : 'dates'))}
-            aria-expanded={picker === 'dates'}
-            className={cn(
-              'flex h-[44px] flex-col items-center justify-center rounded-xl transition-all',
-              isCustom || picker === 'dates'
-                ? 'bg-background text-primary shadow-xs font-semibold'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <span className="flex items-center gap-1 leading-tight text-[12.5px]">
-              <CalendarDays className="size-3.5 shrink-0" />
-              <span className="truncate">{isCustom ? DateUtil.formatDate(date, lang) : t('select_date')}</span>
-            </span>
-            <span className="text-[10px] opacity-70 truncate max-w-full px-1 leading-none">
-              {isCustom ? (multiDay ? `${DateUtil.formatDate(date, lang)}–${DateUtil.formatDate(endDate, lang)}` : DateUtil.weekdayShort(date, lang)) : t('key_in_or_pick')}
-            </span>
-          </button>
-        </div>
-
-        <div className="mt-2.5 grid grid-cols-3 gap-2">
-          {SLOTS.map(s => {
-            const blocked = !!slotProblem(s.start, s.end);
-            return (
-              <Choice key={s.key} active={preset?.key === s.key} disabled={blocked} onClick={() => (setRange({ start: s.start, end: s.end }), setEndDate(date), setPicker(null))}>
-                <span className="text-[12.5px] font-semibold leading-tight">{t(s.key)}</span>
-                <span className="text-[11px] tabular opacity-70">{!blocked ? `${s.start}–${s.end}` : date === today && DateUtil.toMins(s.end) <= nowMins ? t('passed') : t('booked_slots')}</span>
-              </Choice>
-            );
-          })}
-        </div>
-
-        {/* Date range (calendar & direct key-in) + exact From/To time */}
-        <div className="mt-3 space-y-2">
+        {/* Date range (calendar & direct key-in) + time: drag on the day track, or From/To for several days */}
+        <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <DateBox label={t('start_date')} value={date} lang={lang} active={picker === 'dates'} onClick={() => setPicker(p => (p === 'dates' ? null : 'dates'))} />
             <DateBox label={t('end_date')} value={endDate} lang={lang} active={picker === 'dates'} onClick={() => setPicker(p => (p === 'dates' ? null : 'dates'))} />
           </div>
-          {picker === 'dates' && (
-            <div className="space-y-2.5 rounded-2xl border bg-card p-3 shadow-card animate-in fade-in-0 zoom-in-95">
-              <div className="flex items-center justify-between border-b pb-2">
-                <span className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
-                  <CalendarDays className="size-4 text-primary" />
-                  {t('select_date')} · <span className="font-normal text-muted-foreground">{multiDay ? `${DateUtil.formatDate(date, lang)} – ${DateUtil.formatDate(endDate, lang)}` : DateUtil.longDate(date, lang)}</span>
+          {/* Calendar pops up over the screen so the whole month shows; picking the end date closes it */}
+          <CalendarPopup open={picker === 'dates'} onOpenChange={o => !o && setPicker(null)} title={t('select_date')}>
+            <RangeCalendar
+              start={date}
+              end={endDate}
+              min={today}
+              lang={lang}
+              onChange={(s, e) => (setDate(s), setEndDate(e))}
+              onDone={() => setPicker(null)}
+              markDay={d => (car && isCarInMaintenance(car.id, d) ? 'service' : car && occupyingBookings(app, car.id, d).some(b => b.status === 'Approved') ? 'booked' : undefined)}
+              labels={{ pickStart: t('cal_pick_start'), pickEnd: t('cal_pick_end'), booked: t('cal_booked'), unavailable: t('unavailable'), prev: t('a11y_prev_month'), next: t('a11y_next_month') }}
+            />
+          </CalendarPopup>
+          {multiDay ? (
+            <div className="grid grid-cols-2 gap-2">
+              <TimeField
+                label={t('start_time')}
+                value={start}
+                open={picker === 'from'}
+                onOpenChange={o => setPicker(o ? 'from' : null)}
+                onChange={v =>
+                  setRange(r => ({
+                    start: v,
+                    // keep the end after the start on single-day bookings
+                    end: !multiDay && DateUtil.toMins(r.end) <= DateUtil.toMins(v) ? `${DateUtil.pad(Math.min(23, Number(v.slice(0, 2)) + 1))}:${v.slice(3)}` : r.end,
+                  }))
+                }
+              />
+              <TimeField label={t('end_time')} value={end} open={picker === 'to'} onOpenChange={o => setPicker(o ? 'to' : null)} onChange={v => setRange(r => ({ ...r, end: v }))} invalid={DateUtil.stamp(endDate, end) <= DateUtil.stamp(date, start)} />
+            </div>
+          ) : (
+            <div className="rounded-xl bg-muted/50 px-3 pb-2.5 pt-2">
+              <div className="mb-1.5 flex items-baseline justify-between">
+                <span className="text-[14px] font-semibold tabular">
+                  {start} – {end}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setPicker(null)}
-                  className="rounded-lg px-2 py-0.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-                >
-                  {t('close')}
-                </button>
+                <span className="text-[11px] font-medium tabular text-muted-foreground">{DateUtil.duration(date, start, endDate, end, lang)}</span>
               </div>
-
-              {/* Direct Key-In Date Inputs */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="mb-1 block text-[11px] font-medium text-muted-foreground">{t('start_date')}</label>
-                  <Input
-                    type="date"
-                    min={today}
-                    value={date}
-                    onChange={e => {
-                      if (e.target.value) {
-                        const newStart = e.target.value;
-                        setDate(newStart);
-                        if (newStart > endDate) setEndDate(newStart);
-                      }
-                    }}
-                    className="h-9 text-[12.5px] font-medium bg-muted/40"
-                    aria-label={t('start_date')}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[11px] font-medium text-muted-foreground">{t('end_date')}</label>
-                  <Input
-                    type="date"
-                    min={date}
-                    value={endDate}
-                    onChange={e => {
-                      if (e.target.value) {
-                        setEndDate(e.target.value);
-                      }
-                    }}
-                    className="h-9 text-[12.5px] font-medium bg-muted/40"
-                    aria-label={t('end_date')}
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button
-                  size="sm"
-                  className="h-8 px-3 font-semibold text-[12px]"
-                  onClick={() => setPicker(null)}
-                >
-                  {t('confirm')}
-                </Button>
-              </div>
-
-              <RangeCalendar
-                start={date}
-                end={endDate}
-                min={today}
+              <TimeRangeTrack
+                start={start}
+                end={end}
+                onChange={(s, e) => setRange({ start: s, end: e })}
+                booked={dayBooked}
+                pending={dayPending}
+                now={date === today ? nowMins : undefined}
+                invalid={!!timeProblem}
                 lang={lang}
-                onChange={(s, e) => (setDate(s), setEndDate(e))}
-                onDone={() => setPicker(null)}
-                markDay={d => (car && isCarInMaintenance(car.id, d) ? 'service' : car && occupyingBookings(app, car.id, d).some(b => b.status === 'Approved') ? 'booked' : undefined)}
-                labels={{ pickStart: t('cal_pick_start'), pickEnd: t('cal_pick_end'), booked: t('cal_booked'), unavailable: t('unavailable'), prev: t('a11y_prev_month'), next: t('a11y_next_month') }}
+                labels={{ yours: t('lg_yours'), booked: t('lg_booked'), pending: t('lg_pending'), start: t('start_time'), end: t('end_time') }}
               />
             </div>
           )}
-          <div className="grid grid-cols-2 gap-2">
-            <TimeField
-              label={t('start_time')}
-              value={start}
-              open={picker === 'from'}
-              onOpenChange={o => setPicker(o ? 'from' : null)}
-              onChange={v =>
-                setRange(r => ({
-                  start: v,
-                  // keep the end after the start on single-day bookings
-                  end: !multiDay && DateUtil.toMins(r.end) <= DateUtil.toMins(v) ? `${DateUtil.pad(Math.min(23, Number(v.slice(0, 2)) + 1))}:${v.slice(3)}` : r.end,
-                }))
-              }
-            />
-            <TimeField label={t('end_time')} value={end} open={picker === 'to'} onOpenChange={o => setPicker(o ? 'to' : null)} onChange={v => setRange(r => ({ ...r, end: v }))} invalid={DateUtil.stamp(endDate, end) <= DateUtil.stamp(date, start)} />
-          </div>
-          <p className="text-right text-[12px] font-semibold tabular text-muted-foreground">
-            {preset ? `${t(preset.key)} · ` : multiDay ? `${t('days_n', { n: DateUtil.dateRange(date, endDate).length })} · ` : ''}
-            {DateUtil.duration(date, start, endDate, end)}
-          </p>
+          {multiDay && (
+            <p className="text-right text-[12px] font-semibold tabular text-muted-foreground">
+              {preset ? `${t(preset.key)} · ` : multiDay ? `${t('days_n', { n: DateUtil.dateRange(date, endDate).length })} · ` : ''}
+              {DateUtil.duration(date, start, endDate, end, lang)}
+            </p>
+          )}
         </div>
 
-        <div className="mt-2 rounded-2xl bg-muted/60 p-3">
-          <DayBar
-            bookings={barBookings}
-            date={date}
-            interactive
-            allowOpenBooking={false}
-            highlight={{ start, end: multiDay ? '23:59' : end, ok: !timeProblem, reason: timeProblem }}
-            onUseFree={(s, e) => {
-              setEndDate(date);
-              setPicker(null);
-              setRange({ start: s, end: e });
-            }}
-          />
-          <DayBarLegend
-            className="mt-2"
-            labels={legendLabels(t)}
-            items={['free', 'booked', timeProblem ? 'clash' : 'yours', ...(date === today ? (['past', 'now'] as const) : [])]}
-          />
+        <div className={cn('mt-2', booked.length > 0 && 'rounded-2xl bg-muted/60 p-3')}>
           {booked.length > 0 && (
-            <ul className="mt-2 space-y-1.5">
+            <ul className="space-y-1.5">
               {booked.map(b => {
                 const who = users.find(u => u.id === b.requesterId);
                 const sameDay = (b.endDate || b.startDate) === b.startDate;
@@ -393,7 +286,6 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium">
                         {who?.name}
-                        {b.requesterId === currentUser.id && <span className="text-primary"> ({t('you')})</span>}
                       </span>
                       <span className="block truncate text-[11.5px] text-muted-foreground">{b.purpose}</span>
                     </span>
@@ -407,13 +299,14 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
               })}
             </ul>
           )}
-          <div className={cn('mt-2.5 flex items-start gap-2 rounded-xl px-3 py-2.5', timeProblem ? 'bg-destructive-soft text-destructive' : 'bg-success-soft text-success')} role="status">
-            {timeProblem ? <AlertTriangle className="mt-0.5 size-[18px] shrink-0" /> : <CheckCircle2 className="mt-0.5 size-[18px] shrink-0" />}
-            <div className="min-w-0">
-              <p className="text-[12.5px] font-semibold">{timeProblem ?? t('slot_free')}</p>
-              <p className="text-[13px] font-bold tabular text-foreground">{windowText}</p>
-            </div>
-          </div>
+          {/* One-line result; the chosen date and time are already shown above and in the footer */}
+          <p
+            className={cn('flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-[12px] font-medium', booked.length > 0 && 'mt-2', timeProblem ? 'bg-destructive-soft text-destructive' : 'bg-success-soft text-success')}
+            role="status"
+          >
+            {timeProblem ? <AlertTriangle className="size-3.5 shrink-0" /> : <CheckCircle2 className="size-3.5 shrink-0" />}
+            {timeProblem ?? t('slot_free')}
+          </p>
         </div>
       </Step>
 
@@ -433,11 +326,11 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
       </Step>
 
       {/* 4. Who drives */}
-      <Step n={4} icon={<UserRound />} label={t('driver_q')} value={needDriver ? t('with_driver') : t('self_drive')} done last>
+      <Step n={4} icon={<UserRound />} label={t('driver_q')} required value={needDriver ? t('with_driver') : t('self_drive')} done last>
         <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('driver_q')}>
           {[
-            { v: false, icon: CarFront, title: t('self_drive'), desc: t('self_drive_desc') },
-            { v: true, icon: UserRound, title: t('with_driver'), desc: t('with_driver_desc') },
+            { v: false, icon: CarFront, title: t('self_drive') },
+            { v: true, icon: UserRound, title: t('with_driver') },
           ].map(o => (
             <button
               key={String(o.v)}
@@ -445,18 +338,20 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
               role="radio"
               aria-checked={needDriver === o.v}
               onClick={() => setNeedDriver(o.v)}
-              className={cn('flex items-center gap-2.5 rounded-2xl border-2 p-3 text-left transition-all', needDriver === o.v ? 'border-primary bg-primary-soft/60' : 'border-transparent bg-card ring-1 ring-border')}
+              className={cn('flex items-center gap-2.5 rounded-2xl border-2 px-2.5 py-2 text-left transition-all', needDriver === o.v ? 'border-primary bg-primary-soft/60' : 'border-transparent bg-card ring-1 ring-border')}
             >
-              <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-xl', needDriver === o.v ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
-                <o.icon className="size-[18px]" />
+              <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-xl', needDriver === o.v ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
+                <o.icon className="size-4" />
               </span>
-              <span className="min-w-0">
-                <span className="block text-[13.5px] font-semibold">{o.title}</span>
-                <span className="block truncate text-[11.5px] text-muted-foreground">{o.desc}</span>
-              </span>
+              <span className="min-w-0 truncate text-[13.5px] font-semibold">{o.title}</span>
             </button>
           ))}
         </div>
+        {pickDriver && needDriver && car && editing && (
+          <div className="mt-3">
+            <DriverSelect b={{ ...editing, carId: car.id, startDate: date, endDate, startTime: start, endTime: end }} value={driverId} onChange={setDriverId} />
+          </div>
+        )}
       </Step>
     </Sheet>
   );
@@ -498,19 +393,3 @@ function Step({
   );
 }
 
-function Choice({ active, disabled, onClick, children }: { active: boolean; disabled?: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      disabled={disabled}
-      onClick={onClick}
-      className={cn(
-        'flex h-[60px] flex-col items-center justify-center gap-0.5 rounded-2xl border px-1 text-center transition-all disabled:opacity-35',
-        active ? 'border-primary bg-primary-soft text-primary ring-1 ring-primary' : 'bg-card hover:bg-muted'
-      )}
-    >
-      {children}
-    </button>
-  );
-}

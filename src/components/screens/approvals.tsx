@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { AlertTriangle, CarFront, Check, ClipboardCheck, UserRound, X } from 'lucide-react';
+import { AlertTriangle, CarFront, Check, ClipboardCheck, Pencil, UserRound, X } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { canReview } from '@/lib/permissions';
 import { PageHeader } from '@/components/ui/card';
@@ -21,7 +21,8 @@ export function ApprovalsScreen() {
     .filter(b => canReview(currentUser, b))
     .sort((a, b) => (a.startDate + a.startTime).localeCompare(b.startDate + b.startTime));
   const decided = bookings
-    .filter(b => (b.status === 'Approved' || b.status === 'Rejected' || b.status === 'Completed') && b.approverId && b.requesterId !== currentUser.id)
+    // Requests this approver said yes to (still upcoming, in use, or already completed)
+    .filter(b => (b.status === 'Approved' || b.status === 'Completed') && b.approverId && b.requesterId !== currentUser.id)
     .filter(b => currentUser.role === 'Admin' || b.approverId === currentUser.id)
     .sort((a, b) => (b.decisionAt ?? '').localeCompare(a.decisionAt ?? ''));
   const list = filter === 'pending' ? pending : decided;
@@ -34,7 +35,7 @@ export function ApprovalsScreen() {
         onChange={setFilter}
         options={[
           { value: 'pending', label: t('f_pending'), count: pending.length },
-          { value: 'decided', label: t('f_decided') },
+          { value: 'decided', label: t('st_Approved') },
         ]}
       />
       <div className="mt-4 space-y-3">
@@ -79,7 +80,7 @@ function PendingCard({ b }: { b: Booking }) {
             aria-checked={assign === o.v}
             onClick={o.onClick}
             className={cn(
-              'flex h-11 items-center justify-center gap-2 rounded-xl border-2 px-2 text-[13px] font-semibold transition-all',
+              'flex h-10 items-center justify-center gap-1.5 rounded-xl border-2 px-2 text-[12.5px] font-semibold transition-all',
               assign === o.v ? 'border-primary bg-primary-soft text-primary' : 'border-transparent bg-muted/60 text-foreground/80 hover:bg-muted'
             )}
           >
@@ -107,7 +108,10 @@ function PendingCard({ b }: { b: Booking }) {
         beforeFooter={choice}
         footer={
           <>
-            <Button variant="destructive-soft" size="sm" className="h-10 flex-1" onClick={() => openSheet({ type: 'review', id: b.id })}>
+            <Button variant="outline" size="sm" className="h-10 w-10 shrink-0 px-0" aria-label={t('edit')} onClick={() => openSheet({ type: 'book', editId: b.id })}>
+              <Pencil />
+            </Button>
+            <Button variant="destructive-soft" size="sm" className="h-10 flex-1" onClick={() => openSheet({ type: 'review', id: b.id, mode: 'reject' })}>
               <X /> {t('reject')}
             </Button>
             <Button size="sm" className="h-10 flex-[1.4]" disabled={!ready} onClick={approve}>

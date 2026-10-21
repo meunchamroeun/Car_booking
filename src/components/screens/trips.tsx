@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarPlus, CalendarX2, Plus } from 'lucide-react';
+import { CalendarPlus, CalendarX2 } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { isUpcoming } from '@/lib/selectors';
 import { Booking } from '@/types';
@@ -35,15 +35,7 @@ export function TripsScreen() {
 
   return (
     <div>
-      <PageHeader
-        title={t('trips_title')}
-        subtitle={t('trips_sub')}
-        action={
-          <Button size="icon" onClick={goBook} aria-label={t('new_booking')}>
-            <Plus />
-          </Button>
-        }
-      />
+      <PageHeader title={t('trips_title')} subtitle={t('trips_sub')} />
       <Segmented
         value={filter}
         onChange={setFilter}

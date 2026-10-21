@@ -12,11 +12,11 @@ import { Switch } from '@/components/ui/switch';
 import { Segmented } from '@/components/ui/segmented';
 import { cn } from '@/lib/utils';
 
-const ROLE_ORDER: UserRole[] = ['Employee', 'Approver', 'Driver', 'Admin'];
+// Driver accounts are not offered in the demo; company drivers are still assigned to bookings
+const ROLE_ORDER: UserRole[] = ['Employee', 'Approver', 'Admin'];
 
 export function ProfileScreen() {
-  const { currentUser, users, cars, bookings, t, theme, setTheme, lang, setLang, switchUser, resetDemoData } = useApp();
-  const mine = currentUser.role === 'Driver' ? bookings.filter(b => b.driverId === currentUser.driverId) : bookings.filter(b => b.requesterId === currentUser.id);
+  const { currentUser, users, cars, t, theme, setTheme, lang, setLang, switchUser, resetDemoData } = useApp();
 
   return (
     <div className="pt-2">
@@ -31,19 +31,7 @@ export function ProfileScreen() {
             </Badge>
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-3 divide-x divide-white/10 rounded-2xl bg-white/[0.07] py-3 text-center">
-          {[
-            { label: t('stat_trips'), value: mine.length },
-            { label: t('stat_pending'), value: mine.filter(b => b.status === 'Pending' || (b.status === 'Approved' && currentUser.role === 'Driver')).length },
-            { label: t('stat_done'), value: mine.filter(b => b.status === 'Completed').length },
-          ].map(s => (
-            <div key={s.label}>
-              <p className="text-[20px] font-bold tabular">{s.value}</p>
-              <p className="text-[11.5px] text-white/60">{s.label}</p>
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 space-y-1 text-[13px] text-white/75">
+        <div className="mt-4 space-y-1 text-[13px] text-white/75">
           <p className="flex items-center gap-2">
             <Mail className="size-3.5" /> {currentUser.email}
           </p>

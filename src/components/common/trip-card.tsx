@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { BookingStatusBadge } from '@/components/common/status';
 import { CarPhoto } from '@/components/common/car-photo';
-import { Clock, MapPin, UserRound, Users } from 'lucide-react';
+import { Clock, UserRound } from 'lucide-react';
 
 /**
  * One trip in a list. `perspective` decides who is the main subject:
@@ -37,17 +37,17 @@ export function TripCard({
 
   return (
     <Card className="overflow-hidden">
-      <button type="button" onClick={open} className="block w-full p-4 text-left transition-colors hover:bg-muted/40">
+      <button type="button" onClick={open} className="block w-full p-3.5 text-left transition-colors hover:bg-muted/40">
         <div className="flex items-start gap-3">
           {perspective === 'requester' ? (
-            <CarPhoto car={car} className="h-11 w-16 shrink-0 rounded-xl" />
+            <CarPhoto car={car} className="h-10 w-14 shrink-0 rounded-lg" />
           ) : (
-            <Avatar initials={requester?.initials ?? '?'} seed={requester?.id} className="size-11" />
+            <Avatar initials={requester?.initials ?? '?'} seed={requester?.id} className="size-10" />
           )}
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="truncate text-[15px] font-semibold leading-snug">{perspective === 'requester' ? car?.name : requester?.name}</p>
+                <p className="truncate text-[14.5px] font-semibold leading-snug">{perspective === 'requester' ? car?.name : requester?.name}</p>
                 <p className="truncate text-[12.5px] text-muted-foreground">
                   {perspective === 'requester' ? (
                     <span className="font-mono">{car?.plate}</span>
@@ -63,33 +63,22 @@ export function TripCard({
           </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-[13px]">
-          <span className="col-span-2 flex items-center gap-1.5 font-semibold">
-            <Clock className="size-3.5 text-muted-foreground" />
-            <span className="truncate tabular">
-              {DateUtil.window(b, lang)}
-            </span>
+        {/* When and who drives; the request form no longer asks for a place or passenger count */}
+        <div className="mt-2.5 flex items-center gap-x-3 text-[12.5px]">
+          <span className="flex min-w-0 items-center gap-1.5 font-semibold">
+            <Clock className="size-3.5 shrink-0 text-muted-foreground" />
+            <span className="truncate tabular">{DateUtil.window(b, lang)}</span>
           </span>
-          {b.destination && (
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <MapPin className="size-3.5 shrink-0" />
-              <span className="truncate">{b.destination}</span>
-            </span>
-          )}
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <Users className="size-3.5" />
-            {t('pax', { n: b.passengers })}
-          </span>
-          <span className="flex items-center gap-1.5 text-muted-foreground">
+          <span className="ml-auto flex shrink-0 items-center gap-1 text-muted-foreground">
             <UserRound className="size-3.5" />
-            <span className="truncate">{b.needDriver ? driver?.name ?? t('with_driver') : t('self_drive')}</span>
+            <span className="max-w-[110px] truncate">{b.needDriver ? driver?.name ?? t('with_driver') : t('self_drive')}</span>
           </span>
         </div>
 
-        {perspective !== 'driver' && b.purpose && <p className="mt-2.5 line-clamp-2 rounded-lg bg-muted/60 px-3 py-2 text-[12.5px] text-muted-foreground">{b.purpose}</p>}
+        {perspective !== 'driver' && b.purpose && <p className="mt-2 line-clamp-2 rounded-lg bg-muted/60 px-2.5 py-1.5 text-[12px] text-muted-foreground">{b.purpose}</p>}
       </button>
-      {beforeFooter && <div className="border-t px-4 py-3">{beforeFooter}</div>}
-      {footer && <div className="flex gap-2 border-t px-4 py-3">{footer}</div>}
+      {beforeFooter && <div className="border-t px-3.5 py-3">{beforeFooter}</div>}
+      {footer && <div className="flex gap-2 border-t px-3.5 py-2.5">{footer}</div>}
     </Card>
   );
 }

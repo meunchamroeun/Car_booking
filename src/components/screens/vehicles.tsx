@@ -1,21 +1,21 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarDays, CarFront, ChevronRight, Clock, Fuel, LayoutList, MapPin, Search, Users, Wrench } from 'lucide-react';
+import { CalendarDays, CarFront, ChevronRight, Clock, LayoutList, Search, Users, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { can } from '@/lib/permissions';
 import { occupyingBookings } from '@/lib/fleet-service';
-import { Car, CarType } from '@/types';
+import { Car } from '@/types';
 import { PageHeader, Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
-import { Chips, Segmented } from '@/components/ui/segmented';
+import { Segmented } from '@/components/ui/segmented';
 import { EmptyState } from '@/components/ui/empty';
 import { CarPhoto } from '@/components/common/car-photo';
-import { DAY_END, DAY_START, DayBar, DayBarLegend, legendLabels } from '@/components/common/day-bar';
+import { DAY_END, DAY_START } from '@/components/common/day-bar';
 import { RangeCalendar } from '@/components/ui/range-calendar';
 import { cn } from '@/lib/utils';
 import { BOOKING_SLOTS, SLOT_ORDER } from '@/lib/slots';
@@ -27,7 +27,7 @@ const SLOT_RANGE = {
 
 export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
   const app = useApp();
-  const { t, viewMode, setViewMode, selectedDate, setSelectedDate, selectedSlot, setSelectedSlot, filterType, setFilterType, searchQuery, setSearchQuery, cars, lang } = app;
+  const { t, viewMode, setViewMode, selectedDate, setSelectedDate, selectedSlot, setSelectedSlot, searchQuery, setSearchQuery, cars, lang } = app;
 
   const [calendarOpen, setCalendarOpen] = React.useState(false);
   const today = React.useMemo(() => DateUtil.todayStr(), []);
@@ -37,7 +37,6 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
   const filtered = React.useMemo(() => {
     return cars
       .filter(c => {
-        if (filterType !== 'all' && c.type !== filterType) return false;
         const q = searchQuery.trim().toLowerCase();
         if (q && !c.name.toLowerCase().includes(q) && !c.plate.toLowerCase().includes(q)) return false;
         return true;
@@ -49,10 +48,10 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
         if (!aAvail && bAvail) return 1;
         return 0;
       });
-  }, [cars, filterType, searchQuery, app, selectedDate, selectedSlot]);
+  }, [cars, searchQuery, app, selectedDate, selectedSlot]);
 
   return (
-    <div id={embedded ? 'vehicles' : undefined} className={embedded ? 'mt-6 scroll-mt-20' : ''}>
+    <div id={embedded ? 'vehicles' : undefined} className={embedded ? 'scroll-mt-20 !mt-5 first:!mt-0' : ''}>
       <PageHeader
         compact={embedded}
         title={t('vehicles_title')}
@@ -71,108 +70,43 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
         }
       />
 
-      {/* Compact date selector: Today | Tomorrow | Select / Key-in date */}
-      <div className="grid grid-cols-3 gap-1 rounded-2xl bg-muted/60 p-1 text-[13px]" role="radiogroup" aria-label={t('date')}>
-        {/* Today */}
-        <button
-          type="button"
-          onClick={() => {
-            setSelectedDate(today);
-            setCalendarOpen(false);
-          }}
-          className={cn(
-            'flex h-[44px] flex-col items-center justify-center rounded-xl transition-all',
-            selectedDate === today && !calendarOpen
-              ? 'bg-background text-foreground shadow-xs font-semibold'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          <span className="leading-tight text-[12.5px]">{t('today')}</span>
-          <span className="text-[10px] opacity-70 tabular leading-none">{DateUtil.formatDate(today, lang)}</span>
-        </button>
-
-        {/* Tomorrow */}
-        <button
-          type="button"
-          onClick={() => {
-            setSelectedDate(tomorrow);
-            setCalendarOpen(false);
-          }}
-          className={cn(
-            'flex h-[44px] flex-col items-center justify-center rounded-xl transition-all',
-            selectedDate === tomorrow && !calendarOpen
-              ? 'bg-background text-foreground shadow-xs font-semibold'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          <span className="leading-tight text-[12.5px]">{t('tomorrow')}</span>
-          <span className="text-[10px] opacity-70 tabular leading-none">{DateUtil.formatDate(tomorrow, lang)}</span>
-        </button>
-
-        {/* Select / Key in date */}
-        <button
-          type="button"
-          onClick={() => setCalendarOpen(o => !o)}
-          aria-expanded={calendarOpen}
-          className={cn(
-            'flex h-[44px] flex-col items-center justify-center rounded-xl transition-all',
-            isCustom || calendarOpen
-              ? 'bg-background text-primary shadow-xs font-semibold'
-              : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          <span className="flex items-center gap-1 leading-tight text-[12.5px]">
-            <CalendarDays className="size-3.5 shrink-0" />
-            <span className="truncate">{isCustom ? DateUtil.formatDate(selectedDate, lang) : t('select_date')}</span>
-          </span>
-          <span className="text-[10px] opacity-70 truncate max-w-full px-1 leading-none">
-            {isCustom ? DateUtil.weekdayShort(selectedDate, lang) : t('key_in_or_pick')}
-          </span>
-        </button>
+      {/* Date: Today | Tomorrow | a box to type a date or pick it from the calendar */}
+      <div className="grid grid-cols-[1fr_1fr_1.45fr] gap-0.5 rounded-xl bg-muted/60 p-0.5" role="radiogroup" aria-label={t('date')}>
+        {[
+          { d: today, label: t('today') },
+          { d: tomorrow, label: t('tomorrow') },
+        ].map(o => (
+          <button
+            key={o.d}
+            type="button"
+            role="radio"
+            aria-checked={selectedDate === o.d}
+            onClick={() => (setSelectedDate(o.d), setCalendarOpen(false))}
+            className={cn(
+              'h-8 rounded-[10px] text-[12.5px] transition-all',
+              selectedDate === o.d ? 'bg-primary font-semibold text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
+            )}
+          >
+            {o.label}
+          </button>
+        ))}
+        <DateKeyIn
+          value={selectedDate}
+          min={today}
+          active={isCustom}
+          open={calendarOpen}
+          onChange={d => (setSelectedDate(d), setCalendarOpen(false))}
+          onToggle={() => setCalendarOpen(o => !o)}
+          onOpen={() => setCalendarOpen(true)}
+          label={t('key_in_date')}
+          placeholder={t('date_ph')}
+          pickLabel={t('select_date')}
+        />
       </div>
 
-      {/* Expandable Calendar & Key-In Date Picker */}
+      {/* Calendar to pick a date */}
       {calendarOpen && (
-        <div className="mt-2.5 rounded-2xl border bg-card p-3 shadow-card animate-in fade-in-0 zoom-in-95">
-          <div className="mb-2.5 flex items-center justify-between border-b pb-2">
-            <span className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
-              <CalendarDays className="size-4 text-primary" />
-              {t('select_date')} · <span className="font-normal text-muted-foreground">{DateUtil.longDate(selectedDate, lang)}</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => setCalendarOpen(false)}
-              className="rounded-lg px-2 py-0.5 text-[12px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              {t('close')}
-            </button>
-          </div>
-
-          {/* Direct Key-In Date Input */}
-          <div className="mb-3 flex items-center gap-2">
-            <div className="relative flex-1">
-              <Input
-                type="date"
-                min={today}
-                value={selectedDate}
-                onChange={e => {
-                  if (e.target.value) {
-                    setSelectedDate(e.target.value);
-                  }
-                }}
-                className="h-9 text-[13px] font-medium bg-muted/40"
-                aria-label={t('key_in_date')}
-              />
-            </div>
-            <Button
-              size="sm"
-              className="h-9 px-3.5 font-semibold"
-              onClick={() => setCalendarOpen(false)}
-            >
-              {t('confirm')}
-            </Button>
-          </div>
-
+        <div className="mt-2 animate-in fade-in-0 zoom-in-95">
           <RangeCalendar
             mode="single"
             start={selectedDate}
@@ -186,6 +120,7 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
             onDone={() => setCalendarOpen(false)}
             labels={{
               pickStart: t('cal_pick_start'),
+              pickSingle: t('cal_pick_single'),
               pickEnd: t('cal_pick_end'),
               booked: t('cal_booked'),
               unavailable: t('unavailable'),
@@ -197,60 +132,53 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
       )}
 
       <div className="mt-3 space-y-3">
-        <Segmented
-          size="lg"
-          value={selectedSlot}
-          onChange={setSelectedSlot}
-          ariaLabel={t('a11y_time_slot')}
-          options={(
+        {/* Time slot: one-line chips, scroll sideways if the screen is narrow */}
+        <div className="no-scrollbar flex gap-[3px] overflow-x-auto" role="radiogroup" aria-label={t('a11y_time_slot')}>
+          {(
             [
               ['all', 'full_day'],
               ['morning', 'morning'],
               ['afternoon', 'afternoon'],
             ] as const
-          ).map(([value, key]) => ({
-            value,
-            label: (
-              <span className="flex flex-col items-center leading-tight">
-                <span>{t(key)}</span>
-                <span className="text-[11px] font-medium tabular opacity-70">
-                  {BOOKING_SLOTS[key].start}–{BOOKING_SLOTS[key].end}
-                </span>
-              </span>
-            ),
-          }))}
-        />
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground" />
-          <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder={t('search_hint')} className="pl-10" aria-label={t('search_hint')} />
+          ).map(([value, key]) => {
+            const on = selectedSlot === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => setSelectedSlot(value)}
+                className={cn(
+                  'h-8 flex-auto shrink-0 whitespace-nowrap rounded-full border px-1.5 text-[11.5px] font-semibold transition-colors',
+                  on ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                )}
+              >
+                {t(key)}
+                {value !== 'all' && (
+                  <span className="ml-0.5 font-medium tabular opacity-75">
+                    {BOOKING_SLOTS[key].start}–{BOOKING_SLOTS[key].end}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
-        <Chips<'all' | CarType>
-          value={filterType}
-          onChange={setFilterType}
-          options={(['all', 'Sedan', 'SUV', 'Van', 'Pickup'] as const).map(v => ({
-            value: v,
-            label: t(v === 'all' ? 'type_all' : `type_${v}`),
-            count: v === 'all' ? undefined : cars.filter(c => c.type === v).length,
-          }))}
-        />
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder={t('search_hint')} className="h-9 rounded-xl pl-8 text-[13px]" aria-label={t('search_hint')} />
+        </div>
       </div>
 
       <div className="mt-4">
         {filtered.length === 0 ? (
           <EmptyState
             icon={<CarFront />}
-            title={searchQuery ? (lang === 'kh' ? 'រកមិនឃើញរថយន្ត' : 'No matching vehicles') : t('no_results')}
-            desc={searchQuery || filterType !== 'all' ? (lang === 'kh' ? 'សូមសាកល្បងផ្លាស់ប្តូរពាក្យស្វែងរក ឬប្រភេទរថយន្ត' : 'Try clearing your filters or search keywords') : undefined}
+            title={searchQuery ? t('no_match_title') : t('no_results')}
+            desc={searchQuery ? t('no_match_desc') : undefined}
           />
         ) : viewMode === 'cards' ? (
           <div className="space-y-3">
-            <div className="rounded-xl border bg-card px-3 py-2">
-              <DayBarLegend
-                labels={legendLabels(t)}
-                items={['free', 'booked', ...(selectedDate === DateUtil.todayStr() ? (['past', 'now'] as const) : []), 'service']}
-              />
-              <p className="mt-1 text-[11px] text-muted-foreground">{t('bar_tap_hint')}</p>
-            </div>
             {filtered.map(c => (
               <VehicleCard key={c.id} car={c} />
             ))}
@@ -263,13 +191,99 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
   );
 }
 
-/** Slot to pre-select when booking: the one picked in the filter, if it's still ahead and free for this car. */
-const BOOK_SLOTS: [string, string][] = SLOT_ORDER.map(k => [BOOKING_SLOTS[k].start, BOOKING_SLOTS[k].end]);
-/** Name of the slot for a [start, end] window, e.g. 'morning'; null for a custom window. */
-function slotKeyOf([s, e]: [string, string]) {
-  return SLOT_ORDER.find(k => BOOKING_SLOTS[k].start === s && BOOKING_SLOTS[k].end === e) ?? null;
+/** Date box: type dd/mm/yyyy (slashes are added while typing) or tap the icon to pick from the calendar. */
+function DateKeyIn({
+  value,
+  min,
+  active,
+  open,
+  onChange,
+  onToggle,
+  onOpen,
+  label,
+  placeholder,
+  pickLabel,
+}: {
+  value: string;
+  min: string;
+  active: boolean;
+  open: boolean;
+  onChange: (date: string) => void;
+  onToggle: () => void;
+  onOpen: () => void;
+  label: string;
+  placeholder: string;
+  pickLabel: string;
+}) {
+  const shown = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
+  // Always shows the chosen day (today by default), so it can be edited in place
+  const [text, setText] = React.useState(shown(value));
+  const [bad, setBad] = React.useState(false);
+  React.useEffect(() => {
+    setText(shown(value));
+    setBad(false);
+  }, [value]);
+
+  // A full date that exists and is not in the past, or null
+  const parse = (digits: string) => {
+    if (digits.length !== 8) return null;
+    const iso = `${digits.slice(4)}-${digits.slice(2, 4)}-${digits.slice(0, 2)}`;
+    const d = new Date(`${iso}T00:00`);
+    return !isNaN(d.getTime()) && DateUtil.toDateStr(d) === iso && iso >= min ? iso : null;
+  };
+  const type = (raw: string) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 8);
+    setText(digits.length > 4 ? `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}` : digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits);
+    const iso = parse(digits);
+    setBad(digits.length === 8 && !iso);
+    if (iso) onChange(iso);
+  };
+  const leave = () => {
+    if (!parse(text.replace(/\D/g, ''))) setText(shown(value));
+    setBad(false);
+  };
+
+  return (
+    // Looks and acts like the Today / Tomorrow buttons: tap anywhere to open the calendar, or type a date
+    <div
+      onClick={e => !(e.target as HTMLElement).closest('button') && !open && onOpen()}
+      className={cn(
+        'flex h-8 min-w-0 cursor-pointer items-center gap-0.5 rounded-[10px] pl-0.5 pr-1.5 transition-all',
+        bad ? 'bg-background ring-1 ring-destructive' : active ? 'bg-primary shadow-sm' : open ? 'bg-background shadow-xs ring-1 ring-primary/30' : 'hover:bg-background/70'
+      )}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={pickLabel}
+        aria-expanded={open}
+        className={cn(
+          'flex size-7 shrink-0 items-center justify-center rounded-md transition-colors',
+          active && !bad ? 'text-primary-foreground' : open ? 'bg-primary-soft text-primary' : 'text-muted-foreground hover:text-foreground'
+        )}
+      >
+        <CalendarDays className="size-4" />
+      </button>
+      <input
+        value={text}
+        onChange={e => type(e.target.value)}
+        onBlur={leave}
+        onKeyDown={e => e.key === 'Enter' && e.currentTarget.blur()}
+        inputMode="numeric"
+        placeholder={placeholder}
+        aria-label={label}
+        aria-invalid={bad}
+        className={cn(
+          'min-w-0 flex-1 cursor-pointer bg-transparent text-[12.5px] tabular outline-none placeholder:text-muted-foreground focus:cursor-text focus-visible:ring-0 focus-visible:ring-offset-0',
+          active && !bad ? 'font-semibold text-primary-foreground placeholder:text-primary-foreground/70' : 'text-muted-foreground focus:text-foreground'
+        )}
+      />
+    </div>
+  );
 }
 
+/** Slot to pre-select when booking: the one picked in the filter, if it's still ahead and free for this car. */
+const BOOK_SLOTS: [string, string][] = SLOT_ORDER.map(k => [BOOKING_SLOTS[k].start, BOOKING_SLOTS[k].end]);
 const MIN_GAP = 60; // shortest free stretch worth offering, in minutes
 
 /**
@@ -351,36 +365,29 @@ function VehicleCard({ car }: { car: Car }) {
         onKeyDown: (e: React.KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), book()),
       })}
     >
-      <div className="flex gap-3 p-4">
-        <CarPhoto car={car} zoomable className="h-[78px] w-[112px] shrink-0 rounded-2xl" />
+      {/* Name and details at the top beside the photo; the status floats top-right and the name wraps around it */}
+      <div className="flex items-start gap-3 p-3">
+        <CarPhoto car={car} zoomable className="h-16 w-[92px] shrink-0 rounded-xl" />
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <p className="truncate text-[15px] font-semibold leading-snug">{car.name}</p>
-            <Badge tone={status.tone} dot className="shrink-0">
-              {status.label}
-            </Badge>
-          </div>
-          <p className="font-mono text-[12px] text-muted-foreground">{car.plate}</p>
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Users className="size-3.5" />
-              {t('seats', { n: car.seats })}
+          <Badge tone={status.tone} dot className="float-right ml-2 mt-0.5 px-2 py-0 text-[10.5px]">
+            {status.label}
+          </Badge>
+          <p className="text-[14.5px] font-semibold leading-tight">{car.name}</p>
+          <p className="mt-0.5 flex items-center gap-1.5 truncate text-[11.5px] text-muted-foreground">
+            <span className="font-mono">{car.plate}</span>
+            <span aria-hidden>·</span>
+            <span className="flex items-center gap-0.5">
+              <Users className="size-3" />
+              {car.seats}
             </span>
-            <span className="flex items-center gap-1">
-              <CarFront className="size-3.5" />
-              {t(`type_${car.type}`)}
-            </span>
-            {car.fuel && (
-              <span className="flex items-center gap-1">
-                <Fuel className="size-3.5" />
-                {car.fuel}
-              </span>
-            )}
-          </div>
+            <span aria-hidden>·</span>
+            <span>{t(`type_${car.type}`)}</span>
+          </p>
         </div>
       </div>
 
-      <div className="px-4 pb-3">
+      {/* Maintenance note or today's bookings; nothing when the car is free */}
+      <div className={cn('px-3', (inService || busy.length > 0) && 'pb-3')}>
         {inService ? (
           <div
             className={cn(
@@ -408,7 +415,7 @@ function VehicleCard({ car }: { car: Car }) {
                 <span className="flex size-5 items-center justify-center rounded-full bg-warning/20">
                   <Wrench className="size-3 text-warning" />
                 </span>
-                <span>{t('nt_maint_title')}</span>
+                <span>{t('st_service')}</span>
               </div>
               {car.maintenance?.estimatedDate && (
                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-warning/25 bg-background/85 px-2.5 py-0.5 text-[11px] font-semibold text-warning shadow-xs whitespace-nowrap backdrop-blur-xs">
@@ -430,27 +437,18 @@ function VehicleCard({ car }: { car: Car }) {
               {car.maintenance?.reason || t('nt_maint_title')}
             </p>
 
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11.5px] text-muted-foreground">
-              {car.maintenance?.workshop ? (
-                <span className="flex items-center gap-1 truncate">
-                  <MapPin className="size-3 shrink-0 text-muted-foreground/80" />
-                  <span className="truncate">{car.maintenance.workshop}</span>
-                </span>
-              ) : (
-                <span />
-              )}
-              {canManage && (
-                <span className="ml-auto inline-flex items-center gap-0.5 font-medium text-warning group-hover/maint:underline">
+            {canManage && (
+              <div className="mt-2 flex justify-end text-[11.5px]">
+                <span className="inline-flex items-center gap-0.5 font-medium text-warning group-hover/maint:underline">
                   {t('manage')} <ChevronRight className="size-3" />
                 </span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         ) : (
           <>
-            <DayBar bookings={busy} date={selectedDate} interactive />
             {busy.length > 0 && (
-              <ul className="mt-2.5 space-y-1.5">
+              <ul className="space-y-1.5">
                 {busy.map(b => {
                   const who = users.find(u => u.id === b.requesterId);
                   const mine = b.requesterId === currentUser.id;
@@ -470,7 +468,6 @@ function VehicleCard({ car }: { car: Car }) {
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[13px] font-semibold">
                             {who?.name ?? '—'}
-                            {mine && <span className="ml-1 font-medium text-primary">({t('you')})</span>}
                           </span>
                           <span className="block truncate text-[11.5px] text-muted-foreground" title={b.purpose}>
                             {b.purpose || who?.dept}
@@ -490,33 +487,34 @@ function VehicleCard({ car }: { car: Car }) {
       </div>
 
       {(canBook || canManage) && (
-        <div className="flex gap-2 border-t px-4 py-3">
+        <div className="flex gap-2 border-t px-3 py-2.5">
           {canManage && (
-            <Button variant="outline" size="sm" className="h-10" onClick={e => (e.stopPropagation(), openSheet({ type: 'maintenance', carId: car.id }))}>
+            <Button variant="outline" size="sm" className="h-9" onClick={e => (e.stopPropagation(), openSheet({ type: 'maintenance', carId: car.id }))}>
               <Wrench /> {inService ? t('manage') : t('set_service')}
             </Button>
           )}
           {canBook && (
             <Button
               size="sm"
-              className="h-10 flex-1"
+              className="h-9 min-w-0 flex-1"
               variant={!win && anyWin ? 'outline' : 'default'}
               disabled={!targetWin}
               onClick={e => (e.stopPropagation(), book())}
             >
               {win ? (
-                <span className="flex items-center gap-1.5">
+                <span className="flex min-w-0 items-center gap-1.5">
                   {t('book_short')}
                   <span className="opacity-60">·</span>
-                  {slotKeyOf(win) && <span className="font-medium opacity-90">{t(slotKeyOf(win)!)}</span>}
                   <span className="tabular">
                     {win[0]}–{win[1]}
                   </span>
                 </span>
               ) : anyWin ? (
-                <span className="flex items-center gap-1.5">
-                  <span className="opacity-75">{selectedSlot === 'morning' ? (lang === 'kh' ? 'ពេញពេលព្រឹក · កក់' : 'Morning full · Book') : (lang === 'kh' ? 'ពេញពេលរសៀល · កក់' : 'Afternoon full · Book')}</span>
-                  <span className="tabular font-semibold">{anyWin[0]}–{anyWin[1]}</span>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate opacity-75">{t('slot_full_book', { slot: t(selectedSlot) })}</span>
+                  <span className="shrink-0 tabular font-semibold">
+                    {anyWin[0]}–{anyWin[1]}
+                  </span>
                 </span>
               ) : (
                 t('unavailable')
@@ -543,16 +541,25 @@ function Timeline({ cars }: { cars: Car[] }) {
 
   return (
     <Card className="overflow-hidden">
-      <p className="border-b px-4 py-2.5 text-[12.5px] text-muted-foreground">{canBook ? t('timeline_hint') : DateUtil.friendly(selectedDate, app.lang)}</p>
-      <div className="no-scrollbar overflow-x-auto">
-        <div className="min-w-[640px]">
+      <p className="border-b px-3 py-2 text-[11.5px] text-muted-foreground">{canBook ? t('timeline_hint') : DateUtil.friendly(selectedDate, app.lang)}</p>
+      {/* Fits the phone width: one column per hour, labels every 2 hours */}
+      <div>
+        <div>
           <div className="flex border-b bg-muted/40">
-            <div className="sticky left-0 z-10 w-[120px] shrink-0 bg-muted/90 backdrop-blur" />
-            {hours.map(h => (
-              <div key={h} className="flex-1 border-l py-1.5 text-center text-[11px] font-semibold tabular text-muted-foreground">
-                {DateUtil.pad(h)}
-              </div>
-            ))}
+            <div className="w-[92px] shrink-0" />
+            <div className="relative h-6 flex-1">
+              {hours
+                .filter(h => (h - DAY_START) % 2 === 0)
+                .map(h => (
+                  <span
+                    key={h}
+                    className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] font-semibold tabular text-muted-foreground first:translate-x-0 first:pl-1"
+                    style={{ left: `${((h - DAY_START) / hours.length) * 100}%` }}
+                  >
+                    {DateUtil.pad(h)}
+                  </span>
+                ))}
+            </div>
           </div>
           {cars.map(c => {
             const busy = occupyingBookings(app, c.id, selectedDate);
@@ -566,11 +573,11 @@ function Timeline({ cars }: { cars: Car[] }) {
                   disabled={!win}
                   onClick={() => win && openBooking(c.id, win[0], win[1])}
                   aria-label={win ? `${t('book_short')} ${c.name} ${win[0]}–${win[1]}` : c.name}
-                  className="group sticky left-0 z-10 flex w-[120px] shrink-0 items-center border-r bg-card px-3 py-2.5 text-left transition-colors enabled:hover:bg-primary-soft enabled:active:bg-primary-soft disabled:cursor-default"
+                  className="group flex h-10 w-[92px] shrink-0 items-center border-r bg-card px-2 text-left transition-colors enabled:hover:bg-primary-soft enabled:active:bg-primary-soft disabled:cursor-default"
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[12.5px] font-semibold group-enabled:group-hover:text-primary">{c.name}</span>
-                    <span className="block font-mono text-[10.5px] text-muted-foreground">{c.plate}</span>
+                    <span className="block truncate text-[11.5px] font-semibold leading-tight group-enabled:group-hover:text-primary">{c.name}</span>
+                    <span className="block font-mono text-[9.5px] leading-tight text-muted-foreground">{c.plate}</span>
                   </span>
                 </button>
                 <div className="relative flex flex-1">
@@ -581,20 +588,20 @@ function Timeline({ cars }: { cars: Car[] }) {
                       disabled={!canBook || service || (isToday && (h + 1) * 60 <= nowM)}
                       aria-label={`${c.name} ${DateUtil.pad(h)}:00`}
                       onClick={() => openBooking(c.id, `${DateUtil.pad(h)}:00`, `${DateUtil.pad(h + 1)}:00`)}
-                      className="flex-1 border-l transition-colors enabled:hover:bg-primary-soft disabled:cursor-default"
+                      className={cn('flex-1 transition-colors enabled:hover:bg-primary-soft disabled:cursor-default', h > DAY_START && 'border-l border-border/60')}
                     />
                   ))}
                   {/* Time already passed today: grey diagonal stripes (//////) */}
                   {isToday && now > 0 && (
                     <div
                       aria-hidden
-                      className="pointer-events-none absolute inset-y-0 left-0 bg-[repeating-linear-gradient(135deg,hsl(var(--muted-foreground)/0.22)_0_2px,transparent_2px_7px)]"
+                      className="pointer-events-none absolute inset-y-0 left-0 bg-[repeating-linear-gradient(135deg,hsl(var(--muted-foreground)/0.2)_0_1.5px,transparent_1.5px_5px)]"
                       style={{ width: `${Math.min(now, 100)}%` }}
                     />
                   )}
                   {service && (
-                    <div className="absolute inset-1 flex items-center justify-center rounded-lg bg-[repeating-linear-gradient(45deg,hsl(var(--warning)/0.18)_0_6px,transparent_6px_12px)] text-[11px] font-semibold text-warning">
-                      <Wrench className="mr-1 size-3.5" /> {t('st_service')}
+                    <div className="absolute inset-1 flex items-center justify-center gap-1 overflow-hidden rounded-md bg-[repeating-linear-gradient(45deg,hsl(var(--warning)/0.18)_0_5px,transparent_5px_10px)] text-[10px] font-semibold text-warning">
+                      <Wrench className="size-3 shrink-0" /> <span className="truncate">{t('st_service')}</span>
                     </div>
                   )}
                   {!service &&
@@ -607,19 +614,17 @@ function Timeline({ cars }: { cars: Car[] }) {
                           type="button"
                           onClick={() => (mine || canSeeAll ? openSheet({ type: 'booking', id: b.id }) : showToast(`${b.startTime}–${b.endTime} · ${who?.name}`, 'info'))}
                           className={cn(
-                            'absolute inset-y-1.5 overflow-hidden rounded-lg px-2 text-left text-[11px] font-semibold leading-tight',
+                            'absolute inset-y-1 overflow-hidden rounded-md px-1 text-left text-[10px] font-semibold leading-tight',
                             b.status === 'Completed' ? 'bg-muted text-muted-foreground' : mine ? 'bg-primary text-primary-foreground' : 'bg-navy text-navy-foreground dark:bg-primary/40'
                           )}
                           style={{ left: `${pct(b.startTime)}%`, width: `${pct(b.endTime) - pct(b.startTime)}%` }}
                         >
                           <span className="block truncate">{who?.name.split(' ')[0]}</span>
-                          <span className="block truncate font-normal opacity-75 tabular">
-                            {DateUtil.timeSpan(app.bookings.find(x => x.id === b.id) ?? b, app.lang)}
-                          </span>
+                          <span className="block truncate text-[9px] font-normal opacity-75 tabular">{b.startTime}</span>
                         </button>
                       );
                     })}
-                  {isToday && now > 0 && now < 100 && <div className="pointer-events-none absolute inset-y-0 w-0.5 bg-destructive/70" style={{ left: `${now}%` }} />}
+                  {isToday && now > 0 && now < 100 && <div className="pointer-events-none absolute inset-y-0 w-px bg-destructive/80" style={{ left: `${now}%` }} />}
                 </div>
               </div>
             );

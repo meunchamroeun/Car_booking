@@ -1,7 +1,7 @@
 import { Booking, Car, FleetData, Msg, MsgVar, NotificationItem, User } from '@/types';
 import { translate } from '@/lib/i18n';
 import { DateUtil } from '@/lib/date-utils';
-import { can, canCancel, canCompleteTask, canReturnEarly, canReview, canStartTask } from '@/lib/permissions';
+import { can, canCancel, canCompleteTask, canEdit, canReturnEarly, canReview, canStartTask } from '@/lib/permissions';
 
 /**
  * Business logic for the fleet booking app, written as pure functions.
@@ -202,6 +202,89 @@ export function createBooking(data: FleetData, actor: User, input: CreateBooking
   };
 }
 
+export interface UpdateBookingInput {
+  carId: string;
+  date: string;
+  endDate?: string;
+  startTime: string;
+  endTime: string;
+  purpose: string;
+  needDriver: boolean;
+  /** Approved bookings only: the company driver (kept if left out). */
+  driverId?: string | null;
+}
+
+/**
+ * PATCH /bookings/:id  — change car, dates, times, purpose or driver.
+ * Requester: own Pending request. Manager: Pending, or Approved before it starts (see canEdit).
+ * The booking keeps its status; the other side is notified.
+ */
+export function updateBooking(data: FleetData, actor: User, id: string, input: UpdateBookingInput): Result {
+  const b = findBooking(data, id);
+  if (!canEdit(actor, b)) fail('err_cannot_edit');
+  const car = data.cars.find(c => c.id === input.carId) ?? fail('err_choose_vehicle');
+  if (!input.purpose.trim()) fail('err_purpose');
+  const endDate = input.endDate || input.date;
+  if (endDate < input.date) fail('err_end_date');
+  if (DateUtil.dayDiff(input.date, endDate) > 14) fail('max_days');
+  if (DateUtil.stamp(endDate, input.endTime) <= DateUtil.stamp(input.date, input.startTime)) fail('err_end_time');
+  if (DateUtil.stamp(endDate, input.endTime) <= DateUtil.nowStamp()) fail('err_past');
+  const conflict = checkConflict(data, car.id, input.date, input.startTime, input.endTime, id, endDate);
+  if (!conflict.ok) throw new ServiceError(conflict.msg);
+
+  const win = { startDate: input.date, startTime: input.startTime, endDate, endTime: input.endTime };
+  // An approved booking with a company driver needs a free, active driver for the new time
+  let driverId: string | null = null;
+  if (b.status === 'Approved' && input.needDriver) {
+    driverId = input.driverId === undefined ? b.driverId : input.driverId;
+    if (!driverId) fail('err_assign_driver');
+    const driver = data.drivers.find(x => x.id === driverId) ?? fail('err_driver_not_found');
+    if (driver.status !== 'Active') fail('err_driver_off', { name: driver.name });
+    const busy = isDriverBusy(data, driver.id, { id, ...win });
+    if (busy) fail('err_driver_busy', { name: driver.name, start: busy.startTime, end: busy.endTime });
+  }
+
+  const vars = { name: actor.name, id, car: carLabel(data, car.id), win: winOf(win) };
+  const byRequester = actor.id === b.requesterId;
+  const newDriverUser = driverId && driverId !== b.driverId ? driverUserId(data, driverId) : null;
+  const notifs = [
+    // Manager changed it → tell the requester; requester changed a pending request → tell the reviewers
+    ...notify(byRequester ? (actor.role === 'Approver' ? admins(data) : reviewers(data, actor.id)) : [b.requesterId], {
+      kind: byRequester ? 'request' : 'info',
+      bookingId: id,
+      titleKey: byRequester ? 'nt_req_edited_title' : 'nt_edited_title',
+      textKey: byRequester ? 'nt_req_edited_text' : 'nt_edited_text',
+      vars,
+    }),
+    ...notify(newDriverUser ? [newDriverUser] : [], {
+      kind: 'assigned',
+      bookingId: id,
+      titleKey: 'nt_assigned_title',
+      textKey: 'nt_assigned_text',
+      vars: { name: data.users.find(u => u.id === b.requesterId)?.name ?? '', dest: b.destination || '—', win: winOf(win) },
+    }),
+  ];
+
+  return {
+    data: {
+      ...data,
+      bookings: patchBooking(data, id, {
+        carId: car.id,
+        startDate: input.date,
+        endDate,
+        startTime: input.startTime,
+        endTime: input.endTime,
+        originalEndTime: input.endTime,
+        purpose: input.purpose.trim(),
+        needDriver: input.needDriver,
+        ...(b.status === 'Approved' ? { driverId, taskStatus: driverId ? ('Assigned' as const) : null } : {}),
+      }),
+      notifications: [...notifs, ...data.notifications],
+    },
+    message: msg('msg_updated', { id }),
+  };
+}
+
 /**
  * POST /bookings/:id/approve  { driverId?, assignDriver? }
  * For a request that asked for a driver, the approver decides: assign one (driverId) or
@@ -291,8 +374,8 @@ export function cancelBooking(data: FleetData, actor: User, id: string, reason?:
           kind: 'cancelled',
           bookingId: id,
           titleKey: 'nt_cancelled_title',
-          textKey: 'nt_cancelled_text',
-          vars: { name: actor.name, id, car: carLabel(data, b.carId), win: winOf(b) },
+          textKey: reason?.trim() ? 'nt_cancelled_text_note' : 'nt_cancelled_text',
+          vars: { name: actor.name, id, car: carLabel(data, b.carId), win: winOf(b), reason: reason?.trim() ?? '' },
         }),
         ...data.notifications,
       ],
@@ -378,7 +461,7 @@ export function setMaintenance(
   data: FleetData,
   actor: User,
   carId: string,
-  m: { mode: 'manual' | 'scheduled'; reason: string; workshop?: string; estimatedDate?: string; startDate?: string; startTime?: string; endDate?: string; endTime?: string }
+  m: { mode: 'manual' | 'scheduled'; reason: string; estimatedDate?: string; startDate?: string; startTime?: string; endDate?: string; endTime?: string }
 ): Result {
   if (!can(actor, 'vehicle.maintenance')) fail('err_maint_role');
   if (!m.reason.trim()) fail('err_maint_reason');
@@ -406,7 +489,6 @@ export function setMaintenance(
               maintenance: {
                 ...m,
                 reason: m.reason.trim(),
-                workshop: m.workshop || 'OONE Fleet Workshop',
                 estimatedDate: m.estimatedDate || null,
                 setAt: DateUtil.nowStamp(),
                 setBy: actor.name,

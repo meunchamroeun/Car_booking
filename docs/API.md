@@ -20,8 +20,8 @@ Notifications are stored with `titleKey`, `textKey`, `vars` (plus English `title
 
 | Role (`UserRole`) | UI label | Can do |
 |---|---|---|
-| `Employee` | Employee | Create bookings, see own bookings, cancel own, end own booking early (self-drive or with driver) |
-| `Approver` | Manager | Everything Employee can + approve/reject others' requests, assign drivers, set vehicles to maintenance / back to available. **Cannot approve own requests** (an Admin does) |
+| `Employee` | Employee | Create bookings, see own bookings, edit own while pending, cancel own, end own booking early (self-drive or with driver) |
+| `Approver` | Manager | Everything Employee can + approve/reject others' requests, edit others' bookings (pending, or approved before start), assign or swap drivers, set vehicles to maintenance / back to available. **Cannot approve own requests** (an Admin does) |
 | `Driver` | Driver | See own assignments, start trip, complete trip (return time + odometer). Cannot book |
 | `Admin` | Fleet admin | Everything Approver can + vehicle service/maintenance, driver on/off duty, approve anyone's request |
 
@@ -60,11 +60,12 @@ shortens `endTime`, sets `returnedEarly: true` — the freed slot is immediately
 | POST | `/bookings` | `{ carId, date, endDate?, startTime, endTime, purpose, destination, passengers, needDriver }` | `createBooking` | role can book; purpose required; not in past; `endDate` ≥ `date` (defaults to `date`), max 14 days; end date-time > start date-time; passengers ≤ seats; no overlap with Approved bookings; car not in service. Notifies Managers+Admins (Admins only if requester is a Manager) |
 | POST | `/bookings/:id/approve` | `{ assignDriver?: boolean, driverId?: string }` | `approveBooking` | status Pending; reviewer ≠ requester for Managers. If the request has `needDriver`, the approver answers *Assign a company driver?*: `assignDriver: true` + `driverId` (on duty, not busy in the window) or `assignDriver: false` → approved as self-drive (`needDriver` set false). Re-check car conflict. Notifies requester (+ driver if assigned) |
 | POST | `/bookings/:id/reject` | `{ reason }` | `rejectBooking` | reason required. Notifies requester |
-| POST | `/bookings/:id/cancel` | `{ reason? }` | `cancelBooking` | requester only; Pending, or Approved & not started |
-| POST | `/bookings/:id/return` | `{ returnTime, notes? }` | `returnVehicle` | requester (or Admin), today within the booking dates — self-drive **and** driver bookings; notifies the assigned driver |
+| PATCH | `/bookings/:id` | `{ carId, date, endDate?, startTime, endTime, purpose, needDriver, driverId? }` | `updateBooking` | requester: own **Pending** request; Manager (others' bookings) / Admin (any): **Pending**, or **Approved before it starts**. Same checks as create (no clash with other Approved bookings, excluding itself). Status stays the same. Approved + needDriver: needs a free, active `driverId` (kept if omitted). Notifies the requester when a manager edits; notifies reviewers when the requester edits; notifies a newly assigned driver |
+| POST | `/bookings/:id/cancel` | `{ reason? }` | `cancelBooking` | requester only; Pending, or Approved before its start time (after that, use return) |
+| POST | `/bookings/:id/return` | `{ returnTime, notes? }` | `returnVehicle` | requester (or Admin), after the booking's start time and within its dates — self-drive **and** driver bookings; notifies the assigned driver |
 | POST | `/tasks/:id/start` | — | `startTask` | assigned driver; trip date ≤ today |
 | POST | `/tasks/:id/complete` | `{ returnTime, odometer?, notes? }` | `returnVehicle` | assigned driver; `odometer` ≥ car's current odometer (updates car) |
-| PUT | `/vehicles/:id/maintenance` | `{ mode: "manual", reason, workshop?, estimatedDate? }` or `{ mode: "scheduled", reason, workshop?, startDate, startTime, endDate, endTime }` | `setMaintenance` | Manager or Admin; notifies requesters of bookings inside the window |
+| PUT | `/vehicles/:id/maintenance` | `{ mode: "manual", reason, estimatedDate? }` or `{ mode: "scheduled", reason, startDate, startTime, endDate, endTime }` | `setMaintenance` | Manager or Admin; notifies requesters of bookings inside the window |
 | DELETE | `/vehicles/:id/maintenance` | — | `clearMaintenance` | Manager or Admin |
 | PATCH | `/drivers/:id` | `{ status: "Active" \| "OffDuty" }` | `toggleDriverDuty` | Admin |
 | POST | `/notifications/read-all` | — | `markNotificationsRead` | |

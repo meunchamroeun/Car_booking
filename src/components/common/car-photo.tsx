@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Camera, CarFront, Fuel, Maximize2, Users, X } from 'lucide-react';
+import { Camera, CarFront, Maximize2, Users, X } from 'lucide-react';
 import { Car } from '@/types';
 import { useApp } from '@/lib/store';
 import { CarArt } from '@/components/common/car-art';
@@ -105,11 +105,6 @@ function PhotoViewer({ car, open, onOpenChange }: { car: Car; open: boolean; onO
                 <span className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1">
                   <CarFront className="size-3.5" /> {t(`type_${car.type}`)}
                 </span>
-                {car.fuel && (
-                  <span className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1">
-                    <Fuel className="size-3.5" /> {car.fuel}
-                  </span>
-                )}
               </div>
               {car.imageCredit && (
                 <p className="mt-3 flex items-start gap-1.5 text-[11px] text-muted-foreground">

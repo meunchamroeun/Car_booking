@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { AlertTriangle, CalendarClock, CarFront, Check, MapPin, UserRound, Users, X } from 'lucide-react';
+import { AlertTriangle, CalendarClock, CarFront, Check, UserRound, X } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { Sheet } from '@/components/ui/sheet';
@@ -12,7 +12,8 @@ import { CarPhoto } from '@/components/common/car-photo';
 import { DriverSelect } from '@/components/common/driver-select';
 import { cn } from '@/lib/utils';
 
-export function ReviewSheet({ open, id }: { open: boolean; id?: string }) {
+/** startMode 'reject' (from the Reject button) skips straight to the reason, without the driver question. */
+export function ReviewSheet({ open, id, startMode = 'approve' }: { open: boolean; id?: string; startMode?: 'approve' | 'reject' }) {
   const app = useApp();
   const { bookings, cars, users, t, lang, closeSheet, approveBooking, rejectBooking, checkConflict } = app;
   const b = bookings.find(x => x.id === id);
@@ -25,12 +26,12 @@ export function ReviewSheet({ open, id }: { open: boolean; id?: string }) {
 
   React.useEffect(() => {
     if (!open || !b) return;
-    setMode('approve');
+    setMode(startMode);
     setReason('');
     setDriverId(null);
     setAssign(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, id]);
+  }, [open, id, startMode]);
 
   if (!b) return null;
   const car = cars.find(c => c.id === b.carId)!;
@@ -99,16 +100,6 @@ export function ReviewSheet({ open, id }: { open: boolean; id?: string }) {
               <CalendarClock className="size-3.5" />
               {DateUtil.window(b, lang)}
             </p>
-            <p className="flex items-center gap-1.5 text-muted-foreground">
-              {b.destination && (
-                <>
-                  <MapPin className="size-3.5" />
-                  <span className="truncate">{b.destination}</span>
-                </>
-              )}
-              <Users className={b.destination ? 'ml-1 size-3.5' : 'size-3.5'} />
-              {b.passengers}
-            </p>
           </div>
         </div>
       </div>
@@ -160,14 +151,7 @@ export function ReviewSheet({ open, id }: { open: boolean; id?: string }) {
       )}
 
       {mode === 'reject' && (
-        <div className="mt-5 space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {['reject_quick_1', 'reject_quick_2', 'reject_quick_3'].map(k => (
-              <button key={k} type="button" onClick={() => setReason(t(k))} className="rounded-full border bg-card px-3 py-1.5 text-[12.5px] font-medium hover:bg-muted">
-                {t(k)}
-              </button>
-            ))}
-          </div>
+        <div className="mt-5">
           <Field label={t('reject_reason')} htmlFor="rj-reason" required>
             <Textarea id="rj-reason" autoFocus value={reason} onChange={e => setReason(e.target.value)} placeholder={t('reject_reason_ph')} maxLength={250} />
           </Field>

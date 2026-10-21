@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ArrowRight, CalendarPlus, CarFront, ChevronRight, Sparkles, CheckCircle2, ClipboardCheck, Clock, Phone, QrCode, RotateCcw, Route, UserRound, Wrench } from 'lucide-react';
+import { ArrowRight, CalendarClock, CalendarPlus, CarFront, ChevronRight, CheckCircle2, ClipboardCheck, Clock, FileText, Phone, RotateCcw, Route, UserRound, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { driverTrips, fleetStats, isLive, myTrips } from '@/lib/selectors';
@@ -15,14 +15,16 @@ import { EmptyState } from '@/components/ui/empty';
 import { CarPhoto } from '@/components/common/car-photo';
 import { TripCard } from '@/components/common/trip-card';
 import { DayBar } from '@/components/common/day-bar';
+import { BookingStatusBadge } from '@/components/common/status';
 import { cn } from '@/lib/utils';
 import { VehiclesScreen } from '@/components/screens/vehicles';
 
 export function HomeScreen() {
   const { currentUser } = useApp();
   return (
-    <div className="space-y-1">
-      <Greeting />
+    <div className={cn('space-y-1', (currentUser.role === 'Employee' || currentUser.role === 'Approver') && 'pt-2')}>
+      {/* Staff and managers open straight on their booking and the cars; fleet admin keeps the greeting */}
+      {currentUser.role !== 'Employee' && currentUser.role !== 'Approver' && <Greeting />}
       {currentUser.role === 'Employee' && <EmployeeHome />}
       {currentUser.role === 'Approver' && <ApproverHome />}
       {currentUser.role === 'Driver' && <DriverHome />}
@@ -118,6 +120,101 @@ function LiveProgress({ b, live }: { b: Booking; live: boolean }) {
   );
 }
 
+/* ── Booking card: light, compact summary of the booking that matters now ── */
+
+function BookingNowCard({ b }: { b: Booking }) {
+  const { cars, currentUser, t, lang, openSheet } = useApp();
+  const car = cars.find(c => c.id === b.carId)!;
+  const live = isLive(b);
+  const now = useNow(1000);
+  const start = toDate(b.startDate, b.startTime).getTime();
+  const end = toDate(b.endDate || b.startDate, b.endTime).getTime();
+  const until = start - now;
+  const multiDay = !!b.endDate && b.endDate !== b.startDate;
+  const open = () => openSheet({ type: 'booking', id: b.id });
+
+  return (
+    // Tap anywhere on the card to see the booking details
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), open())}
+      className={cn(
+        'cursor-pointer rounded-2xl border p-3 transition-[transform,box-shadow] hover:shadow-card active:scale-[0.99]',
+        live ? 'border-success/35 bg-success-soft/40' : 'border-primary/25 bg-primary-soft/40'
+      )}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <p className={cn('flex min-w-0 items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wide', live ? 'text-success' : 'text-primary')}>
+          {live ? (
+            <span className="relative flex size-2 shrink-0">
+              <span className="absolute inset-0 animate-ping_soft rounded-full bg-success" />
+              <span className="relative size-2 rounded-full bg-success" />
+            </span>
+          ) : (
+            <CalendarClock className="size-3 shrink-0" />
+          )}
+          <span className="truncate">{live ? t('now_card_live') : t('now_card_next', { day: DateUtil.friendly(b.startDate, lang) })}</span>
+        </p>
+        {/* Green "In use" to match the card; other states use the usual badge */}
+        {live ? (
+          <Badge tone="success" dot className="shrink-0">
+            {t('st_In Progress')}
+          </Badge>
+        ) : (
+          <BookingStatusBadge b={b} />
+        )}
+      </div>
+
+      <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
+        <p className="truncate text-[14.5px] font-bold">{car.name}</p>
+        <span className="shrink-0 rounded bg-primary-soft px-1 py-px font-mono text-[10.5px] font-semibold text-primary">{car.plate}</span>
+      </div>
+
+      <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[12px] text-muted-foreground">
+        <Clock className="size-3" />
+        <span className="font-semibold tabular text-foreground/80">{multiDay ? DateUtil.window(b, lang) : `${b.startTime} – ${b.endTime}`}</span>
+        {live ? (
+          <span className="tabular">
+            · <span className="font-semibold text-foreground/80">{clock(end - now)}</span> {t('time_left')}
+          </span>
+        ) : (
+          until > 0 &&
+          until < 24 * 3600 * 1000 && (
+            <span className="tabular">
+              · {t('starts_in')} <span className="font-semibold text-foreground/80">{clock(until)}</span>
+            </span>
+          )
+        )}
+      </p>
+
+      {b.purpose && (
+        <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
+          <FileText className="size-3 shrink-0" />
+          <span className="truncate">{b.purpose}</span>
+        </p>
+      )}
+
+      {live && canReturnEarly(currentUser, b) && (
+        <button
+          type="button"
+          onClick={e => (e.stopPropagation(), openSheet({ type: 'return', id: b.id, mode: 'early' }))}
+          className="mt-2.5 flex w-full items-center gap-2.5 rounded-xl bg-gradient-to-r from-success to-success/80 px-2.5 py-2 text-left text-white shadow-sm transition-transform hover:brightness-105 active:scale-[0.99]"
+        >
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/20">
+            <RotateCcw className="size-3.5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[13px] font-bold leading-tight">{t('return_early')}</span>
+            <span className="block text-[10.5px] leading-tight text-white/85">{t('return_early_sub')}</span>
+          </span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ── Hero: dark navy card for the trip that matters right now ─────────── */
 
 function TripHero({ b, mode }: { b: Booking; mode: 'requester' | 'driver' }) {
@@ -128,7 +225,14 @@ function TripHero({ b, mode }: { b: Booking; mode: 'requester' | 'driver' }) {
   const live = isLive(b);
 
   return (
-    <div className="hero-pattern relative overflow-hidden rounded-[22px] bg-navy p-4 text-navy-foreground shadow-float">
+    // Tap the card to open the booking details
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => openSheet({ type: 'booking', id: b.id })}
+      onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), openSheet({ type: 'booking', id: b.id }))}
+      className="hero-pattern relative cursor-pointer overflow-hidden rounded-[22px] bg-navy p-4 text-navy-foreground shadow-float transition-transform active:scale-[0.99]"
+    >
       <div className="flex items-center justify-between">
         <Badge tone="glass">
           {live ? <span className="size-1.5 animate-pulse_ring rounded-full bg-[hsl(var(--success))]" /> : <Clock className="size-3" />}
@@ -195,71 +299,41 @@ function TripHero({ b, mode }: { b: Booking; mode: 'requester' | 'driver' }) {
         )}
       </div>
 
-      <div className="mt-3 flex gap-2">
-        {mode === 'requester' && (
-          <>
-            <Button variant="glass" className="flex-1" onClick={() => openSheet({ type: 'booking', id: b.id })}>
-              <QrCode /> {t('show_pass')}
+      {(mode === 'driver' || (canReturnEarly(currentUser, b) && live)) && (
+        <div className="mt-3 flex gap-2" onClick={e => e.stopPropagation()}>
+          {mode === 'requester' && (
+            <Button className="flex-1 bg-white text-navy hover:bg-white/90" onClick={() => openSheet({ type: 'return', id: b.id, mode: 'early' })}>
+              <RotateCcw /> {t('return_early')}
             </Button>
-            {canReturnEarly(currentUser, b) && live && (
-              <Button className="flex-1 bg-white text-navy hover:bg-white/90" onClick={() => openSheet({ type: 'return', id: b.id, mode: 'early' })}>
-                <RotateCcw /> {t('return_early')}
-              </Button>
-            )}
-          </>
-        )}
-        {mode === 'driver' && (
-          <>
-            {requester && (
-              <Button variant="glass" size="icon" className="size-11 rounded-xl" asChild>
-                <a href={`tel:${requester.phone.replace(/\s/g, '')}`} aria-label={t('call')}>
-                  <Phone />
-                </a>
-              </Button>
-            )}
-            {canStartTask(currentUser, b) && (
-              <Button className="flex-1 bg-white text-navy hover:bg-white/90" onClick={() => startTask(b.id)}>
-                <Route /> {t('start_trip')}
-              </Button>
-            )}
-            {canCompleteTask(currentUser, b) && (
-              <Button className="flex-1 bg-white text-navy hover:bg-white/90" onClick={() => openSheet({ type: 'return', id: b.id, mode: 'complete' })}>
-                <CheckCircle2 /> {t('complete_trip')}
-              </Button>
-            )}
-            {!canStartTask(currentUser, b) && !canCompleteTask(currentUser, b) && (
-              <Button variant="glass" className="flex-1" onClick={() => openSheet({ type: 'booking', id: b.id })}>
-                {t('not_today', { date: DateUtil.friendly(b.startDate, lang) })}
-              </Button>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ── Welcome card when the user has no current or upcoming booking ───── */
-
-function WelcomeHero() {
-  const { currentUser, cars, t, isCarInMaintenance } = useApp();
-  const free = cars.filter(c => !isCarInMaintenance(c.id, DateUtil.todayStr())).length;
-  return (
-    <div className="hero-pattern relative overflow-hidden rounded-[22px] bg-navy p-5 text-navy-foreground shadow-float">
-      <Badge tone="glass">
-        <Sparkles className="size-3" /> {t('welcome_badge')}
-      </Badge>
-      <p className="mt-3 text-[22px] font-bold leading-tight tracking-tight">{t('welcome_title', { name: currentUser.name.split(' ')[0] })}</p>
-      <p className="mt-1 text-[13.5px] text-white/70">{t('welcome_text', { n: free })}</p>
-      <div className="mt-4 flex items-center gap-2">
-        <Button
-          className="flex-1 bg-white text-navy hover:bg-white/90"
-          onClick={() => document.getElementById('vehicles')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-        >
-          <CarFront /> {t('welcome_cta')}
-        </Button>
-      </div>
-      <CarFront className="pointer-events-none absolute -right-4 -top-3 size-28 rotate-[-8deg] text-white/[0.06]" aria-hidden />
+          )}
+          {mode === 'driver' && (
+            <>
+              {requester && (
+                <Button variant="glass" size="icon" className="size-11 rounded-xl" asChild>
+                  <a href={`tel:${requester.phone.replace(/\s/g, '')}`} aria-label={t('call')}>
+                    <Phone />
+                  </a>
+                </Button>
+              )}
+              {canStartTask(currentUser, b) && (
+                <Button className="flex-1 bg-white text-navy hover:bg-white/90" onClick={() => startTask(b.id)}>
+                  <Route /> {t('start_trip')}
+                </Button>
+              )}
+              {canCompleteTask(currentUser, b) && (
+                <Button className="flex-1 bg-white text-navy hover:bg-white/90" onClick={() => openSheet({ type: 'return', id: b.id, mode: 'complete' })}>
+                  <CheckCircle2 /> {t('complete_trip')}
+                </Button>
+              )}
+              {!canStartTask(currentUser, b) && !canCompleteTask(currentUser, b) && (
+                <Button variant="glass" className="flex-1" onClick={() => openSheet({ type: 'booking', id: b.id })}>
+                  {t('not_today', { date: DateUtil.friendly(b.startDate, lang) })}
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -271,7 +345,7 @@ function EmployeeHome() {
   const { hero } = myTrips(app, app.currentUser.id);
   return (
     <>
-      {hero ? <TripHero b={hero} mode="requester" /> : <WelcomeHero />}
+      {hero && <BookingNowCard b={hero} />}
       <VehiclesScreen embedded />
     </>
   );
@@ -306,23 +380,13 @@ function Kpis({ items }: { items: { label: string; value: number | string; icon:
 
 function ApproverHome() {
   const app = useApp();
-  const { currentUser, t, openSheet } = app;
-  const s = fleetStats(app);
+  const { currentUser } = app;
   const { hero } = myTrips(app, currentUser.id);
 
-  // Pending requests live in the Approvals tab (with its badge), so Home starts with the manager's own booking
+  // Same as staff: pending requests live in the Approvals tab (with its badge)
   return (
     <>
-      {hero ? <TripHero b={hero} mode="requester" /> : <WelcomeHero />}
-      <SectionHeader title={t('fleet_today')} />
-      <Kpis
-        items={[
-          { label: t('kpi_available'), value: s.available.length, icon: <CarFront />, tone: 'bg-success-soft text-success', onClick: () => openSheet({ type: 'kpi', kind: 'available' }) },
-          { label: t('kpi_in_use'), value: s.inUse.length, icon: <Route />, tone: 'bg-info-soft text-info', onClick: () => openSheet({ type: 'kpi', kind: 'in_use' }) },
-          { label: t('kpi_trips_today'), value: s.tripsToday.length, icon: <Clock />, tone: 'bg-primary-soft text-primary', onClick: () => openSheet({ type: 'kpi', kind: 'today' }) },
-          { label: t('kpi_service'), value: s.inService.length, icon: <Wrench />, tone: 'bg-warning-soft text-warning', onClick: () => openSheet({ type: 'kpi', kind: 'service' }) },
-        ]}
-      />
+      {hero && <BookingNowCard b={hero} />}
       <VehiclesScreen embedded />
     </>
   );
@@ -456,13 +520,12 @@ function AdminHome() {
                 <span className={cn('size-2 rounded-full', d.status === 'Active' ? 'bg-success' : 'bg-muted-foreground/40')} />
               </div>
               <p className="mt-2 truncate text-[13.5px] font-semibold">{d.name}</p>
-              <p className="text-[12px] text-muted-foreground">{d.status === 'Active' ? t('trips_today_n', { n }) : t('off_duty')}</p>
+              <p className="text-[12px] text-muted-foreground">{d.status === 'Active' ? t(n === 1 ? 'trips_today_one' : 'trips_today_n', { n }) : t('off_duty')}</p>
             </Card>
           );
         })}
       </div>
-      <SectionHeader title={t('quick_book')} />
-      <Button variant="outline" className="w-full" onClick={() => app.openBooking()}>
+      <Button variant="outline" className="mt-5 w-full" onClick={() => app.openBooking()}>
         <CalendarPlus /> {t('new_booking')}
       </Button>
     </>

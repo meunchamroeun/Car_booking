@@ -84,13 +84,14 @@ export const DateUtil = {
   },
 
   /** Duration label for a date-time range: "4.5h" or "2d 3h". */
-  duration(startDate: string, startTime: string, endDate: string, endTime: string): string {
+  duration(startDate: string, startTime: string, endDate: string, endTime: string, lang: 'en' | 'kh' = 'en'): string {
+    const [hu, du] = lang === 'kh' ? [' ម៉ោង', ' ថ្ងៃ'] : ['h', 'd'];
     const mins = this.dayDiff(startDate, endDate) * 1440 + this.toMins(endTime) - this.toMins(startTime);
-    if (mins <= 0) return '0h';
+    if (mins <= 0) return `0${hu}`;
     const d = Math.floor(mins / 1440);
     const h = (mins % 1440) / 60;
     const hs = h % 1 === 0 ? String(h) : h.toFixed(1);
-    return d ? `${d}d${h ? ` ${hs}h` : ''}` : `${hs}h`;
+    return d ? `${d}${du}${h ? ` ${hs}${hu}` : ''}` : `${hs}${hu}`;
   },
 
   /** "Fri 16 Oct · 09:00–13:00" or, for multi-day, "Fri 16 Oct 13:00 → Sat 17 Oct 12:00". */

@@ -26,16 +26,16 @@ export function DateBox({
       onClick={onClick}
       aria-expanded={active}
       className={cn(
-        'relative flex h-[56px] w-full min-w-0 items-center justify-between gap-2 rounded-xl border bg-card pl-3.5 pr-3 pt-4 text-left transition-[border-color,box-shadow]',
+        'relative flex h-12 w-full min-w-0 items-center justify-between gap-2 rounded-xl border bg-card pl-3 pr-2.5 pt-3.5 text-left transition-[border-color,box-shadow]',
         active ? 'border-primary ring-[3px] ring-primary/15' : 'border-input hover:border-primary/40'
       )}
     >
-      <span className="absolute left-3.5 top-1.5 text-[11px] font-medium text-muted-foreground">
+      <span className="absolute left-3 top-1.5 text-[10.5px] font-medium text-muted-foreground">
         {label}
         {required && <span className="ml-0.5 text-destructive">*</span>}
       </span>
-      <span className="min-w-0 truncate text-[15px] font-bold">{DateUtil.longDate(value, lang).replace(/^.*, /, '')}</span>
-      <CalendarDays className={cn('-mt-4 size-[18px] shrink-0', active ? 'text-primary' : 'text-muted-foreground')} />
+      <span className="min-w-0 truncate text-[13.5px] font-semibold">{DateUtil.longDate(value, lang).replace(/^.*, /, '')}</span>
+      <CalendarDays className={cn('-mt-3.5 size-4 shrink-0', active ? 'text-primary' : 'text-muted-foreground')} />
     </button>
   );
 }

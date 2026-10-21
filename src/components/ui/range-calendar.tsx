@@ -82,29 +82,29 @@ export function RangeCalendar({
   };
 
   return (
-    <div className="rounded-2xl border bg-card p-3" onMouseLeave={() => setHover(null)}>
-      <div className="mb-2 flex items-center justify-between">
-        <button type="button" onClick={() => shift(-1)} disabled={!canPrev} className="flex size-9 items-center justify-center rounded-full hover:bg-muted disabled:opacity-30" aria-label={L.prev ?? 'Previous month'}>
-          <ChevronLeft className="size-5" />
+    <div className="rounded-2xl border bg-card p-2.5" onMouseLeave={() => setHover(null)}>
+      <div className="mb-1 flex items-center justify-between">
+        <button type="button" onClick={() => shift(-1)} disabled={!canPrev} className="flex size-8 items-center justify-center rounded-full hover:bg-muted disabled:opacity-30" aria-label={L.prev ?? 'Previous month'}>
+          <ChevronLeft className="size-4" />
         </button>
         <div className="text-center">
-          <p className="text-[14.5px] font-bold">{monthLabel}</p>
-          <p className="text-[11.5px] font-medium text-primary">{mode === 'single' ? L.pickSingle ?? L.pickStart : picking === 'start' ? L.pickStart : L.pickEnd}</p>
+          <p className="text-[13.5px] font-bold">{monthLabel}</p>
+          <p className="text-[11px] font-medium text-primary">{mode === 'single' ? L.pickSingle ?? L.pickStart : picking === 'start' ? L.pickStart : L.pickEnd}</p>
         </div>
-        <button type="button" onClick={() => shift(1)} className="flex size-9 items-center justify-center rounded-full hover:bg-muted" aria-label={L.next ?? 'Next month'}>
-          <ChevronRight className="size-5" />
+        <button type="button" onClick={() => shift(1)} className="flex size-8 items-center justify-center rounded-full hover:bg-muted" aria-label={L.next ?? 'Next month'}>
+          <ChevronRight className="size-4" />
         </button>
       </div>
 
-      <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-muted-foreground">
+      <div className="grid grid-cols-7 text-center text-[10.5px] font-semibold text-muted-foreground">
         {weekdays.map((w, i) => (
-          <span key={i} className="py-1">
+          <span key={i} className="py-0.5">
             {w}
           </span>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-y-1" role="grid">
+      <div className="grid grid-cols-7 gap-y-0.5" role="grid">
         {cells.map((d, i) => {
           if (!d) return <span key={i} />;
           const mark = markDay?.(d);
@@ -119,7 +119,7 @@ export function RangeCalendar({
             <div
               key={d}
               className={cn(
-                'relative flex h-11 items-center justify-center',
+                'relative flex h-9 items-center justify-center',
                 // continuous range band behind the day buttons
                 (inRange || (isStart && previewEnd > start) || (isEnd && previewEnd > start)) && 'bg-primary-soft',
                 isStart && previewEnd > start && 'rounded-l-full',
@@ -136,15 +136,17 @@ export function RangeCalendar({
                 aria-pressed={isStart || isEnd}
                 aria-label={d}
                 className={cn(
-                  'relative flex size-10 flex-col items-center justify-center rounded-full text-[14px] font-semibold tabular transition-colors disabled:cursor-not-allowed',
+                  'relative flex size-8 flex-col items-center justify-center rounded-full text-[13px] font-semibold tabular transition-colors disabled:cursor-not-allowed',
                   isStart || isEnd ? 'bg-primary text-primary-foreground' : inRange ? 'text-primary' : 'hover:bg-muted',
-                  disabled && 'text-muted-foreground/35 line-through decoration-1',
+                  disabled && 'font-medium text-muted-foreground/35',
+                  // Struck through only when the car can't be used that day (past days just fade)
+                  disabled && d >= min && 'line-through decoration-1',
                   isToday && !(isStart || isEnd) && 'ring-1 ring-inset ring-primary/40'
                 )}
               >
                 {Number(d.slice(8))}
                 {mark === 'booked' && !disabled && (
-                  <span className={cn('absolute bottom-1 size-1 rounded-full', isStart || isEnd ? 'bg-primary-foreground' : 'bg-warning')} />
+                  <span className={cn('absolute bottom-0.5 size-1 rounded-full', isStart || isEnd ? 'bg-primary-foreground' : 'bg-warning')} />
                 )}
               </button>
             </div>
@@ -152,7 +154,7 @@ export function RangeCalendar({
         })}
       </div>
 
-      <div className="mt-2 flex items-center justify-between border-t pt-2 text-[11.5px] text-muted-foreground">
+      <div className="mt-1.5 flex items-center justify-between border-t pt-1.5 text-[11px] text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="size-1.5 rounded-full bg-warning" /> {L.booked}
         </span>

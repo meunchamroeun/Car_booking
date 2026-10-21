@@ -27,7 +27,8 @@ export function BottomNav() {
   return (
     <nav aria-label={t('a11y_main_nav')} className="pb-safe fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] border-t bg-card/90 px-2 pt-1.5 backdrop-blur-lg">
       <ul className="flex">
-        {ROLE_TABS[currentUser.role].map(tab => {
+        {/* Profile opens from the avatar in the top bar, so it has no tab here */}
+        {ROLE_TABS[currentUser.role].filter(tab => tab !== 'profile').map(tab => {
           const Icon = ICONS[tab];
           const active = currentTab === tab;
           const count = badges[tab];

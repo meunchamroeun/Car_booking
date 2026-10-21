@@ -8,7 +8,7 @@ import { Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Segmented } from '@/components/ui/segmented';
-import { Field, Input, Textarea } from '@/components/ui/input';
+import { Field, Textarea } from '@/components/ui/input';
 import { CarPhoto } from '@/components/common/car-photo';
 import { DateBox } from '@/components/ui/date-box';
 import { RangeCalendar } from '@/components/ui/range-calendar';
@@ -21,7 +21,6 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
   const [editing, setEditing] = React.useState(false);
   const [mode, setMode] = React.useState<'manual' | 'scheduled'>('manual');
   const [reason, setReason] = React.useState('');
-  const [workshop, setWorkshop] = React.useState('OONE Fleet Workshop');
   const [estimated, setEstimated] = React.useState(DateUtil.tomorrowStr());
   const [from, setFrom] = React.useState(DateUtil.tomorrowStr());
   const [to, setTo] = React.useState(DateUtil.tomorrowStr());
@@ -36,7 +35,6 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
     setEditing(!m);
     setMode(defaultMode ?? m?.mode ?? 'manual');
     setReason(m?.reason ?? '');
-    setWorkshop(m?.workshop ?? 'OONE Fleet Workshop');
     setEstimated(m?.estimatedDate ?? DateUtil.tomorrowStr());
     setFrom(m?.startDate ?? DateUtil.tomorrowStr());
     setTo(m?.endDate ?? DateUtil.tomorrowStr());
@@ -58,7 +56,7 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
   const affected = bookings.filter(b => b.carId === car.id && (b.status === 'Approved' || b.status === 'Pending') && b.startDate >= range[0] && b.startDate <= range[1]);
 
   const save = () =>
-    setMaintenance(car.id, mode === 'manual' ? { mode, reason, workshop, estimatedDate: estimated } : { mode, reason, workshop, startDate: from, endDate: to, startTime: fromTime, endTime: toTime });
+    setMaintenance(car.id, mode === 'manual' ? { mode, reason, estimatedDate: estimated } : { mode, reason, startDate: from, endDate: to, startTime: fromTime, endTime: toTime });
 
   return (
     <Sheet
@@ -108,9 +106,6 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
               ? `${t('est_return')}: ${m.estimatedDate ? DateUtil.friendly(m.estimatedDate, lang) : '—'}`
               : `${DateUtil.friendly(m.startDate!, lang)} ${m.startTime} → ${DateUtil.friendly(m.endDate!, lang)} ${m.endTime}`}
           </p>
-          <p className="text-foreground/80">
-            {t('workshop')}: {m.workshop ?? '—'}
-          </p>
           <p className="mt-2 text-[12px] text-muted-foreground">
             {t('service_by', { name: m.setBy ?? '—' })} · {m.setAt}
           </p>
@@ -130,9 +125,6 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
           <p className="px-1 text-[12.5px] text-muted-foreground">{mode === 'manual' ? t('mode_manual_desc') : t('mode_scheduled_desc')}</p>
           <Field label={t('issue')} htmlFor="mt-reason" required>
             <Textarea id="mt-reason" value={reason} onChange={e => setReason(e.target.value)} placeholder={t('issue_ph')} maxLength={200} className="min-h-[72px]" />
-          </Field>
-          <Field label={t('workshop')} htmlFor="mt-ws">
-            <Input id="mt-ws" value={workshop} onChange={e => setWorkshop(e.target.value)} />
           </Field>
           {mode === 'manual' ? (
             <div className="space-y-2">

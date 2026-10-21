@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Sparkles } from 'lucide-react';
+import { CalendarClock, FileText, Sparkles } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { Sheet } from '@/components/ui/sheet';
@@ -11,7 +11,7 @@ import { TimeField } from '@/components/ui/time-field';
 
 /** Self-drive early return (requester) or trip completion (driver). */
 export function ReturnSheet({ open, id, mode }: { open: boolean; id?: string; mode: 'early' | 'complete' }) {
-  const { bookings, cars, t, closeSheet, returnVehicle } = useApp();
+  const { bookings, cars, t, lang, closeSheet, returnVehicle } = useApp();
   const b = bookings.find(x => x.id === id);
   const car = cars.find(c => c.id === b?.carId);
 
@@ -46,17 +46,20 @@ export function ReturnSheet({ open, id, mode }: { open: boolean; id?: string; mo
         </Button>
       }
     >
-      <div className="grid grid-cols-2 gap-3 rounded-2xl bg-muted p-3 text-[13px]">
-        <div>
-          <p className="text-muted-foreground">{t('schedule')}</p>
-          <p className="font-semibold tabular">
-            {b.startTime}–{planned}
+      {/* Booking summary: when, then what for */}
+      <div className="space-y-1.5 rounded-xl border bg-muted/40 px-3 py-2.5 text-[12.5px]">
+        <p className="flex items-center gap-2">
+          <CalendarClock className="size-3.5 shrink-0 text-muted-foreground" />
+          <span className="font-semibold tabular">
+            {DateUtil.friendly(b.startDate, lang)} · {b.startTime}–{planned}
+          </span>
+        </p>
+        {b.purpose && (
+          <p className="flex items-start gap-2 text-muted-foreground">
+            <FileText className="mt-0.5 size-3.5 shrink-0" />
+            <span className="line-clamp-2 leading-snug">{b.purpose}</span>
           </p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">{t('purpose')}</p>
-          <p className="line-clamp-2 font-semibold leading-snug">{b.purpose || '—'}</p>
-        </div>
+        )}
       </div>
 
       <div className="mt-4 space-y-3.5">

@@ -12,7 +12,6 @@ export interface MaintenanceInfo {
   mode: 'manual' | 'scheduled';
   reason: string;
   estimatedDate?: string | null;
-  workshop?: string;
   startDate?: string;
   startTime?: string;
   endDate?: string;
@@ -140,9 +139,9 @@ export type AppTab = 'home' | 'vehicles' | 'trips' | 'tasks' | 'approvals' | 'fl
 export type KpiKind = 'available' | 'in_use' | 'today' | 'service';
 
 export type SheetState =
-  | { type: 'book'; carId?: string; date?: string; start?: string; end?: string }
+  | { type: 'book'; carId?: string; date?: string; start?: string; end?: string; /** Edit this booking instead of making a new one */ editId?: string }
   | { type: 'booking'; id: string }
-  | { type: 'review'; id: string }
+  | { type: 'review'; id: string; mode?: 'approve' | 'reject' }
   | { type: 'return'; id: string; mode: 'early' | 'complete' }
   | { type: 'maintenance'; carId: string; mode?: 'manual' | 'scheduled' }
   | { type: 'notifications' }

@@ -65,7 +65,6 @@ export function getDefaultMockData(): FleetData {
         mode: 'manual',
         reason: 'Suspension check & 30,000 km brake inspection',
         estimatedDate: d(1),
-        workshop: 'OONE Fleet Workshop',
         setAt: `${today} 07:00`,
         setBy: 'Chanthy Ouk',
         setByRole: 'Admin',

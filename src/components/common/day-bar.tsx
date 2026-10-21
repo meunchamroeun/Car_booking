@@ -237,7 +237,6 @@ function SegmentDetail({
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-x-1.5 font-semibold text-foreground">
           {who?.name}
-          {mine && <span className="font-medium text-primary">({t('you')})</span>}
           <BookingStatusBadge b={b} />
         </p>
         <p className="tabular text-muted-foreground">{DateUtil.window(b, lang)}</p>

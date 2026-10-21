@@ -2,15 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/shell/app-shell';
-import { PassCheck } from '@/components/screens/pass-check';
 
 export default function Home() {
   // Data lives in localStorage, so render only after mount to avoid hydration mismatch.
   const [mounted, setMounted] = useState(false);
-  const [passToken, setPassToken] = useState<string | null>(null);
   useEffect(() => {
-    // A scanned vehicle-pass QR opens /?pass=… → show the pass check instead of the app
-    setPassToken(new URLSearchParams(window.location.search).get('pass'));
     setMounted(true);
   }, []);
   if (!mounted) {
@@ -22,5 +18,5 @@ export default function Home() {
       </div>
     );
   }
-  return passToken ? <PassCheck token={passToken} /> : <AppShell />;
+  return <AppShell />;
 }

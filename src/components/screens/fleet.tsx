@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronRight, Gauge, Phone, Wrench } from 'lucide-react';
+import { ChevronRight, Phone, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { PageHeader, Card } from '@/components/ui/card';
@@ -39,17 +39,11 @@ function VehicleList() {
         const scheduled = !service && c.maintenance?.mode === 'scheduled';
         return (
           <button key={c.id} type="button" onClick={() => openSheet({ type: 'maintenance', carId: c.id })} className="flex w-full items-center gap-3 p-3.5 text-left transition-colors hover:bg-muted/40">
-            <CarPhoto car={c} className="h-11 w-16 shrink-0 rounded-xl" />
+            <CarPhoto car={c} className="h-10 w-14 shrink-0 rounded-lg" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-[14px] font-semibold">{c.name}</p>
-              <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                <span className="font-mono">{c.plate}</span>
-                {c.odometer && (
-                  <span className="flex items-center gap-1">
-                    <Gauge className="size-3" />
-                    {t('odo', { km: c.odometer.toLocaleString() })}
-                  </span>
-                )}
+              <p className="truncate text-[11.5px] text-muted-foreground">
+                <span className="font-mono">{c.plate}</span> · {t(`type_${c.type}`)}
               </p>
               {scheduled && (
                 <p className="mt-0.5 text-[11.5px] font-medium text-warning">
@@ -89,7 +83,7 @@ function DriverList() {
                 )}
               </p>
               <p className="text-[12px] text-muted-foreground">
-                {d.status === 'Active' ? t('trips_today_n', { n: today.length }) : t('off_duty')} · {d.licenseNo}
+                {d.status === 'Active' ? t(today.length === 1 ? 'trips_today_one' : 'trips_today_n', { n: today.length }) : t('off_duty')} · {d.licenseNo}
               </p>
             </div>
             <a href={`tel:${d.phone.replace(/\s/g, '')}`} className="flex size-9 items-center justify-center rounded-full bg-muted text-muted-foreground hover:text-foreground" aria-label={`${t('call')} ${d.name}`}>
