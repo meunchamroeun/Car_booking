@@ -5,16 +5,18 @@ import { DateUtil } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 import type { Language } from '@/types';
 
-const FROM = 7 * 60; // track starts 07:00
-const TO = 22 * 60; // and ends 22:00
+const FROM = 8 * 60; // track starts 08:00
+const TO = 20 * 60; // and ends 20:00
 const SPAN = TO - FROM;
 const STEP = 15; // minutes per snap
 const MIN_LEN = 30;
-const LABEL_HOURS = [9, 12, 15, 18, 21];
+const LABEL_HOURS = [8, 10, 12, 14, 16, 18];
 
 const toTime = (m: number) => `${DateUtil.pad(Math.floor(m / 60))}:${DateUtil.pad(m % 60)}`;
 const pct = (m: number) => ((Math.min(TO, Math.max(FROM, m)) - FROM) / SPAN) * 100;
-const hourLabel = (h: number, lang: Language) => `${h % 12 || 12} ${lang === 'kh' ? (h < 12 ? 'ព្រឹក' : 'ល្ងាច') : h < 12 ? 'AM' : 'PM'}`;
+// Khmer day parts: morning (ព្រឹក), noon (ថ្ងៃត្រង់), afternoon (រសៀល), evening (ល្ងាច)
+const khPart = (h: number) => (h < 12 ? 'ព្រឹក' : h === 12 ? 'ថ្ងៃត្រង់' : h < 18 ? 'រសៀល' : 'ល្ងាច');
+const hourLabel = (h: number, lang: Language) => `${h % 12 || 12} ${lang === 'kh' ? khPart(h) : h < 12 ? 'AM' : 'PM'}`;
 
 type Block = { id: string; start: string; end: string };
 type Kind = 'start' | 'end' | 'move';
@@ -122,7 +124,8 @@ export function TimeRangeTrack({
       {/* Hour labels */}
       <div className="relative mb-1 h-3.5 text-[10.5px] font-medium text-muted-foreground">
         {LABEL_HOURS.map(h => (
-          <span key={h} className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: `${pct(h * 60)}%` }}>
+          // The first label sits at the left edge, so start it there instead of centring it
+          <span key={h} className={cn('absolute whitespace-nowrap', h * 60 > FROM && '-translate-x-1/2')} style={{ left: `${pct(h * 60)}%` }}>
             {hourLabel(h, lang)}
           </span>
         ))}
