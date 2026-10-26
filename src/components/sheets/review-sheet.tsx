@@ -85,11 +85,17 @@ export function ReviewSheet({ open, id, startMode = 'approve' }: { open: boolean
         <div className="flex items-center gap-3">
           <Avatar initials={requester.initials} seed={requester.id} className="size-11" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[15px] font-semibold">{requester.name}</p>
+            <p className="truncate text-[15px] font-semibold">
+              <span className="text-[12.5px] font-normal text-muted-foreground">{t('booking_by')} : </span>
+              {requester.name}
+            </p>
             <p className="truncate text-[12.5px] text-muted-foreground">{requester.dept}</p>
           </div>
         </div>
-        <p className="mt-3 rounded-xl bg-muted/70 px-3 py-2 text-[13.5px]">{b.purpose}</p>
+        <p className="mt-3 rounded-xl bg-muted/70 px-3 py-2 text-[13.5px]">
+          <span className="font-normal text-muted-foreground">{t('purpose')} : </span>
+          <span className="font-medium text-foreground/90">{b.purpose}</span>
+        </p>
         <div className="mt-3 flex items-center gap-3">
           <CarPhoto car={car} zoomable className="h-[54px] w-20 shrink-0 rounded-lg" />
           <div className="min-w-0 flex-1 space-y-0.5 text-[13px]">

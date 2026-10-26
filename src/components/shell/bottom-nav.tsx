@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarCheck2, CarFront, ClipboardCheck, Home, Route, UserRound, Wrench } from 'lucide-react';
+import { CalendarCheck2, CarFront, ClipboardCheck, History, Home, Route, UserRound, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { ROLE_TABS } from '@/lib/permissions';
 import { AppTab } from '@/types';
@@ -10,6 +10,7 @@ const ICONS: Record<AppTab, typeof Home> = {
   home: Home,
   vehicles: CarFront,
   trips: CalendarCheck2,
+  history: History,
   tasks: Route,
   approvals: ClipboardCheck,
   fleet: Wrench,

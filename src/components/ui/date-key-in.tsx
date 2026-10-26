@@ -30,7 +30,7 @@ export function DateKeyIn({
   placeholder: string;
   pickLabel: string;
 }) {
-  const shown = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
+  const shown = (d: string) => (d && d.length >= 10 ? `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}` : '');
   // Always shows the chosen day (today by default), so it can be edited in place
   const [text, setText] = React.useState(shown(value));
   const [bad, setBad] = React.useState(false);

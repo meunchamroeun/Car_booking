@@ -133,7 +133,7 @@ export interface FleetData {
 export type Language = 'en' | 'kh';
 export type ThemeMode = 'light' | 'dark';
 export type ViewMode = 'cards' | 'timeline';
-export type AppTab = 'home' | 'vehicles' | 'trips' | 'tasks' | 'approvals' | 'fleet' | 'profile';
+export type AppTab = 'home' | 'vehicles' | 'trips' | 'history' | 'tasks' | 'approvals' | 'fleet' | 'profile';
 
 /** Fleet-today numbers that open a detail list. */
 export type KpiKind = 'available' | 'in_use' | 'today' | 'service';

@@ -192,7 +192,8 @@ function BookingNowCard({ b }: { b: Booking }) {
       {b.purpose && (
         <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
           <FileText className="size-3 shrink-0" />
-          <span className="truncate">{b.purpose}</span>
+          <span className="font-normal text-muted-foreground/80">{t('purpose')} : </span>
+          <span className="truncate font-medium text-foreground/85">{b.purpose}</span>
         </p>
       )}
 

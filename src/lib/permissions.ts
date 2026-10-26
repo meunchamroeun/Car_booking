@@ -42,10 +42,10 @@ export function can(user: User, permission: Permission): boolean {
 
 /** Bottom navigation per role — each role sees only the screens it needs. */
 export const ROLE_TABS: Record<UserRole, AppTab[]> = {
-  Employee: ['home', 'trips', 'profile'],
-  Driver: ['home', 'tasks', 'vehicles', 'profile'],
-  Approver: ['home', 'approvals', 'trips', 'profile'],
-  Admin: ['home', 'approvals', 'vehicles', 'fleet', 'profile'],
+  Employee: ['home', 'trips', 'history', 'profile'],
+  Driver: ['home', 'tasks', 'vehicles', 'history', 'profile'],
+  Approver: ['home', 'approvals', 'trips', 'history', 'profile'],
+  Admin: ['home', 'approvals', 'vehicles', 'fleet', 'history', 'profile'],
 };
 
 export const ROLE_DEFAULT_TAB: Record<UserRole, AppTab> = {

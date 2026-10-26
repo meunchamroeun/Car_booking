@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { HomeScreen } from '@/components/screens/home';
 import { VehiclesScreen } from '@/components/screens/vehicles';
 import { TripsScreen } from '@/components/screens/trips';
+import { HistoryScreen } from '@/components/screens/history';
 import { TasksScreen } from '@/components/screens/tasks';
 import { ApprovalsScreen } from '@/components/screens/approvals';
 import { FleetScreen } from '@/components/screens/fleet';
@@ -17,6 +18,7 @@ const SCREENS = {
   home: HomeScreen,
   vehicles: VehiclesScreen,
   trips: TripsScreen,
+  history: HistoryScreen,
   tasks: TasksScreen,
   approvals: ApprovalsScreen,
   fleet: FleetScreen,

@@ -236,11 +236,17 @@ function SegmentDetail({
       <Avatar initials={who?.initials ?? '?'} seed={who?.id} className="size-8 text-[11px]" />
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-x-1.5 font-semibold text-foreground">
+          <span className="text-[12px] font-normal text-muted-foreground">{t('booking_by')} : </span>
           {who?.name}
           <BookingStatusBadge b={b} />
         </p>
         <p className="tabular text-muted-foreground">{DateUtil.window(b, lang)}</p>
-        {b.purpose && <p className="mt-0.5 text-foreground/85">{b.purpose}</p>}
+        {b.purpose && (
+          <p className="mt-0.5 text-foreground/85">
+            <span className="font-normal text-muted-foreground">{t('purpose')} : </span>
+            {b.purpose}
+          </p>
+        )}
         {canOpen && (
           <button type="button" onClick={() => openSheet({ type: 'booking', id: b.id })} className="mt-1 flex items-center gap-0.5 font-semibold text-primary">
             {t('notif_view')} <ChevronRight className="size-3.5" />
