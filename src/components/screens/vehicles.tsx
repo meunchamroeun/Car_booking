@@ -273,8 +273,10 @@ function VehicleCard({ car }: { car: Car }) {
             {status.label}
           </Badge>
           <p className="text-[14.5px] font-semibold leading-tight">{car.name}</p>
-          <p className="mt-0.5 flex items-center gap-1.5 truncate text-[11.5px] text-muted-foreground">
-            <span className="font-mono">{car.plate}</span>
+          <p className="mt-1 flex items-center gap-1.5 truncate text-[11.5px] text-muted-foreground">
+            <span className="rounded-[5px] border border-border/80 bg-muted/60 px-1.5 py-[1.5px] font-mono text-[10.5px] font-semibold text-foreground/85 shadow-2xs leading-none">
+              {car.plate}
+            </span>
             <span aria-hidden>·</span>
             <span className="flex items-center gap-0.5">
               <Users className="size-3" />
