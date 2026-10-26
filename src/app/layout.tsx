@@ -38,10 +38,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kantumruy+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
           rel="stylesheet"
         />
-        {/* Apply saved theme before paint to avoid a flash */}
+        {/* Apply saved theme before paint to avoid a flash; clean any legacy service worker */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem('oone_fleet_theme_v3')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');if(t==='dark')document.documentElement.classList.add('dark');var l=localStorage.getItem('oone_fleet_lang_v3');if(l==='kh')document.documentElement.lang='km'}catch(e){}`,
+            __html: `try{var t=localStorage.getItem('oone_fleet_theme_v3')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');if(t==='dark')document.documentElement.classList.add('dark');var l=localStorage.getItem('oone_fleet_lang_v3');if(l==='kh')document.documentElement.lang='km';if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(r){for(var s of r)s.unregister()})}}catch(e){}`,
           }}
         />
       </head>
