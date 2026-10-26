@@ -23,11 +23,11 @@ export function isUpcoming(b: Booking): boolean {
 }
 
 export function myTrips(data: FleetData, userId: string) {
-  const mine = data.bookings.filter(b => b.requesterId === userId);
+  const mine = data.bookings.filter(b => b.requesterId === userId && b.status !== 'Cancelled' && b.status !== 'Rejected');
   const live = mine.find(isLive);
   const upcoming = mine.filter(b => b !== live && isUpcoming(b)).sort(byTime);
-  const nextApproved = upcoming.find(b => b.status === 'Approved');
-  return { all: mine, live, upcoming, hero: live ?? nextApproved };
+  const next = upcoming.find(b => b.status === 'Approved') ?? upcoming[0];
+  return { all: mine, live, upcoming, hero: live ?? next };
 }
 
 export function driverTrips(data: FleetData, driverId?: string | null) {

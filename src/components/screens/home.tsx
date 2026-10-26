@@ -123,8 +123,9 @@ function LiveProgress({ b, live }: { b: Booking; live: boolean }) {
 /* ── Booking card: light, compact summary of the booking that matters now ── */
 
 function BookingNowCard({ b }: { b: Booking }) {
-  const { cars, currentUser, t, lang, openSheet } = useApp();
+  const { cars, users, currentUser, t, lang, openSheet } = useApp();
   const car = cars.find(c => c.id === b.carId)!;
+  const requester = users.find(u => u.id === b.requesterId) || currentUser;
   const live = isLive(b);
   const now = useNow(1000);
   const start = toDate(b.startDate, b.startTime).getTime();
@@ -169,7 +170,9 @@ function BookingNowCard({ b }: { b: Booking }) {
 
       <div className="mt-1.5 flex min-w-0 items-center gap-1.5">
         <p className="truncate text-[14.5px] font-bold">{car.name}</p>
-        <span className="shrink-0 rounded bg-primary-soft px-1 py-px font-mono text-[10.5px] font-semibold text-primary">{car.plate}</span>
+        <span className="shrink-0 rounded-[5px] border border-[#163280] bg-muted/60 px-1.5 py-[1px] font-mono text-[10.5px] font-semibold text-foreground/85 shadow-2xs leading-none">
+          {car.plate}
+        </span>
       </div>
 
       <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[12px] text-muted-foreground">
@@ -187,6 +190,12 @@ function BookingNowCard({ b }: { b: Booking }) {
             </span>
           )
         )}
+      </p>
+
+      <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
+        <UserRound className="size-3 shrink-0" />
+        <span className="font-normal text-muted-foreground/80">{t('booking_by')} : </span>
+        <span className="truncate font-semibold text-foreground/85">{requester?.name || currentUser.name}</span>
       </p>
 
       {b.purpose && (
@@ -443,9 +452,15 @@ function AdminHome() {
   const app = useApp();
   const { t, setCurrentTab, openSheet, lang } = app;
   const s = fleetStats(app);
+  const { hero } = myTrips(app, app.currentUser.id);
 
   return (
     <>
+      {hero && (
+        <div className="mb-2.5">
+          <BookingNowCard b={hero} />
+        </div>
+      )}
       <Kpis
         items={[
           { label: t('kpi_available'), value: s.available.length, icon: <CarFront />, tone: 'bg-success-soft text-success', onClick: () => openSheet({ type: 'kpi', kind: 'available' }) },
