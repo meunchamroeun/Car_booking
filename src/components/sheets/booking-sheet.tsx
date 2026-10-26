@@ -116,9 +116,15 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
         )
       }
     >
-      <div className="mb-3 flex items-center justify-between">
-        <BookingStatusBadge b={b} />
-        <span className="text-[12px] tabular text-muted-foreground">{DateUtil.relative(b.createdAt, lang)}</span>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[12px]">
+        <div className="flex items-center gap-1.5">
+          <span className="font-normal text-muted-foreground">{t('status_label')} :</span>
+          <BookingStatusBadge b={b} />
+        </div>
+        <div className="tabular text-muted-foreground">
+          <span>{t('request_date')} : </span>
+          <span className="font-medium text-foreground/85">{DateUtil.relative(b.createdAt, lang)}</span>
+        </div>
       </div>
 
       {(

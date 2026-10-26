@@ -64,6 +64,8 @@ const en = {
   st_full: 'Fully booked',
   st_service: 'Maintenance',
   st_early: 'Returned early',
+  status_label: 'Status',
+  request_date: 'Request Date',
 
   // Common
   today: 'Today',
@@ -522,6 +524,8 @@ const kh: Partial<Dict> = {
   st_full: 'ពេញ',
   st_service: 'កំពុងថែទាំ',
   st_early: 'ប្រគល់មុនម៉ោង',
+  status_label: 'ស្ថានភាព',
+  request_date: 'កាលបរិច្ឆេទស្នើ',
 
   today: 'ថ្ងៃនេះ',
   tomorrow: 'ថ្ងៃស្អែក',
