@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ArrowRight, CalendarDays, CarFront, ChevronRight, Clock, LayoutList, Users, Wrench } from 'lucide-react';
+import { CalendarDays, CarFront, ChevronRight, Clock, LayoutList, Users, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { can } from '@/lib/permissions';
@@ -32,8 +32,6 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
   const today = React.useMemo(() => DateUtil.todayStr(), []);
   const tomorrow = React.useMemo(() => DateUtil.addDays(today, 1), [today]);
   const isCustom = selectedDate !== today && selectedDate !== tomorrow;
-  const isToday = selectedDate === today;
-  const isAfterHours = isToday && DateUtil.toMins(DateUtil.nowTimeStr()) >= 18 * 60;
 
   const filtered = React.useMemo(() => {
     // Free cars first, then the ones that can't be booked
@@ -164,23 +162,6 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
           })}
         </div>
       </div>
-
-      {isAfterHours && (
-        <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-warning/35 bg-warning-soft/65 p-3 text-[12.5px] text-warning shadow-2xs">
-          <div className="flex items-center gap-2">
-            <Clock className="size-4 shrink-0 text-warning" />
-            <span className="font-medium text-foreground/90">{t('after_hours_notice')}</span>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7.5 shrink-0 text-[11.5px] font-semibold border-warning/40 bg-background/90 text-foreground hover:bg-warning-soft active:scale-[0.98]"
-            onClick={() => setSelectedDate(tomorrow)}
-          >
-            {t('tomorrow')} <ArrowRight className="size-3 text-warning" />
-          </Button>
-        </div>
-      )}
 
       <div className="mt-4">
         {filtered.length === 0 ? (
