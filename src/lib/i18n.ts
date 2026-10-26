@@ -287,6 +287,7 @@ const en = {
   driver_busy: 'Busy {start}–{end}',
   driver_off: 'Off duty',
   reject_reason: 'Reason for rejection',
+  cancel_reason: 'Reason for cancellation',
   reject_reason_ph: 'Let the requester know what to change…',
   conflict_warn: 'Conflict: {reason}',
 
@@ -735,6 +736,7 @@ const kh: Partial<Dict> = {
   driver_busy: 'រវល់ {start}–{end}',
   driver_off: 'ឈប់សម្រាក',
   reject_reason: 'មូលហេតុបដិសេធ',
+  cancel_reason: 'មូលហេតុលុបចោល',
   reject_reason_ph: 'ប្រាប់អ្នកស្នើពីអ្វីដែលត្រូវកែ…',
   conflict_warn: 'ជាន់គ្នា: {reason}',
 
