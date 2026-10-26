@@ -436,8 +436,12 @@ export function HistoryScreen() {
                   </span>
                 )}
                 {selectedCar.color && <span>· {selectedCar.color}</span>}
-                <span className={cn('font-semibold', selectedCar.status === 'Active' ? 'text-success' : 'text-amber-600')}>
-                  · {selectedCar.status === 'Active' ? '🟢 Active' : '🟡 Maintenance'}
+                <span className="flex items-center gap-1 font-semibold">
+                  <span>·</span>
+                  <span className={cn('size-1.5 rounded-full', selectedCar.status === 'Active' ? 'bg-success' : 'bg-warning')} />
+                  <span className={selectedCar.status === 'Active' ? 'text-success' : 'text-warning'}>
+                    {selectedCar.status === 'Active' ? t('f_active') : t('st_service')}
+                  </span>
                 </span>
               </div>
             </div>
