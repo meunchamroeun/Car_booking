@@ -59,7 +59,7 @@ export function TripCard({
                 </p>
                 <p className="truncate text-[12.5px] text-muted-foreground">
                   {perspective === 'requester' ? (
-                    <span className="rounded-[5px] border border-border/80 bg-muted/60 px-1.5 py-[1px] font-mono text-[10.5px] font-semibold text-foreground/85 shadow-2xs leading-none">
+                    <span className="rounded-[5px] border border-[#163280] bg-muted/60 px-1.5 py-[1px] font-mono text-[10.5px] font-semibold text-foreground/85 shadow-2xs leading-none">
                       {car?.plate}
                     </span>
                   ) : (

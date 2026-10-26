@@ -132,7 +132,7 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
           <CarPhoto car={car} zoomable className="h-16 w-24 shrink-0 rounded-xl" />
           <div className="min-w-0">
             <p className="truncate font-semibold">{car.name}</p>
-            <span className="inline-block mt-0.5 rounded-[5px] border border-border/80 bg-background/80 px-1.5 py-[1.5px] font-mono text-[11px] font-semibold text-foreground/85 shadow-2xs leading-none">
+            <span className="inline-block mt-0.5 rounded-[5px] border border-[#163280] bg-background/80 px-1.5 py-[1.5px] font-mono text-[11px] font-semibold text-foreground/85 shadow-2xs leading-none">
               {car.plate}
             </span>
           </div>

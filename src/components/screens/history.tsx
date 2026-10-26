@@ -674,7 +674,7 @@ function HistoryBookingCard({ b, onClick }: { b: Booking; onClick: () => void })
             <CarPhoto car={car} className="size-8 shrink-0 rounded-lg object-cover" />
             <div className="min-w-0">
               <p className="truncate text-[13.5px] font-bold leading-tight">{car?.name || '—'}</p>
-              <span className="inline-block mt-0.5 rounded-[5px] border border-border/80 bg-muted/60 px-1.5 py-[1px] font-mono text-[10px] font-semibold text-foreground/85 shadow-2xs leading-none">
+              <span className="inline-block mt-0.5 rounded-[5px] border border-[#163280] bg-muted/60 px-1.5 py-[1px] font-mono text-[10px] font-semibold text-foreground/85 shadow-2xs leading-none">
                 {car?.plate}
               </span>
             </div>

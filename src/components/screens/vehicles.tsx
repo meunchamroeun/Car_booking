@@ -274,7 +274,7 @@ function VehicleCard({ car }: { car: Car }) {
           </Badge>
           <p className="text-[14.5px] font-semibold leading-tight">{car.name}</p>
           <p className="mt-1 flex items-center gap-1.5 truncate text-[11.5px] text-muted-foreground">
-            <span className="rounded-[5px] border border-border/80 bg-muted/60 px-1.5 py-[1.5px] font-mono text-[10.5px] font-semibold text-foreground/85 shadow-2xs leading-none">
+            <span className="rounded-[5px] border border-[#163280] bg-muted/60 px-1.5 py-[1.5px] font-mono text-[10.5px] font-semibold text-foreground/85 shadow-2xs leading-none">
               {car.plate}
             </span>
             <span aria-hidden>·</span>
