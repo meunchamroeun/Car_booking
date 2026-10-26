@@ -83,7 +83,7 @@ export function ReviewSheet({ open, id, startMode = 'approve' }: { open: boolean
     >
       <div className="rounded-2xl border bg-card p-4">
         <div className="flex items-center gap-3">
-          <Avatar initials={requester.initials} seed={requester.id} className="size-11" />
+          <Avatar initials={requester.initials} seed={requester.id} src={requester.avatarUrl} className="size-11" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-[15px] font-semibold">
               <span className="text-[12.5px] font-normal text-muted-foreground">{t('booking_by')} : </span>

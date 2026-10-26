@@ -24,25 +24,30 @@ export interface MaintenanceInfo {
 export interface User {
   id: string;
   name: string;
+  nameKm?: string;
   email: string;
   dept: string;
   role: UserRole;
   phone: string;
   initials: string;
+  avatarUrl?: string;
   driverId?: string | null;
 }
 
 export interface Driver {
   id: string;
   name: string;
+  nameKm?: string;
   phone: string;
   status: 'Active' | 'OffDuty';
+  avatarUrl?: string;
   licenseNo?: string;
 }
 
 export interface Car {
   id: string;
   name: string;
+  nameKm?: string;
   plate: string;
   type: CarType;
   seats: number;

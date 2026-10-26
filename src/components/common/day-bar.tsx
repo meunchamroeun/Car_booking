@@ -233,7 +233,7 @@ function SegmentDetail({
   const canOpen = allowOpenBooking && (mine || can(currentUser, 'booking.view_all'));
   return shell(
     <div className="flex gap-2.5">
-      <Avatar initials={who?.initials ?? '?'} seed={who?.id} className="size-8 text-[11px]" />
+      <Avatar initials={who?.initials ?? '?'} seed={who?.id} src={who?.avatarUrl} className="size-8 text-[11px]" />
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-x-1.5 font-semibold text-foreground">
           <span className="text-[12px] font-normal text-muted-foreground">{t('booking_by')} : </span>

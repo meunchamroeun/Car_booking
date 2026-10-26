@@ -42,7 +42,7 @@ export function TripCard({
           {perspective === 'requester' ? (
             <CarPhoto car={car} className="h-10 w-14 shrink-0 rounded-lg" />
           ) : (
-            <Avatar initials={requester?.initials ?? '?'} seed={requester?.id} className="size-10" />
+            <Avatar initials={requester?.initials ?? '?'} seed={requester?.id} src={requester?.avatarUrl} className="size-10" />
           )}
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">

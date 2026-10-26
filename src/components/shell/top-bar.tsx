@@ -33,7 +33,7 @@ export function TopBar() {
           )}
         </button>
         <button type="button" onClick={() => setCurrentTab('profile')} aria-label={t('nav_profile')} className="rounded-full">
-          <Avatar initials={currentUser.initials} seed={currentUser.id} />
+          <Avatar initials={currentUser.initials} seed={currentUser.id} src={currentUser.avatarUrl} />
         </button>
       </div>
     </header>

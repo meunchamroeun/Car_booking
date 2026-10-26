@@ -22,7 +22,7 @@ export function ProfileScreen() {
     <div className="pt-2">
       <Card className="hero-pattern overflow-hidden border-0 bg-navy p-5 text-navy-foreground">
         <div className="flex items-center gap-4">
-          <Avatar initials={currentUser.initials} seed={currentUser.id} className="size-16 text-[20px] ring-4 ring-white/15" />
+          <Avatar initials={currentUser.initials} seed={currentUser.id} src={currentUser.avatarUrl} className="size-16 text-[20px] ring-4 ring-white/15" />
           <div className="min-w-0">
             <p className="truncate text-[20px] font-bold leading-tight">{currentUser.name}</p>
             <p className="truncate text-[13px] text-white/65">{currentUser.dept}</p>
@@ -74,10 +74,11 @@ export function ProfileScreen() {
           const active = u.id === currentUser.id;
           return (
             <button key={u.id} type="button" onClick={() => !active && switchUser(u.id)} className={cn('flex w-full items-center gap-3 p-3.5 text-left transition-colors', active ? 'bg-primary-soft/60' : 'hover:bg-muted/40')}>
-              <Avatar initials={u.initials} seed={u.id} />
+              <Avatar initials={u.initials} seed={u.id} src={u.avatarUrl} />
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-2 text-[14px] font-semibold">
                   {u.name}
+                  {u.nameKm && <span className="font-normal text-muted-foreground text-[12px]">({u.nameKm})</span>}
                   <Badge tone={u.role === 'Admin' ? 'primary' : u.role === 'Approver' ? 'info' : u.role === 'Driver' ? 'warning' : 'neutral'}>{t(`role_${u.role}`)}</Badge>
                 </p>
                 <p className="truncate text-[12px] text-muted-foreground">{t(`role_desc_${u.role}`)}</p>

@@ -76,7 +76,7 @@ export function DriverSelect({ b, value, onChange }: { b: Booking; value: string
             )}
           >
             {selected ? (
-              <Avatar initials={initials(selected.driver.name)} seed={selected.driver.id} className="size-8 text-[11px]" />
+              <Avatar initials={initials(selected.driver.name)} seed={selected.driver.id} src={selected.driver.avatarUrl} className="size-8 text-[11px]" />
             ) : (
               <span className="flex size-8 items-center justify-center rounded-full bg-muted text-muted-foreground">
                 <UserRound className="size-4" />
@@ -152,7 +152,7 @@ export function DriverSelect({ b, value, onChange }: { b: Booking; value: string
                     active && 'bg-primary-soft data-[highlighted]:bg-primary-soft'
                   )}
                 >
-                  <Avatar initials={initials(o.driver.name)} seed={o.driver.id} className="size-8 text-[11px]" />
+                  <Avatar initials={initials(o.driver.name)} seed={o.driver.id} src={o.driver.avatarUrl} className="size-8 text-[11px]" />
                   <span className="min-w-0 flex-1">
                     <span className={cn('block truncate text-[13.5px] font-semibold', active && 'text-primary')}>{o.driver.name}</span>
                     <span className="block truncate text-[11.5px] text-muted-foreground">{o.driver.phone}</span>

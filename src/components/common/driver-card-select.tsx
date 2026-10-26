@@ -62,7 +62,7 @@ export function DriverCardSelect({
                     : 'border-border/40 bg-muted/20 opacity-55 cursor-not-allowed'
               )}
             >
-              <Avatar initials={initials(o.driver.name)} seed={o.driver.id} className="size-9 shrink-0 text-[11px]" />
+              <Avatar initials={initials(o.driver.name)} seed={o.driver.id} src={o.driver.avatarUrl} className="size-9 shrink-0 text-[11px]" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className={cn('truncate text-[13.5px] font-semibold leading-tight', isSelected ? 'text-primary' : 'text-foreground')}>

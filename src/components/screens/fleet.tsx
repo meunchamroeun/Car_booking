@@ -72,10 +72,11 @@ function DriverList() {
         const live = today.find(b => b.taskStatus === 'In Progress');
         return (
           <div key={d.id} className="flex items-center gap-3 p-3.5">
-            <Avatar initials={d.name.split(' ').map(x => x[0]).join('')} seed={d.id} />
+            <Avatar initials={d.name.split(' ').map(x => x[0]).join('')} seed={d.id} src={d.avatarUrl} />
             <div className="min-w-0 flex-1">
               <p className="flex items-center gap-2 truncate text-[14px] font-semibold">
                 {d.name}
+                {d.nameKm && <span className="font-normal text-muted-foreground text-[12px]">({d.nameKm})</span>}
                 {live && (
                   <Badge tone="info" dot>
                     {t('st_In Progress')}

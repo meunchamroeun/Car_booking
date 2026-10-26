@@ -517,7 +517,7 @@ function AdminHome() {
           return (
             <Card key={d.id} className="w-[150px] shrink-0 p-3">
               <div className="flex items-center gap-2">
-                <Avatar initials={d.name.split(' ').map(x => x[0]).join('')} seed={d.id} className="size-8 text-[11px]" />
+                <Avatar initials={d.name.split(' ').map(x => x[0]).join('')} seed={d.id} src={d.avatarUrl} className="size-8 text-[11px]" />
                 <span className={cn('size-2 rounded-full', d.status === 'Active' ? 'bg-success' : 'bg-muted-foreground/40')} />
               </div>
               <p className="mt-2 truncate text-[13.5px] font-semibold">{d.name}</p>
