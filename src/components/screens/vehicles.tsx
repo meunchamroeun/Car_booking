@@ -246,11 +246,13 @@ function VehicleCard({ car }: { car: Car }) {
 
   const status = inService
     ? { tone: 'warning' as const, label: t('st_service') }
-    : busy.length === 0
-      ? { tone: 'success' as const, label: t('st_available') }
-      : anyWin
-        ? { tone: 'primary' as const, label: t('st_partly') }
-        : { tone: 'danger' as const, label: t('st_full') };
+    : !anyWin
+      ? busy.length > 0
+        ? { tone: 'danger' as const, label: t('st_full') }
+        : { tone: 'neutral' as const, label: t('st_not_available') }
+      : busy.length === 0
+        ? { tone: 'success' as const, label: t('st_available') }
+        : { tone: 'primary' as const, label: t('st_partly') };
 
   return (
     <Card
