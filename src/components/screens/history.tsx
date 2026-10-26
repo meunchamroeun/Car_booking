@@ -697,7 +697,7 @@ function HistoryBookingCard({ b, onClick }: { b: Booking; onClick: () => void })
         {/* Middle details: Requester & Driver */}
         <div className="mt-2.5 flex items-center justify-between text-[12px]">
           <div className="flex items-center gap-1.5 truncate">
-            <Avatar initials={requester?.initials ?? '?'} seed={requester?.id} className="size-5 text-[9px]" />
+            <Avatar initials={requester?.initials ?? '?'} seed={requester?.id} src={requester?.avatarUrl} className="size-5 text-[9px]" />
             <span className="text-[12px] font-normal text-muted-foreground">{t('booking_by')} :</span>
             <span className="truncate font-semibold text-foreground">{requester?.name || '—'}</span>
           </div>
