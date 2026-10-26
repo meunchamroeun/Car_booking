@@ -104,7 +104,7 @@ export const DateUtil = {
 
   /** Times only for same-day, full window otherwise (for lists already grouped by day). */
   timeSpan(b: { startDate: string; startTime: string; endDate?: string; endTime: string }, lang: 'en' | 'kh' = 'en'): string {
-    return (b.endDate || b.startDate) === b.startDate ? `${b.startTime}–${b.endTime}` : this.window(b, lang);
+    return (b.endDate || b.startDate) === b.startDate ? `${b.startTime} - ${b.endTime}` : this.window(b, lang);
   },
 
   /** "Just now", "12 min ago", "09:40" (today) or "Wed 14 Oct · 09:40". */

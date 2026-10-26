@@ -11,7 +11,6 @@ import { PageHeader, Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DateKeyIn } from '@/components/ui/date-key-in';
-import { Avatar } from '@/components/ui/avatar';
 import { Segmented } from '@/components/ui/segmented';
 import { EmptyState } from '@/components/ui/empty';
 import { CarPhoto } from '@/components/common/car-photo';
@@ -127,8 +126,8 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
       )}
 
       <div className="mt-3 space-y-3">
-        {/* Time slot: one-line chips, scroll sideways if the screen is narrow */}
-        <div className="no-scrollbar flex gap-[3px] overflow-x-auto" role="radiogroup" aria-label={t('a11y_time_slot')}>
+        {/* Time slot: 3 chips fitting the width cleanly without ellipsis or scrolling */}
+        <div className="grid grid-cols-[auto_1fr_1.08fr] gap-1" role="radiogroup" aria-label={t('a11y_time_slot')}>
           {(
             [
               ['all', 'full_day'],
@@ -145,16 +144,19 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
                 aria-checked={on}
                 onClick={() => setSelectedSlot(value)}
                 className={cn(
-                  'h-8 flex-auto shrink-0 whitespace-nowrap rounded-full border px-1.5 text-[11.5px] font-semibold transition-colors',
-                  on ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                  'flex h-8 min-w-0 items-center justify-center whitespace-nowrap rounded-full border px-1.5 text-center transition-colors',
+                  value === 'all' && 'px-2.5',
+                  on ? 'border-primary bg-primary-soft text-primary font-semibold' : 'border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground'
                 )}
               >
-                {t(key)}
-                {value !== 'all' && (
-                  <span className="ml-0.5 font-medium tabular opacity-75">
-                    {BOOKING_SLOTS[key].start}–{BOOKING_SLOTS[key].end}
-                  </span>
-                )}
+                <span className="text-[10.5px] min-[380px]:text-[11.5px] font-semibold">
+                  {t(key)}
+                  {value !== 'all' && (
+                    <span className="ml-1 font-medium tabular opacity-80">
+                      {BOOKING_SLOTS[key].start}–{BOOKING_SLOTS[key].end}
+                    </span>
+                  )}
+                </span>
               </button>
             );
           })}
@@ -344,7 +346,7 @@ function VehicleCard({ car }: { car: Car }) {
         ) : (
           <>
             {busy.length > 0 && (
-              <ul className="space-y-1.5">
+              <ul className="space-y-2">
                 {busy.map(b => {
                   const who = users.find(u => u.id === b.requesterId);
                   const mine = b.requesterId === currentUser.id;
@@ -358,20 +360,37 @@ function VehicleCard({ car }: { car: Car }) {
                           e.stopPropagation();
                           openSheet({ type: 'booking', id: b.id });
                         }}
-                        className={cn('flex w-full items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-left', mine ? 'bg-primary-soft' : 'bg-muted/60', !(mine || canSeeAll) && 'cursor-default')}
+                        className={cn(
+                          'group/bitem flex w-full items-center gap-3 rounded-2xl p-2.5 text-left border transition-all',
+                          mine
+                            ? 'bg-primary-soft/80 border-primary/25 hover:bg-primary-soft hover:border-primary/40 hover:shadow-xs'
+                            : 'bg-muted/40 border-border/60 hover:bg-muted/70 hover:border-border hover:shadow-xs',
+                          !(mine || canSeeAll) && 'cursor-default'
+                        )}
                       >
-                        <Avatar initials={who?.initials ?? '?'} seed={who?.id} className="size-7 text-[10.5px]" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[13px] font-semibold">
-                            {who?.name ?? '—'}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[12.5px] leading-tight">
+                            <span className="text-muted-foreground font-normal">{t('booking_by')} : </span>
+                            <span className="font-semibold text-foreground">{who?.name ?? '—'}</span>
+                          </p>
+                          <p className="mt-1 truncate text-[11.5px] leading-tight text-muted-foreground" title={b.purpose}>
+                            <span className="text-muted-foreground/80 font-normal">{t('purpose')} : </span>
+                            <span className="font-medium text-foreground/85">{b.purpose || who?.dept || '—'}</span>
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[12px] font-semibold tabular shadow-2xs',
+                              done
+                                ? 'border-border bg-muted/80 text-muted-foreground'
+                                : 'border-border-strong border-foreground/25 bg-background text-foreground'
+                            )}
+                          >
+                            <Clock className="size-3 shrink-0 opacity-70" />
+                            <span>{DateUtil.timeSpan(app.bookings.find(x => x.id === b.id) ?? b, lang)}</span>
                           </span>
-                          <span className="block truncate text-[11.5px] text-muted-foreground" title={b.purpose}>
-                            {b.purpose || who?.dept}
-                          </span>
-                        </span>
-                        <span className={cn('shrink-0 text-[12px] font-semibold tabular', done ? 'text-muted-foreground' : 'text-primary')}>
-                          {DateUtil.timeSpan(app.bookings.find(x => x.id === b.id) ?? b, lang)}
-                        </span>
+                        </div>
                       </button>
                     </li>
                   );
@@ -398,13 +417,7 @@ function VehicleCard({ car }: { car: Car }) {
               onClick={e => (e.stopPropagation(), book())}
             >
               {win ? (
-                <span className="flex min-w-0 items-center gap-1.5">
-                  {t('book_short')}
-                  <span className="opacity-60">·</span>
-                  <span className="tabular">
-                    {win[0]}–{win[1]}
-                  </span>
-                </span>
+                t('book')
               ) : anyWin ? (
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span className="truncate opacity-75">{t('slot_full_book', { slot: t(selectedSlot) })}</span>

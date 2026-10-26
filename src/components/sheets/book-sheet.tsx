@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { AlertTriangle, Briefcase, CalendarDays, CarFront, Check, CheckCircle2, ChevronDown, UserRound, Users, Zap } from 'lucide-react';
+import { AlertTriangle, Briefcase, CalendarDays, CarFront, Check, CheckCircle2, ChevronDown, Clock, UserRound, Users, Zap } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { occupyingBookings } from '@/lib/fleet-service';
@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils';
 import { CalendarPopup } from '@/components/ui/calendar-popup';
 import { TimeRangeTrack } from '@/components/ui/time-range-track';
 import { DateTimeBox } from '@/components/ui/date-time-box';
-import { DateKeyIn } from '@/components/ui/date-key-in';
 import { TimeField } from '@/components/ui/time-field';
 import { TimeSpin } from '@/components/ui/time-spin';
 import { TimeWheelPicker } from '@/components/ui/time-wheel-picker';
@@ -153,7 +152,6 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
 
   // Staff changing an approved booking's car / time / driver need → it goes back for approval
   const reapprove = !!editing && !!car && needsReapproval(currentUser, editing, { carId: car.id, date, endDate, startTime: start, endTime: end, needDriver });
-  const otherDay = multiDay || (date !== today && date !== tomorrow);
   // Start moved past the end → push the end so the booking keeps at least 30 minutes
   const changeStart = (v: string) =>
     setRange(r => {
@@ -208,6 +206,37 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
             </div>
           </div>
         )}
+
+        {/* Existing bookings for this vehicle */}
+        {booked.length > 0 && (
+          <div className="mt-2 rounded-2xl bg-muted/60 p-2.5">
+            <ul className="space-y-1.5">
+              {booked.map(b => {
+                const who = users.find(u => u.id === b.requesterId);
+                const sameDay = (b.endDate || b.startDate) === b.startDate;
+                return (
+                  <li key={b.id} className="flex items-center gap-3 rounded-2xl border border-border/60 bg-background/80 p-2.5 text-[12.5px] shadow-2xs">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate leading-tight">
+                        <span className="text-muted-foreground font-normal">{t('booking_by')} : </span>
+                        <span className="font-semibold text-foreground">{who?.name ?? '—'}</span>
+                      </p>
+                      <p className="mt-1 truncate text-[11.5px] leading-tight text-muted-foreground" title={b.purpose}>
+                        <span className="text-muted-foreground/80 font-normal">{t('purpose')} : </span>
+                        <span className="font-medium text-foreground/85">{b.purpose || who?.dept || '—'}</span>
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full border border-border/80 bg-background px-3 py-1 text-[12px] font-semibold tabular text-foreground shadow-2xs">
+                      {multiDay || !sameDay ? `${DateUtil.friendly(b.startDate, lang)} ` : ''}
+                      {b.startTime} - {sameDay ? '' : `${DateUtil.friendly(b.endDate, lang)} `}
+                      {b.endTime}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
         {changingCar && (
           <div className="no-scrollbar -mx-5 mt-2.5 flex snap-x gap-2 overflow-x-auto px-5 pb-1" role="radiogroup" aria-label={t('choose_vehicle')}>
             {cars.map(c => {
@@ -259,71 +288,67 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           </button>
         }
       >
-        {/* Quick picks (Today / Tomorrow / date + Full day / Morning / Afternoon) — hidden until "Quick pick" is tapped */}
+
+        {/* Quick picks (Today / Tomorrow / date + Full day / Morning / Afternoon) inside a card, toggleable */}
         {showQuick && (
-          <div className="mb-2.5 animate-in fade-in-0 slide-in-from-top-1">
-          <div className="grid grid-cols-[1fr_1fr_1.45fr] gap-0.5 rounded-xl bg-muted/60 p-0.5" role="radiogroup" aria-label={t('date')}>
-            {[
-              { d: today, label: t('today') },
-              { d: tomorrow, label: t('tomorrow') },
-            ].map(o => {
-              const on = date === o.d && !multiDay;
-              return (
-                <button
-                  key={o.d}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  onClick={() => (setDate(o.d), setEndDate(o.d), setPicker(null))}
-                  className={cn(
-                    'h-8 rounded-[10px] text-[12.5px] transition-all',
-                    on ? 'bg-primary font-semibold text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
-                  )}
-                >
-                  {o.label}
-                </button>
-              );
-            })}
-            {/* Type the date (dd/mm/yyyy) or tap the icon for the calendar */}
-            <DateKeyIn
-              value={date}
-              min={today}
-              active={otherDay}
-              open={picker === 'dates'}
-              onChange={d => (setDate(d), setEndDate(d), setPicker(null))}
-              onToggle={() => setPicker(p => (p === 'dates' ? null : 'dates'))}
-              label={t('key_in_date')}
-              placeholder={t('date_ph')}
-              pickLabel={t('select_date')}
-            />
-          </div>
-          <div className="no-scrollbar mt-2 flex gap-[3px] overflow-x-auto" role="radiogroup" aria-label={t('a11y_time_slot')}>
-            {QUICK_SLOTS.map(s => {
-              const on = preset?.key === s.key;
-              const blocked = !!slotProblem(s.start, s.end);
-              return (
-                <button
-                  key={s.key}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  disabled={blocked}
-                  onClick={() => (setRange({ start: s.start, end: s.end }), setPicker(null))}
-                  className={cn(
-                    'h-8 flex-auto shrink-0 whitespace-nowrap rounded-full border px-1.5 text-[11.5px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40',
-                    on ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-card text-muted-foreground enabled:hover:border-primary/40 enabled:hover:text-foreground'
-                  )}
-                >
-                  {t(s.key)}
-                  {s.key !== 'full_day' && (
-                    <span className="ml-0.5 font-medium tabular opacity-75">
-                      {s.start}–{s.end}
+          <div className="mb-3 rounded-2xl border border-border/80 bg-card p-2.5 shadow-2xs animate-in fade-in-0 slide-in-from-top-1">
+            <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-0.5" role="radiogroup" aria-label={t('date')}>
+              {[
+                { d: today, label: t('today') },
+                { d: tomorrow, label: t('tomorrow') },
+              ].map(o => {
+                const on = date === o.d && !multiDay;
+                return (
+                  <button
+                    key={o.d}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => (setDate(o.d), setEndDate(o.d), setPicker(null))}
+                    className={cn(
+                      'h-8 rounded-[10px] text-[12.5px] transition-all',
+                      on ? 'bg-primary font-semibold text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
+                    )}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Time slot chips: Full day | Morning 08:00–12:00 | Afternoon 13:00–17:30 (fits clean, no ellipsis, no scrolling) */}
+            <div className="mt-2 grid grid-cols-[auto_1fr_1.08fr] gap-1" role="radiogroup" aria-label={t('a11y_time_slot')}>
+              {QUICK_SLOTS.map(s => {
+                const on = preset?.key === s.key;
+                const blocked = !!slotProblem(s.start, s.end);
+                return (
+                  <button
+                    key={s.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    disabled={blocked}
+                    onClick={() => (setRange({ start: s.start, end: s.end }), setPicker(null))}
+                    className={cn(
+                      'flex h-8 min-w-0 items-center justify-center whitespace-nowrap rounded-full border px-1.5 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+                      s.key === 'full_day' && 'px-2.5',
+                      on
+                        ? 'border-primary bg-primary-soft text-primary font-semibold'
+                        : 'border-border bg-card text-muted-foreground enabled:hover:border-primary/40 enabled:hover:text-foreground'
+                    )}
+                  >
+                    <span className="text-[10.5px] min-[380px]:text-[11.5px] font-semibold">
+                      {t(s.key)}
+                      {s.key !== 'full_day' && (
+                        <span className="ml-1 font-medium tabular opacity-80">
+                          {s.start}–{s.end}
+                        </span>
+                      )}
                     </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -365,17 +390,18 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
               </p>
             </>
           ) : (
-            <div className="rounded-xl bg-muted/50 px-3 pb-2.5 pt-2">
+            <div className="rounded-xl border border-border bg-muted/40 px-3 pb-2.5 pt-2">
               <div className="mb-1.5 flex items-center justify-between">
                 {/* Scroll / drag up-down or type to change the times */}
-                <span className="flex items-center text-[14px] font-semibold">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary-soft px-2.5 py-0.5 text-[13.5px] font-semibold text-primary">
+                  <Clock className="size-3.5 shrink-0 text-primary/80" />
                   {/* Tap a time for a small hour : minute dropdown (scroll / drag also work) */}
                   <TimeWheelPicker open={timePick === 'start'} onOpenChange={o => setTimePick(o ? 'start' : null)} value={start} onChange={changeStart} title={t('start_time')} labels={{ hour: t('a11y_hour', { label: '' }), minute: t('a11y_minute', { label: '' }) }}>
                     <span className="inline-flex">
                       <TimeSpin value={start} label={t('start_time')} onChange={changeStart} onOpen={() => setTimePick('start')} active={timePick === 'start'} max={23 * 60} />
                     </span>
                   </TimeWheelPicker>
-                  <span className="px-0.5 text-muted-foreground">–</span>
+                  <span className="px-1 text-primary/60">–</span>
                   <TimeWheelPicker open={timePick === 'end'} onOpenChange={o => setTimePick(o ? 'end' : null)} value={end} onChange={changeEnd} title={t('end_time')} labels={{ hour: t('a11y_hour', { label: '' }), minute: t('a11y_minute', { label: '' }) }}>
                     <span className="inline-flex">
                       <TimeSpin value={end} label={t('end_time')} onChange={changeEnd} onOpen={() => setTimePick('end')} active={timePick === 'end'} min={DateUtil.toMins(start) + 30} />
@@ -413,40 +439,17 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           />
         </CalendarPopup>
 
-        <div className={cn('mt-2', booked.length > 0 && 'rounded-2xl bg-muted/60 p-3')}>
-          {booked.length > 0 && (
-            <ul className="space-y-1.5">
-              {booked.map(b => {
-                const who = users.find(u => u.id === b.requesterId);
-                const sameDay = (b.endDate || b.startDate) === b.startDate;
-                return (
-                  <li key={b.id} className="flex items-center gap-2 text-[12.5px]">
-                    <Avatar initials={who?.initials ?? '?'} seed={who?.id} className="size-6 text-[10px]" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">
-                        {who?.name}
-                      </span>
-                      <span className="block truncate text-[11.5px] text-muted-foreground">{b.purpose}</span>
-                    </span>
-                    <span className="shrink-0 font-semibold tabular text-primary">
-                      {multiDay || !sameDay ? `${DateUtil.friendly(b.startDate, lang)} ` : ''}
-                      {b.startTime}–{sameDay ? '' : `${DateUtil.friendly(b.endDate, lang)} `}
-                      {b.endTime}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+        {/* One-line result; old style status */}
+        <p
+          className={cn(
+            'mt-2.5 flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-[12px] font-medium',
+            timeProblem ? 'bg-destructive-soft text-destructive' : 'bg-success-soft text-success'
           )}
-          {/* One-line result; the chosen date and time are already shown above and in the footer */}
-          <p
-            className={cn('flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-[12px] font-medium', booked.length > 0 && 'mt-2', timeProblem ? 'bg-destructive-soft text-destructive' : 'bg-success-soft text-success')}
-            role="status"
-          >
-            {timeProblem ? <AlertTriangle className="size-3.5 shrink-0" /> : <CheckCircle2 className="size-3.5 shrink-0" />}
-            {timeProblem ?? t('slot_free')}
-          </p>
-        </div>
+          role="status"
+        >
+          {timeProblem ? <AlertTriangle className="size-3.5 shrink-0" /> : <CheckCircle2 className="size-3.5 shrink-0" />}
+          {timeProblem ?? t('slot_free')}
+        </p>
       </Step>
 
       {/* 3. Purpose */}
@@ -461,15 +464,14 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           aria-required
           className="min-h-[64px]"
         />
-        <p className="mt-1 text-right text-[11.5px] tabular text-muted-foreground">{purpose.length}/250</p>
       </Step>
 
       {/* 4. Who drives */}
-      <Step n={4} icon={<UserRound />} label={t('driver_q')} required value={needDriver ? t('with_driver') : t('self_drive')} done last>
+      <Step n={4} icon={<UserRound />} label={t('driver_q')} required value={needDriver ? t('driver_needed_yes') : t('driver_needed_no')} done last>
         <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('driver_q')}>
           {[
-            { v: false, icon: CarFront, title: t('self_drive') },
-            { v: true, icon: UserRound, title: t('with_driver') },
+            { v: false, icon: CarFront, title: t('driver_needed_no') },
+            { v: true, icon: UserRound, title: t('driver_needed_yes') },
           ].map(o => (
             <button
               key={String(o.v)}
@@ -477,7 +479,10 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
               role="radio"
               aria-checked={needDriver === o.v}
               onClick={() => setNeedDriver(o.v)}
-              className={cn('flex items-center gap-2.5 rounded-2xl border-2 px-2.5 py-2 text-left transition-all', needDriver === o.v ? 'border-primary bg-primary-soft/60' : 'border-transparent bg-card ring-1 ring-border')}
+              className={cn(
+                'flex items-center gap-2.5 rounded-2xl border-2 px-3 py-2.5 text-left transition-all',
+                needDriver === o.v ? 'border-primary bg-primary-soft/60' : 'border-transparent bg-card ring-1 ring-border'
+              )}
             >
               <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-xl', needDriver === o.v ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
                 <o.icon className="size-4" />

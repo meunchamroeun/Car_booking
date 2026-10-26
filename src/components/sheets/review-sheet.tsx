@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Field, Textarea } from '@/components/ui/input';
 import { CarPhoto } from '@/components/common/car-photo';
-import { DriverSelect } from '@/components/common/driver-select';
+import { DriverCardSelect } from '@/components/common/driver-card-select';
 import { cn } from '@/lib/utils';
 
 /** startMode 'reject' (from the Reject button) skips straight to the reason, without the driver question. */
@@ -112,41 +112,19 @@ export function ReviewSheet({ open, id, startMode = 'approve' }: { open: boolean
 
       {mode === 'approve' && b.needDriver && (
         <div className="mt-5">
-          <p className="mb-2 text-[14px] font-semibold">{t('assign_q')}</p>
-          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('assign_q')}>
-            {(
-              [
-                { v: 'yes', icon: UserRound, title: t('assign_yes'), desc: t('assign_yes_desc') },
-                { v: 'no', icon: CarFront, title: t('assign_no'), desc: t('assign_no_desc') },
-              ] as const
-            ).map(o => (
-              <button
-                key={o.v}
-                type="button"
-                role="radio"
-                aria-checked={assign === o.v}
-                onClick={() => setAssign(o.v)}
-                className={cn(
-                  'flex items-start gap-2.5 rounded-2xl border-2 p-3 text-left transition-all',
-                  assign === o.v ? 'border-primary bg-primary-soft/60' : 'border-transparent bg-card ring-1 ring-border'
-                )}
-              >
-                <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-xl', assign === o.v ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
-                  <o.icon className="size-[18px]" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-[13.5px] font-semibold leading-snug">{o.title}</span>
-                  <span className="block text-[11.5px] leading-snug text-muted-foreground">{o.desc}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {mode === 'approve' && b.needDriver && assign === 'yes' && (
-        <div className="mt-4 animate-in fade-in-0 slide-in-from-top-1 duration-200">
-          <DriverSelect b={b} value={driverId} onChange={setDriverId} />
+          <DriverCardSelect
+            b={b}
+            driverId={driverId}
+            assign={assign}
+            onSelectDriver={id => {
+              setAssign('yes');
+              setDriverId(id);
+            }}
+            onSelectNoDriver={() => {
+              setAssign('no');
+              setDriverId(null);
+            }}
+          />
         </div>
       )}
 

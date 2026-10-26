@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Segmented } from '@/components/ui/segmented';
 import { EmptyState } from '@/components/ui/empty';
 import { TripCard } from '@/components/common/trip-card';
-import { DriverSelect } from '@/components/common/driver-select';
+import { DriverCardSelect } from '@/components/common/driver-card-select';
 import { Booking } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -62,40 +62,20 @@ function PendingCard({ b }: { b: Booking }) {
   const approve = () => approveBooking(b.id, assign === 'yes' ? driverId : null, !b.needDriver || assign === 'yes');
 
   const choice = b.needDriver ? (
-    <div onClick={e => e.stopPropagation()}>
-      <p className="mb-2 text-[13.5px] font-semibold">
-        {t('assign_q')} <span className="text-destructive">*</span>
-      </p>
-      <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('assign_q')}>
-        {(
-          [
-            { v: 'yes', icon: UserRound, label: t('assign_yes'), onClick: () => setAssign('yes') },
-            { v: 'no', icon: CarFront, label: t('assign_no'), onClick: () => setAssign('no') },
-          ] as const
-        ).map(o => (
-          <button
-            key={o.v}
-            type="button"
-            role="radio"
-            aria-checked={assign === o.v}
-            onClick={o.onClick}
-            className={cn(
-              'flex h-10 items-center justify-center gap-1.5 rounded-xl border-2 px-2 text-[12.5px] font-semibold transition-all',
-              assign === o.v ? 'border-primary bg-primary-soft text-primary' : 'border-transparent bg-muted/60 text-foreground/80 hover:bg-muted'
-            )}
-          >
-            <o.icon className="size-4 shrink-0" />
-            {o.label}
-          </button>
-        ))}
-      </div>
-
-      {assign === 'yes' && (
-        <div className="mt-3 animate-in fade-in-0 slide-in-from-top-1 duration-200">
-          <DriverSelect b={b} value={driverId} onChange={setDriverId} />
-        </div>
-      )}
-      {assign === 'no' && <p className="mt-2 text-[12px] text-muted-foreground">{t('assign_no_desc')}</p>}
+    <div onClick={e => e.stopPropagation()} className="mt-1">
+      <DriverCardSelect
+        b={b}
+        driverId={driverId}
+        assign={assign}
+        onSelectDriver={id => {
+          setAssign('yes');
+          setDriverId(id);
+        }}
+        onSelectNoDriver={() => {
+          setAssign('no');
+          setDriverId(null);
+        }}
+      />
     </div>
   ) : null;
 

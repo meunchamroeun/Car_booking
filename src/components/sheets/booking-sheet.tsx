@@ -181,7 +181,7 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
               <span className="font-medium text-muted-foreground">{t('awaiting_driver')}</span>
             )
           ) : (
-            t('self_drive')
+            t('driver_needed_no')
           )}
         </InfoRow>
         <InfoRow icon={<FileText />} label={t('purpose')}>
