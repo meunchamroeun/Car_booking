@@ -70,6 +70,7 @@ const en = {
   // Common
   today: 'Today',
   tomorrow: 'Tomorrow',
+  after_hours_notice: 'Office hours for today have ended (08:00–18:00).',
   quick_pick: 'Quick Select',
   quick_select_cleared: 'Custom time (Quick Select cleared)',
   select_date: 'Select date',
@@ -530,6 +531,7 @@ const kh: Partial<Dict> = {
 
   today: 'ថ្ងៃនេះ',
   tomorrow: 'ថ្ងៃស្អែក',
+  after_hours_notice: 'ម៉ោងធ្វើការសម្រាប់ថ្ងៃនេះបានបញ្ចប់ហើយ (08:00–18:00)។',
   quick_pick: 'ជ្រើសរហ័ស',
   quick_select_cleared: 'ម៉ោងផ្ទាល់ខ្លួន (សម្អាតការជ្រើសរហ័ស)',
   select_date: 'រើសថ្ងៃ',

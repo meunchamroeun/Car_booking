@@ -712,12 +712,11 @@ function HistoryBookingCard({ b, onClick }: { b: Booking; onClick: () => void })
           </div>
         </div>
 
-        {/* Purpose / Destination */}
-        {(b.purpose || b.destination) && (
+        {/* Purpose */}
+        {b.purpose && (
           <div className="mt-2 truncate border-t border-border/60 pt-2 text-[12px]">
             <span className="font-normal text-muted-foreground">{t('purpose')} : </span>
-            <span className="font-medium text-foreground/85">{b.purpose || '—'}</span>
-            {b.destination && <span className="text-muted-foreground"> · {b.destination}</span>}
+            <span className="font-medium text-foreground/85">{b.purpose}</span>
           </div>
         )}
 
