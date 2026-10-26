@@ -86,7 +86,7 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
         ))}
         <DateKeyIn
           value={selectedDate}
-          min={today}
+          min="2020-01-01"
           active={isCustom}
           open={calendarOpen}
           onChange={d => (setSelectedDate(d), setCalendarOpen(false))}
@@ -105,7 +105,7 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
             mode="single"
             start={selectedDate}
             end={selectedDate}
-            min={today}
+            min="2020-01-01"
             lang={lang}
             onChange={s => {
               setSelectedDate(s);
@@ -236,23 +236,28 @@ function VehicleCard({ car }: { car: Car }) {
   const canSeeAll = can(currentUser, 'booking.view_all');
   const busy = occupyingBookings(app, car.id, selectedDate);
   const inService = app.isCarInMaintenance(car.id, selectedDate);
-  const win = inService ? null : suggestWindow(app, car.id);
-  const anyWin = inService ? null : (selectedSlot === 'all' ? win : suggestWindow(app, car.id, 'all'));
+  const isPast = selectedDate < DateUtil.todayStr();
+  const win = inService || isPast ? null : suggestWindow(app, car.id);
+  const anyWin = inService || isPast ? null : (selectedSlot === 'all' ? win : suggestWindow(app, car.id, 'all'));
   const canBook = can(currentUser, 'booking.create');
   const canManage = can(currentUser, 'vehicle.maintenance');
   const targetWin = win ?? anyWin;
-  const bookable = canBook && !!targetWin;
+  const bookable = !isPast && canBook && !!targetWin;
   const book = () => targetWin && openBooking(car.id, targetWin[0], targetWin[1]);
 
   const status = inService
     ? { tone: 'warning' as const, label: t('st_service') }
-    : !anyWin
+    : isPast
       ? busy.length > 0
-        ? { tone: 'danger' as const, label: t('st_full') }
+        ? { tone: 'neutral' as const, label: t('st_not_available') }
         : { tone: 'neutral' as const, label: t('st_not_available') }
-      : busy.length === 0
-        ? { tone: 'success' as const, label: t('st_available') }
-        : { tone: 'primary' as const, label: t('st_partly') };
+      : !anyWin
+        ? busy.length > 0
+          ? { tone: 'danger' as const, label: t('st_full') }
+          : { tone: 'neutral' as const, label: t('st_not_available') }
+        : busy.length === 0
+          ? { tone: 'success' as const, label: t('st_available') }
+          : { tone: 'primary' as const, label: t('st_partly') };
 
   return (
     <Card

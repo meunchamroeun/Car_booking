@@ -19,14 +19,24 @@ import { cn } from '@/lib/utils';
 export function ApprovalsScreen() {
   const { bookings, currentUser, t, lang } = useApp();
   const [filter, setFilter] = React.useState<'pending' | 'decided'>('pending');
-  const [dateMode, setDateMode] = React.useState<'all' | 'today' | 'tomorrow' | 'custom'>('all');
+  const [dateMode, setDateMode] = React.useState<'all' | 'yesterday' | 'today' | 'tomorrow' | 'custom'>('all');
   const [customDate, setCustomDate] = React.useState('');
   const [calendarOpen, setCalendarOpen] = React.useState(false);
 
   const today = React.useMemo(() => DateUtil.todayStr(), []);
+  const yesterday = React.useMemo(() => DateUtil.addDays(today, -1), [today]);
   const tomorrow = React.useMemo(() => DateUtil.addDays(today, 1), [today]);
 
-  const targetDate = dateMode === 'today' ? today : dateMode === 'tomorrow' ? tomorrow : dateMode === 'custom' ? customDate : null;
+  const targetDate =
+    dateMode === 'yesterday'
+      ? yesterday
+      : dateMode === 'today'
+        ? today
+        : dateMode === 'tomorrow'
+          ? tomorrow
+          : dateMode === 'custom'
+            ? customDate
+            : null;
 
   const matchesDate = (b: Booking) => {
     if (!targetDate) return true;
@@ -58,8 +68,8 @@ export function ApprovalsScreen() {
         ]}
       />
 
-      {/* Date Filter: All | Today | Tomorrow | Pick Date */}
-      <div className="mt-3 grid grid-cols-[auto_1fr_1fr_1.35fr] gap-0.5 rounded-xl bg-muted/60 p-0.5" role="radiogroup" aria-label={t('filter_by_date')}>
+      {/* Date Filter: All | Yesterday | Today | Tomorrow | Pick Date */}
+      <div className="mt-3 grid grid-cols-[auto_1fr_1fr_1fr_1.35fr] gap-0.5 rounded-xl bg-muted/60 p-0.5" role="radiogroup" aria-label={t('filter_by_date')}>
         <button
           type="button"
           role="radio"
@@ -69,13 +79,30 @@ export function ApprovalsScreen() {
             setCalendarOpen(false);
           }}
           className={cn(
-            'h-8 rounded-[10px] px-2.5 text-[12px] transition-all',
+            'h-8 rounded-[10px] px-2 text-[12px] transition-all',
             dateMode === 'all'
               ? 'bg-primary font-semibold text-primary-foreground shadow-sm'
               : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
           )}
         >
           {t('period_all')}
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={dateMode === 'yesterday'}
+          onClick={() => {
+            setDateMode('yesterday');
+            setCalendarOpen(false);
+          }}
+          className={cn(
+            'h-8 rounded-[10px] text-[12px] transition-all',
+            dateMode === 'yesterday'
+              ? 'bg-primary font-semibold text-primary-foreground shadow-sm'
+              : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
+          )}
+        >
+          {t('yesterday')}
         </button>
         <button
           type="button"
@@ -113,7 +140,7 @@ export function ApprovalsScreen() {
         </button>
         <DateKeyIn
           value={customDate || today}
-          min={today}
+          min="2020-01-01"
           active={dateMode === 'custom'}
           open={calendarOpen}
           onChange={d => {
@@ -136,7 +163,7 @@ export function ApprovalsScreen() {
             mode="single"
             start={customDate || today}
             end={customDate || today}
-            min={today}
+            min="2020-01-01"
             lang={lang}
             onChange={s => {
               setCustomDate(s);
