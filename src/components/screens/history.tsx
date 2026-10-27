@@ -878,11 +878,22 @@ function HistoryBookingCard({ b, onClick }: { b: Booking; onClick: () => void })
 
   return (
     <Card className="overflow-hidden transition-all hover:border-primary/40 hover:shadow-card active:scale-[0.995]">
-      <button type="button" onClick={onClick} className="block w-full p-3 text-left">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onClick}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick();
+          }
+        }}
+        className="block w-full cursor-pointer p-3 text-left focus:outline-hidden"
+      >
         {/* Top: Car Name + Plate and Status Badge */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2.5">
-            <CarPhoto car={car} zoomable className="h-11 w-15 shrink-0 rounded-xl object-cover border border-border/60 shadow-2xs" />
+            <CarPhoto car={car} zoomable className="h-14 w-[84px] shrink-0 rounded-2xl object-cover border border-border/60 shadow-2xs" />
             <div className="min-w-0">
               <p className="truncate text-[14px] font-bold leading-tight">{car?.name || '—'}</p>
               <span className="inline-block mt-1 rounded-[5px] border border-[#163280] bg-muted/60 px-1.5 py-[1px] font-mono text-[10px] font-semibold text-foreground/85 shadow-2xs leading-none">
@@ -948,7 +959,7 @@ function HistoryBookingCard({ b, onClick }: { b: Booking; onClick: () => void })
             {t('cancel_reason')}: {b.cancelReason}
           </p>
         )}
-      </button>
+      </div>
     </Card>
   );
 }

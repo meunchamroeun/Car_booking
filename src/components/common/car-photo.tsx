@@ -42,7 +42,7 @@ export function CarPhoto({ car, className, zoomable }: { car?: Car; className?: 
         </div>
       )}
       {canZoom && loaded && (
-        <span className="absolute bottom-1 right-1 flex size-5 items-center justify-center rounded-md bg-black/45 text-white backdrop-blur-sm">
+        <span className="absolute bottom-1 right-1 flex size-5.5 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm shadow-xs transition-transform group-hover:scale-110">
           <Maximize2 className="size-3" />
         </span>
       )}
