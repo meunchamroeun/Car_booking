@@ -672,54 +672,46 @@ export function HistoryScreen() {
           {/* Historical Trips Analytics for this vehicle */}
           <div
             className={cn(
-              'mt-3 grid gap-2 border-t border-border/60 pt-2.5 text-center',
+              'mt-2.5 grid gap-1.5 border-t border-border/60 pt-2 text-center',
               carStats.rejected > 0 ? 'grid-cols-4' : 'grid-cols-3'
             )}
           >
-            <div className="flex flex-col items-center justify-between rounded-2xl bg-card/95 px-1.5 min-[380px]:px-2.5 py-2.5 shadow-2xs border border-border/60 min-h-[76px]">
-              <div className="flex flex-col items-center justify-center leading-tight">
-                <span className="text-[10.5px] min-[380px]:text-[11px] font-medium text-muted-foreground leading-none">
-                  {t('stat_total_prefix')}
-                </span>
-                <span className="text-[11.5px] min-[380px]:text-[12px] font-bold text-foreground leading-tight mt-0.5">
-                  {t('stat_lbl_request')}
-                </span>
-              </div>
-              <p className="text-[19px] min-[380px]:text-[21px] font-bold text-primary tabular tracking-tight mt-1">{carStats.total}</p>
+            <div className="flex flex-col items-center justify-center rounded-xl bg-card/95 px-1 py-1.5 sm:py-2 shadow-2xs border border-border/60">
+              <span className="text-[9.5px] min-[380px]:text-[10px] font-medium text-muted-foreground/80 leading-none">
+                {t('stat_total_prefix')}
+              </span>
+              <span className="text-[10.5px] min-[380px]:text-[11px] font-bold text-foreground leading-tight mt-0.5">
+                {t('stat_lbl_request')}
+              </span>
+              <p className="text-[16px] min-[380px]:text-[17px] font-bold text-primary tabular tracking-tight mt-0.5">{carStats.total}</p>
             </div>
-            <div className="flex flex-col items-center justify-between rounded-2xl bg-card/95 px-1.5 min-[380px]:px-2.5 py-2.5 shadow-2xs border border-border/60 min-h-[76px]">
-              <div className="flex flex-col items-center justify-center leading-tight">
-                <span className="text-[10.5px] min-[380px]:text-[11px] font-medium text-muted-foreground leading-none">
-                  {t('stat_total_prefix')}
-                </span>
-                <span className="text-[11.5px] min-[380px]:text-[12px] font-bold text-foreground leading-tight mt-0.5">
-                  {t('stat_lbl_completed')}
-                </span>
-              </div>
-              <p className="text-[19px] min-[380px]:text-[21px] font-bold text-success tabular tracking-tight mt-1">{carStats.completed}</p>
+            <div className="flex flex-col items-center justify-center rounded-xl bg-card/95 px-1 py-1.5 sm:py-2 shadow-2xs border border-border/60">
+              <span className="text-[9.5px] min-[380px]:text-[10px] font-medium text-muted-foreground/80 leading-none">
+                {t('stat_total_prefix')}
+              </span>
+              <span className="text-[10.5px] min-[380px]:text-[11px] font-bold text-foreground leading-tight mt-0.5">
+                {t('stat_lbl_completed')}
+              </span>
+              <p className="text-[16px] min-[380px]:text-[17px] font-bold text-success tabular tracking-tight mt-0.5">{carStats.completed}</p>
             </div>
-            <div className="flex flex-col items-center justify-between rounded-2xl bg-card/95 px-1.5 min-[380px]:px-2.5 py-2.5 shadow-2xs border border-border/60 min-h-[76px]">
-              <div className="flex flex-col items-center justify-center leading-tight">
-                <span className="text-[10.5px] min-[380px]:text-[11px] font-medium text-muted-foreground leading-none">
-                  {t('stat_total_prefix')}
-                </span>
-                <span className="text-[11.5px] min-[380px]:text-[12px] font-bold text-foreground leading-tight mt-0.5">
-                  {t('stat_lbl_cancelled')}
-                </span>
-              </div>
-              <p className="text-[19px] min-[380px]:text-[21px] font-bold text-muted-foreground tabular tracking-tight mt-1">{carStats.cancelled}</p>
+            <div className="flex flex-col items-center justify-center rounded-xl bg-card/95 px-1 py-1.5 sm:py-2 shadow-2xs border border-border/60">
+              <span className="text-[9.5px] min-[380px]:text-[10px] font-medium text-muted-foreground/80 leading-none">
+                {t('stat_total_prefix')}
+              </span>
+              <span className="text-[10.5px] min-[380px]:text-[11px] font-bold text-foreground leading-tight mt-0.5">
+                {t('stat_lbl_cancelled')}
+              </span>
+              <p className="text-[16px] min-[380px]:text-[17px] font-bold text-muted-foreground tabular tracking-tight mt-0.5">{carStats.cancelled}</p>
             </div>
             {carStats.rejected > 0 && (
-              <div className="flex flex-col items-center justify-between rounded-2xl bg-card/95 px-1.5 min-[380px]:px-2.5 py-2.5 shadow-2xs border border-border/60 min-h-[76px]">
-                <div className="flex flex-col items-center justify-center leading-tight">
-                  <span className="text-[10.5px] min-[380px]:text-[11px] font-medium text-muted-foreground leading-none">
-                    {t('stat_total_prefix')}
-                  </span>
-                  <span className="text-[11.5px] min-[380px]:text-[12px] font-bold text-foreground leading-tight mt-0.5">
-                    {t('stat_lbl_rejected')}
-                  </span>
-                </div>
-                <p className="text-[19px] min-[380px]:text-[21px] font-bold text-destructive tabular tracking-tight mt-1">{carStats.rejected}</p>
+              <div className="flex flex-col items-center justify-center rounded-xl bg-card/95 px-1 py-1.5 sm:py-2 shadow-2xs border border-border/60">
+                <span className="text-[9.5px] min-[380px]:text-[10px] font-medium text-muted-foreground/80 leading-none">
+                  {t('stat_total_prefix')}
+                </span>
+                <span className="text-[10.5px] min-[380px]:text-[11px] font-bold text-foreground leading-tight mt-0.5">
+                  {t('stat_lbl_rejected')}
+                </span>
+                <p className="text-[16px] min-[380px]:text-[17px] font-bold text-destructive tabular tracking-tight mt-0.5">{carStats.rejected}</p>
               </div>
             )}
           </div>
@@ -751,54 +743,46 @@ export function HistoryScreen() {
 
           <div
             className={cn(
-              'mt-3 grid gap-2 border-t border-border/60 pt-2.5 text-center',
+              'mt-2.5 grid gap-1.5 border-t border-border/60 pt-2 text-center',
               userStats.rejected > 0 ? 'grid-cols-4' : 'grid-cols-3'
             )}
           >
-            <div className="flex flex-col items-center justify-between rounded-2xl bg-card/95 px-1.5 min-[380px]:px-2.5 py-2.5 shadow-2xs border border-border/60 min-h-[76px]">
-              <div className="flex flex-col items-center justify-center leading-tight">
-                <span className="text-[10.5px] min-[380px]:text-[11px] font-medium text-muted-foreground leading-none">
-                  {t('stat_total_prefix')}
-                </span>
-                <span className="text-[11.5px] min-[380px]:text-[12px] font-bold text-foreground leading-tight mt-0.5">
-                  {t('stat_lbl_request')}
-                </span>
-              </div>
-              <p className="text-[19px] min-[380px]:text-[21px] font-bold text-primary tabular tracking-tight mt-1">{userStats.total}</p>
+            <div className="flex flex-col items-center justify-center rounded-xl bg-card/95 px-1 py-1.5 sm:py-2 shadow-2xs border border-border/60">
+              <span className="text-[9.5px] min-[380px]:text-[10px] font-medium text-muted-foreground/80 leading-none">
+                {t('stat_total_prefix')}
+              </span>
+              <span className="text-[10.5px] min-[380px]:text-[11px] font-bold text-foreground leading-tight mt-0.5">
+                {t('stat_lbl_request')}
+              </span>
+              <p className="text-[16px] min-[380px]:text-[17px] font-bold text-primary tabular tracking-tight mt-0.5">{userStats.total}</p>
             </div>
-            <div className="flex flex-col items-center justify-between rounded-2xl bg-card/95 px-1.5 min-[380px]:px-2.5 py-2.5 shadow-2xs border border-border/60 min-h-[76px]">
-              <div className="flex flex-col items-center justify-center leading-tight">
-                <span className="text-[10.5px] min-[380px]:text-[11px] font-medium text-muted-foreground leading-none">
-                  {t('stat_total_prefix')}
-                </span>
-                <span className="text-[11.5px] min-[380px]:text-[12px] font-bold text-foreground leading-tight mt-0.5">
-                  {t('stat_lbl_completed')}
-                </span>
-              </div>
-              <p className="text-[19px] min-[380px]:text-[21px] font-bold text-success tabular tracking-tight mt-1">{userStats.completed}</p>
+            <div className="flex flex-col items-center justify-center rounded-xl bg-card/95 px-1 py-1.5 sm:py-2 shadow-2xs border border-border/60">
+              <span className="text-[9.5px] min-[380px]:text-[10px] font-medium text-muted-foreground/80 leading-none">
+                {t('stat_total_prefix')}
+              </span>
+              <span className="text-[10.5px] min-[380px]:text-[11px] font-bold text-foreground leading-tight mt-0.5">
+                {t('stat_lbl_completed')}
+              </span>
+              <p className="text-[16px] min-[380px]:text-[17px] font-bold text-success tabular tracking-tight mt-0.5">{userStats.completed}</p>
             </div>
-            <div className="flex flex-col items-center justify-between rounded-2xl bg-card/95 px-1.5 min-[380px]:px-2.5 py-2.5 shadow-2xs border border-border/60 min-h-[76px]">
-              <div className="flex flex-col items-center justify-center leading-tight">
-                <span className="text-[10.5px] min-[380px]:text-[11px] font-medium text-muted-foreground leading-none">
-                  {t('stat_total_prefix')}
-                </span>
-                <span className="text-[11.5px] min-[380px]:text-[12px] font-bold text-foreground leading-tight mt-0.5">
-                  {t('stat_lbl_cancelled')}
-                </span>
-              </div>
-              <p className="text-[19px] min-[380px]:text-[21px] font-bold text-muted-foreground tabular tracking-tight mt-1">{userStats.cancelled}</p>
+            <div className="flex flex-col items-center justify-center rounded-xl bg-card/95 px-1 py-1.5 sm:py-2 shadow-2xs border border-border/60">
+              <span className="text-[9.5px] min-[380px]:text-[10px] font-medium text-muted-foreground/80 leading-none">
+                {t('stat_total_prefix')}
+              </span>
+              <span className="text-[10.5px] min-[380px]:text-[11px] font-bold text-foreground leading-tight mt-0.5">
+                {t('stat_lbl_cancelled')}
+              </span>
+              <p className="text-[16px] min-[380px]:text-[17px] font-bold text-muted-foreground tabular tracking-tight mt-0.5">{userStats.cancelled}</p>
             </div>
             {userStats.rejected > 0 && (
-              <div className="flex flex-col items-center justify-between rounded-2xl bg-card/95 px-1.5 min-[380px]:px-2.5 py-2.5 shadow-2xs border border-border/60 min-h-[76px]">
-                <div className="flex flex-col items-center justify-center leading-tight">
-                  <span className="text-[10.5px] min-[380px]:text-[11px] font-medium text-muted-foreground leading-none">
-                    {t('stat_total_prefix')}
-                  </span>
-                  <span className="text-[11.5px] min-[380px]:text-[12px] font-bold text-foreground leading-tight mt-0.5">
-                    {t('stat_lbl_rejected')}
-                  </span>
-                </div>
-                <p className="text-[19px] min-[380px]:text-[21px] font-bold text-destructive tabular tracking-tight mt-1">{userStats.rejected}</p>
+              <div className="flex flex-col items-center justify-center rounded-xl bg-card/95 px-1 py-1.5 sm:py-2 shadow-2xs border border-border/60">
+                <span className="text-[9.5px] min-[380px]:text-[10px] font-medium text-muted-foreground/80 leading-none">
+                  {t('stat_total_prefix')}
+                </span>
+                <span className="text-[10.5px] min-[380px]:text-[11px] font-bold text-foreground leading-tight mt-0.5">
+                  {t('stat_lbl_rejected')}
+                </span>
+                <p className="text-[16px] min-[380px]:text-[17px] font-bold text-destructive tabular tracking-tight mt-0.5">{userStats.rejected}</p>
               </div>
             )}
           </div>
