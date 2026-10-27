@@ -543,26 +543,30 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           </div>
         </div>
 
-        {/* Quick duration presets: 2 hr, 1 day, 2 days, 3 days, 1 week (directly below the Ticket Card as in user image 1) */}
-        <div className="mt-2.5 grid grid-cols-5 gap-1.5 min-[410px]:gap-2">
-          {QUICK_DURATION_OPTIONS.map(item => {
-            const active = activeQuick === item.key;
-            return (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => applyQuickDuration(item.key)}
-                className={cn(
-                  'flex h-10 items-center justify-center rounded-2xl border px-1 text-center text-[13px] min-[380px]:text-[13.5px] font-bold transition-all active:scale-95 shadow-2xs',
-                  active
-                    ? 'border-primary bg-primary text-primary-foreground shadow-xs'
-                    : 'border-neutral-200/90 bg-card text-foreground hover:border-neutral-300 hover:bg-muted/40 dark:border-neutral-800'
-                )}
-              >
-                {item.label}
-              </button>
-            );
-          })}
+        {/* Quick duration presets: 2 hr, 1 day, 2 days, 3 days, 1 week (card directly under the Ticket Card as in user image) */}
+        <div className="mt-2.5 rounded-2xl border border-neutral-200/90 bg-card p-2 sm:p-2.5 shadow-2xs dark:border-neutral-800">
+          <div className="grid grid-cols-5 gap-1.5 min-[410px]:gap-2" role="radiogroup" aria-label={t('quick_select')}>
+            {QUICK_DURATION_OPTIONS.map(item => {
+              const active = activeQuick === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => applyQuickDuration(item.key)}
+                  className={cn(
+                    'flex h-9 sm:h-9.5 items-center justify-center rounded-full border px-1 text-center text-[12.5px] min-[380px]:text-[13.5px] font-bold transition-all active:scale-95',
+                    active
+                      ? 'border-primary bg-primary text-primary-foreground shadow-xs'
+                      : 'border-neutral-200/90 bg-background text-foreground hover:border-neutral-300 hover:bg-muted/40 dark:border-neutral-700/80 dark:bg-card dark:text-foreground'
+                  )}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Interactive timeline slider track card (always shown, matching user design) */}
