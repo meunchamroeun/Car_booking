@@ -102,8 +102,8 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   const [picker, setPicker] = React.useState<'dates' | 'from' | 'to' | null>(null);
   // Which time the wheel picker popup is changing
   const [timePick, setTimePick] = React.useState<'start' | 'end' | null>(null);
-  // Quick picks stay hidden or shown based on user toggle
-  const [showQuick, setShowQuick] = React.useState(true);
+  // Quick picks stay hidden by default
+  const [showQuick, setShowQuick] = React.useState(false);
   // Chosen time window; the Morning/Afternoon/Full day buttons are shortcuts that fill it
   const [range, setRange] = React.useState<{ start: string; end: string }>({ start: '08:00', end: '12:00' });
   const [purpose, setPurpose] = React.useState('');
@@ -113,7 +113,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   // Reset each time the sheet opens, starting from the vehicle card's date and suggested time
   React.useEffect(() => {
     if (!open) return;
-    setShowQuick(true);
+    setShowQuick(false);
     setTimePick(null);
     if (editing) {
       setCarId(editing.carId);
@@ -370,13 +370,13 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
             onClick={() => setShowQuick(v => !v)}
             aria-expanded={showQuick}
             className={cn(
-              'flex h-6 items-center gap-1 rounded-full px-2 text-[11.5px] font-semibold transition-colors',
+              'flex h-6 items-center gap-1 rounded-full px-2.5 text-[11.5px] font-semibold transition-colors',
               showQuick ? 'bg-primary text-primary-foreground' : 'bg-primary-soft text-primary hover:bg-primary-soft/70'
             )}
           >
             <Zap className="size-3" fill="currentColor" />
-            {t('quick_duration')} ({showQuick ? t('hide') : t('show')})
-            <ChevronDown className={cn('size-3 transition-transform', showQuick && 'rotate-180')} />
+            {t('quick_select')}
+            <ChevronDown className={cn('size-3 transition-transform duration-200', showQuick && 'rotate-180')} />
           </button>
         }
       >
@@ -479,22 +479,20 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           </div>
         </div>
 
-        {/* Quick Select presets with Hide / Show toggle */}
+        {/* Quick Select presets with toggle */}
         <div className="mt-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] font-semibold text-muted-foreground flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setShowQuick(v => !v)}
+            className="flex w-full items-center justify-between rounded-xl py-1 text-left transition-colors hover:opacity-80"
+            aria-expanded={showQuick}
+          >
+            <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-foreground/80">
               <Zap className="size-3.5 text-amber-500" />
               {t('quick_select')}
             </span>
-            <button
-              type="button"
-              onClick={() => setShowQuick(v => !v)}
-              className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[12px] font-semibold text-primary transition-colors hover:bg-primary-soft"
-            >
-              <span>{showQuick ? t('hide') : t('show')}</span>
-              <ChevronDown className={cn('size-3.5 transition-transform duration-200', showQuick && 'rotate-180')} />
-            </button>
-          </div>
+            <ChevronDown className={cn('size-3.5 text-muted-foreground transition-transform duration-200', showQuick && 'rotate-180')} />
+          </button>
 
           {showQuick && (
             <div className="mt-2 space-y-2.5 animate-in fade-in-0 slide-in-from-top-1 duration-200">
