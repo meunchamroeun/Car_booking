@@ -240,7 +240,7 @@ export function HistoryScreen() {
               <button
                 type="button"
                 className={cn(
-                  'flex h-13 w-full items-center gap-3 rounded-2xl border bg-card px-3.5 text-left transition-all shadow-2xs focus:outline-hidden',
+                  'flex h-13 w-full items-center gap-2 sm:gap-2.5 rounded-2xl border bg-card px-2.5 sm:px-3 text-left transition-all shadow-2xs focus:outline-hidden',
                   carDropdownOpen
                     ? 'border-primary ring-2 ring-primary/20'
                     : selectedCar
@@ -249,29 +249,29 @@ export function HistoryScreen() {
                 )}
               >
                 {selectedCar ? (
-                  <CarPhoto car={selectedCar} zoomable={false} className="size-9 shrink-0 rounded-full object-cover shadow-2xs border border-border/60" />
+                  <CarPhoto car={selectedCar} zoomable={false} className="size-8.5 shrink-0 rounded-full object-cover shadow-2xs border border-border/60" />
                 ) : (
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary shadow-2xs">
-                    <CarFront className="size-5" />
+                  <div className="flex size-8.5 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary shadow-2xs">
+                    <CarFront className="size-4.5" />
                   </div>
                 )}
 
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="truncate text-[14px] font-bold text-foreground">
+                  <div className="flex items-center gap-1">
+                    <span className="truncate text-[13px] sm:text-[13.5px] font-bold text-foreground">
                       {selectedCar ? selectedCar.name : t('all_vehicles')}
                     </span>
                     {selectedCar ? (
-                      <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-muted-foreground">
+                      <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.2 font-mono text-[10px] font-bold text-muted-foreground">
                         {selectedCar.plate}
                       </span>
                     ) : (
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-[10.5px] font-bold text-muted-foreground">
+                      <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.2 text-[10px] font-bold text-muted-foreground">
                         {cars.length}
                       </span>
                     )}
                   </div>
-                  <p className="truncate text-[11.5px] text-muted-foreground">
+                  <p className="truncate text-[11px] text-muted-foreground">
                     {selectedCar
                       ? `${selectedCar.type} · ${selectedCar.seats} ${t('seats', { n: selectedCar.seats })} · ${carStats?.total ?? 0} ${t('total_trips')}`
                       : `${cars.length} ${t('vehicles')} · ${allHistory.length} ${t('total_trips')}`}
@@ -301,7 +301,7 @@ export function HistoryScreen() {
                   )}
                   <ChevronDown
                     className={cn(
-                      'size-4.5 shrink-0 text-muted-foreground transition-transform duration-200',
+                      'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
                       carDropdownOpen && 'rotate-180'
                     )}
                   />
@@ -314,7 +314,7 @@ export function HistoryScreen() {
                 align="start"
                 sideOffset={6}
                 collisionPadding={12}
-                className="z-[70] w-[var(--radix-dropdown-menu-trigger-width)] overflow-hidden rounded-2xl border border-neutral-300/90 bg-card p-2 shadow-float outline-none animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1 dark:border-neutral-700"
+                className="z-[70] w-[calc(100vw-2rem)] max-w-[398px] overflow-hidden rounded-2xl border border-neutral-300/90 bg-card p-2 shadow-float outline-none animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1 dark:border-neutral-700"
               >
                 {/* Search bar inside dropdown */}
                 <div className="relative mb-2">
@@ -447,7 +447,7 @@ export function HistoryScreen() {
                 <button
                   type="button"
                   className={cn(
-                    'flex h-13 w-full items-center gap-3 rounded-2xl border bg-card px-3.5 text-left transition-all shadow-2xs focus:outline-hidden',
+                    'flex h-13 w-full items-center gap-2 sm:gap-2.5 rounded-2xl border bg-card px-2.5 sm:px-3 text-left transition-all shadow-2xs focus:outline-hidden',
                     userDropdownOpen
                       ? 'border-primary ring-2 ring-primary/20'
                       : selectedUser
@@ -456,20 +456,20 @@ export function HistoryScreen() {
                   )}
                 >
                   {selectedUser ? (
-                    <Avatar initials={selectedUser.initials} seed={selectedUser.id} src={selectedUser.avatarUrl} className="size-9 text-[11.5px] rounded-full shadow-2xs" />
+                    <Avatar initials={selectedUser.initials} seed={selectedUser.id} src={selectedUser.avatarUrl} className="size-8.5 text-[11px] rounded-full shadow-2xs" />
                   ) : (
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary shadow-2xs">
-                      <UserRound className="size-5" />
+                    <div className="flex size-8.5 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary shadow-2xs">
+                      <UserRound className="size-4.5" />
                     </div>
                   )}
 
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="truncate text-[14px] font-bold text-foreground">
+                    <div className="flex items-center gap-1">
+                      <span className="truncate text-[13px] sm:text-[13.5px] font-bold text-foreground">
                         {selectedUser ? selectedUser.name : t('all_users')}
                       </span>
                     </div>
-                    <p className="truncate text-[11.5px] text-muted-foreground">
+                    <p className="truncate text-[11px] text-muted-foreground">
                       {selectedUser
                         ? `${allHistory.filter(b => b.requesterId === selectedUser.id).length} ${t('total_trips')}`
                         : `${bookableUsers.length} ${t('all_users').toLowerCase()} · ${allHistory.length} ${t('total_trips')}`}
@@ -509,10 +509,10 @@ export function HistoryScreen() {
 
               <Menu.Portal>
                 <Menu.Content
-                  align="start"
+                  align="end"
                   sideOffset={6}
                   collisionPadding={12}
-                  className="z-[70] w-[var(--radix-dropdown-menu-trigger-width)] overflow-hidden rounded-2xl border border-neutral-300/90 bg-card p-2 shadow-float outline-none animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1 dark:border-neutral-700"
+                  className="z-[70] w-[calc(100vw-2rem)] max-w-[398px] overflow-hidden rounded-2xl border border-neutral-300/90 bg-card p-2 shadow-float outline-none animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1 dark:border-neutral-700"
                 >
                   {/* Search inside user dropdown */}
                   <div className="relative mb-2">
