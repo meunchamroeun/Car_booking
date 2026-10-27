@@ -12,10 +12,6 @@ import { Avatar } from '@/components/ui/avatar';
 import { CarPhoto } from '@/components/common/car-photo';
 import { cn } from '@/lib/utils';
 import { CalendarPopup } from '@/components/ui/calendar-popup';
-import { TimeRangeTrack } from '@/components/ui/time-range-track';
-import { DateTimeBox } from '@/components/ui/date-time-box';
-import { TimeField } from '@/components/ui/time-field';
-import { TimeSpin } from '@/components/ui/time-spin';
 import { TimeWheelPicker } from '@/components/ui/time-wheel-picker';
 import { RangeCalendar } from '@/components/ui/range-calendar';
 import { BOOKING_SLOTS, SLOT_ORDER } from '@/lib/slots';
@@ -25,8 +21,61 @@ import { DriverSelect } from '@/components/common/driver-select';
 const SLOTS = SLOT_ORDER.map(key => ({ key, ...BOOKING_SLOTS[key] }));
 /** Minutes since midnight → "HH:MM". */
 const spinTime = (m: number) => `${DateUtil.pad(Math.floor(m / 60))}:${DateUtil.pad(m % 60)}`;
-/** Order of the quick slot chips: Full day, Morning, Afternoon. */
-const QUICK_SLOTS = (['full_day', 'morning', 'afternoon'] as const).map(key => ({ key, ...BOOKING_SLOTS[key] }));
+
+const QUICK_DURATION_OPTIONS = [
+  { key: '2hr', label: '2 hr' },
+  { key: '1d', label: '1 day' },
+  { key: '2d', label: '2 days' },
+  { key: '3d', label: '3 days' },
+  { key: '1w', label: '1 week' },
+] as const;
+
+const monthShort = (dateStr: string, lang: 'en' | 'kh' = 'en') => {
+  const [y, m] = dateStr.split('-').map(Number);
+  const names = DateUtil.names(lang);
+  return names.monthShort[(m || 1) - 1] ?? '';
+};
+
+const formatAmPm = (timeStr: string) => {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':').map(Number);
+  const period = h >= 12 ? 'p.m.' : 'a.m.';
+  const hour = h % 12 === 0 ? 12 : h % 12;
+  const padHour = String(hour).padStart(2, '0');
+  const padMinute = String(m || 0).padStart(2, '0');
+  return `${padHour}:${padMinute} ${period}`;
+};
+
+const formatTicketDuration = (startDate: string, startTime: string, endDate: string, endTime: string, lang: 'en' | 'kh' = 'en'): string => {
+  const days = DateUtil.dayDiff(startDate, endDate);
+  const startM = DateUtil.toMins(startTime);
+  const endM = DateUtil.toMins(endTime);
+  const totalMins = days * 1440 + endM - startM;
+  if (totalMins <= 0) return '0 hr';
+
+  const totalHours = totalMins / 60;
+  if (totalHours < 1) {
+    return `${totalMins} min`;
+  }
+  if (days === 0 || (days === 1 && totalHours < 24)) {
+    const hrVal = totalHours % 1 === 0 ? totalHours : totalHours.toFixed(1);
+    return `${hrVal} hr`;
+  }
+  if (days % 7 === 0 && endM === startM) {
+    const weeks = days / 7;
+    return weeks === 1 ? '1 week' : `${weeks} weeks`;
+  }
+  if (totalHours % 24 === 0) {
+    const d = Math.round(totalHours / 24);
+    return d === 1 ? '1 day' : `${d} days`;
+  }
+  const d = Math.floor(totalHours / 24);
+  const remH = Math.round(totalHours % 24);
+  if (remH === 0) {
+    return d === 1 ? '1 day' : `${d} days`;
+  }
+  return `${d}d ${remH}h`;
+};
 
 /**
  * Booking sheet opened from a vehicle's "Book" button.
@@ -50,8 +99,8 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   const [picker, setPicker] = React.useState<'dates' | 'from' | 'to' | null>(null);
   // Which time the wheel picker popup is changing
   const [timePick, setTimePick] = React.useState<'start' | 'end' | null>(null);
-  // Quick picks (Today / Tomorrow / slots) stay hidden until "Quick pick" is tapped
-  const [showQuick, setShowQuick] = React.useState(false);
+  // Quick picks stay hidden or shown based on user toggle
+  const [showQuick, setShowQuick] = React.useState(true);
   // Chosen time window; the Morning/Afternoon/Full day buttons are shortcuts that fill it
   const [range, setRange] = React.useState<{ start: string; end: string }>({ start: '08:00', end: '12:00' });
   const [purpose, setPurpose] = React.useState('');
@@ -61,7 +110,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   // Reset each time the sheet opens, starting from the vehicle card's date and suggested time
   React.useEffect(() => {
     if (!open) return;
-    setShowQuick(false);
+    setShowQuick(true);
     setTimePick(null);
     if (editing) {
       setCarId(editing.carId);
@@ -159,6 +208,46 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
       return { start: v, end: DateUtil.toMins(r.end) - sm < 30 ? spinTime(Math.min(sm + 60, 23 * 60 + 45)) : r.end };
     });
   const changeEnd = (v: string) => setRange(r => ({ ...r, end: v }));
+
+  const applyQuickDuration = (key: (typeof QUICK_DURATION_OPTIONS)[number]['key']) => {
+    if (key === '2hr') {
+      setEndDate(date);
+      const startM = DateUtil.toMins(start);
+      const endM = startM + 120;
+      if (endM < 1440) {
+        setRange(r => ({ ...r, end: spinTime(endM) }));
+      } else {
+        setEndDate(DateUtil.addDays(date, 1));
+        setRange(r => ({ ...r, end: spinTime(endM - 1440) }));
+      }
+    } else if (key === '1d') {
+      setEndDate(DateUtil.addDays(date, 1));
+      setRange(r => ({ ...r, end: r.start }));
+    } else if (key === '2d') {
+      setEndDate(DateUtil.addDays(date, 2));
+      setRange(r => ({ ...r, end: r.start }));
+    } else if (key === '3d') {
+      setEndDate(DateUtil.addDays(date, 3));
+      setRange(r => ({ ...r, end: r.start }));
+    } else if (key === '1w') {
+      setEndDate(DateUtil.addDays(date, 7));
+      setRange(r => ({ ...r, end: r.start }));
+    }
+  };
+
+  const activeQuick = React.useMemo(() => {
+    const days = DateUtil.dayDiff(date, endDate);
+    const startM = DateUtil.toMins(start);
+    const endM = DateUtil.toMins(end);
+    const diffM = days * 1440 + endM - startM;
+    if (diffM === 120 && days === 0) return '2hr';
+    if (diffM === 1440 && days === 1) return '1d';
+    if (diffM === 2880 && days === 2) return '2d';
+    if (diffM === 4320 && days === 3) return '3d';
+    if (diffM === 10080 && days === 7) return '1w';
+    return null;
+  }, [date, endDate, start, end]);
+
   const missing = timeProblem ?? (!purpose.trim() ? t('pick_purpose') : pickDriver && needDriver && !driverId ? t('err_assign_driver') : null);
 
   const submit = () => {
@@ -275,7 +364,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
         extra={
           <button
             type="button"
-            onClick={() => (setShowQuick(v => !v), setPicker(null))}
+            onClick={() => setShowQuick(v => !v)}
             aria-expanded={showQuick}
             className={cn(
               'flex h-6 items-center gap-1 rounded-full px-2 text-[11.5px] font-semibold transition-colors',
@@ -283,144 +372,147 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
             )}
           >
             <Zap className="size-3" fill="currentColor" />
-            {t('quick_pick')}
+            {t('quick_duration')} ({showQuick ? t('hide') : t('show')})
             <ChevronDown className={cn('size-3 transition-transform', showQuick && 'rotate-180')} />
           </button>
         }
       >
+        {/* Ticket Date & Time Card */}
+        <div className="relative overflow-hidden rounded-3xl border border-neutral-200/90 bg-card p-4 sm:p-5 shadow-xs dark:border-neutral-800">
+          {/* Top center cutout notch */}
+          <div className="pointer-events-none absolute -top-3.5 left-1/2 -translate-x-1/2 size-7 rounded-full border border-neutral-200/90 bg-background dark:border-neutral-800" />
+          {/* Bottom center cutout notch */}
+          <div className="pointer-events-none absolute -bottom-3.5 left-1/2 -translate-x-1/2 size-7 rounded-full border border-neutral-200/90 bg-background dark:border-neutral-800" />
+          {/* Vertical dashed center divider */}
+          <div className="pointer-events-none absolute top-4 bottom-4 left-1/2 -translate-x-1/2 border-l border-dashed border-neutral-300 dark:border-neutral-700" />
 
-        {/* Quick picks (Today / Tomorrow / date + Full day / Morning / Afternoon) inside a card, toggleable */}
-        {showQuick && (
-          <div className="mb-3 rounded-2xl border border-border/80 bg-card p-2.5 shadow-2xs animate-in fade-in-0 slide-in-from-top-1">
-            <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-0.5" role="radiogroup" aria-label={t('date')}>
-              {[
-                { d: today, label: t('today') },
-                { d: tomorrow, label: t('tomorrow') },
-              ].map(o => {
-                const on = date === o.d && !multiDay;
-                return (
-                  <button
-                    key={o.d}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    onClick={() => (setDate(o.d), setEndDate(o.d), setPicker(null))}
-                    className={cn(
-                      'h-8 rounded-[10px] text-[12.5px] transition-all',
-                      on ? 'bg-primary font-semibold text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
-                    )}
-                  >
-                    {o.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Time slot chips: Full day | Morning 08:00–12:00 | Afternoon 13:00–17:30 (fits clean, no ellipsis, no scrolling) */}
-            <div className="mt-2 grid grid-cols-[auto_1fr_1.08fr] gap-1" role="radiogroup" aria-label={t('a11y_time_slot')}>
-              {QUICK_SLOTS.map(s => {
-                const on = preset?.key === s.key;
-                const blocked = !!slotProblem(s.start, s.end);
-                return (
-                  <button
-                    key={s.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    disabled={blocked}
-                    onClick={() => (setRange({ start: s.start, end: s.end }), setPicker(null))}
-                    className={cn(
-                      'flex h-8 min-w-0 items-center justify-center whitespace-nowrap rounded-full border px-1.5 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-40',
-                      s.key === 'full_day' && 'px-2.5',
-                      on
-                        ? 'border-primary bg-primary-soft text-primary font-semibold'
-                        : 'border-border bg-card text-muted-foreground enabled:hover:border-primary/40 enabled:hover:text-foreground'
-                    )}
-                  >
-                    <span className="text-[10.5px] min-[380px]:text-[11.5px] font-semibold">
-                      {t(s.key)}
-                      {s.key !== 'full_day' && (
-                        <span className="ml-1 font-medium tabular opacity-80">
-                          {s.start}–{s.end}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+          {/* Duration in the middle */}
+          <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 rounded-md bg-card px-2 py-0.5 text-[12.5px] font-bold text-foreground tabular whitespace-nowrap">
+            {formatTicketDuration(date, start, endDate, end, lang)}
           </div>
-        )}
 
-        {/* Start / end date, then the time: drag on the day track, or From/To for several days */}
-        <div className="space-y-2">
-          {/* Start / End date: type it, or tap the calendar icon */}
-          <div className="grid grid-cols-2 gap-2">
-            <DateTimeBox
-              label={t('start_date')}
-              date={date}
-              min={today}
-              onDate={d => (setDate(d), d > endDate && setEndDate(d))}
-              onCalendar={() => setPicker(p => (p === 'dates' ? null : 'dates'))}
-              active={picker === 'dates'}
-              dateLabel={t('date')}
-              calendarLabel={t('select_date')}
-            />
-            <DateTimeBox
-              label={t('end_date')}
-              date={endDate}
-              min={date}
-              onDate={d => setEndDate(d)}
-              onCalendar={() => setPicker(p => (p === 'dates' ? null : 'dates'))}
-              active={picker === 'dates'}
-              invalid={DateUtil.stamp(endDate, end) <= DateUtil.stamp(date, start)}
-              dateLabel={t('date')}
-              calendarLabel={t('select_date')}
-            />
-          </div>
-          {multiDay ? (
-            <>
-              {/* Several days: start time on the first day, end time on the last */}
-              <div className="grid grid-cols-2 gap-2">
-                <TimeField label={t('start_time')} value={start} open={picker === 'from'} onOpenChange={o => setPicker(o ? 'from' : null)} onChange={v => setRange(r => ({ ...r, start: v }))} />
-                <TimeField label={t('end_time')} value={end} open={picker === 'to'} onOpenChange={o => setPicker(o ? 'to' : null)} onChange={v => setRange(r => ({ ...r, end: v }))} invalid={DateUtil.stamp(endDate, end) <= DateUtil.stamp(date, start)} />
-              </div>
-              <p className="text-right text-[12px] font-semibold tabular text-muted-foreground">
-                {t('days_n', { n: DateUtil.dateRange(date, endDate).length })} · {DateUtil.duration(date, start, endDate, end, lang)}
-              </p>
-            </>
-          ) : (
-            <div className="rounded-xl border border-border bg-muted/40 px-3 pb-2.5 pt-2">
-              <div className="mb-1.5 flex items-center justify-between">
-                {/* Scroll / drag up-down or type to change the times */}
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary-soft px-2.5 py-0.5 text-[13.5px] font-semibold text-primary">
-                  <Clock className="size-3.5 shrink-0 text-primary/80" />
-                  {/* Tap a time for a small hour : minute dropdown (scroll / drag also work) */}
-                  <TimeWheelPicker open={timePick === 'start'} onOpenChange={o => setTimePick(o ? 'start' : null)} value={start} onChange={changeStart} title={t('start_time')} labels={{ hour: t('a11y_hour', { label: '' }), minute: t('a11y_minute', { label: '' }) }}>
-                    <span className="inline-flex">
-                      <TimeSpin value={start} label={t('start_time')} onChange={changeStart} onOpen={() => setTimePick('start')} active={timePick === 'start'} max={23 * 60} />
-                    </span>
-                  </TimeWheelPicker>
-                  <span className="px-1 text-primary/60">–</span>
-                  <TimeWheelPicker open={timePick === 'end'} onOpenChange={o => setTimePick(o ? 'end' : null)} value={end} onChange={changeEnd} title={t('end_time')} labels={{ hour: t('a11y_hour', { label: '' }), minute: t('a11y_minute', { label: '' }) }}>
-                    <span className="inline-flex">
-                      <TimeSpin value={end} label={t('end_time')} onChange={changeEnd} onOpen={() => setTimePick('end')} active={timePick === 'end'} min={DateUtil.toMins(start) + 30} />
-                    </span>
-                  </TimeWheelPicker>
+          <div className="flex items-start justify-between">
+            {/* Left: Pick-up */}
+            <div className="flex-1 pr-3">
+              <p className="text-[13px] font-semibold text-muted-foreground">{t('pick_up')}</p>
+
+              <button
+                type="button"
+                onClick={() => setPicker(p => (p === 'dates' ? null : 'dates'))}
+                className="mt-2 flex items-center gap-2.5 text-left transition-opacity hover:opacity-80"
+                title={t('select_date')}
+              >
+                <span className="text-[40px] min-[380px]:text-[44px] font-black leading-none tracking-tight text-foreground tabular">
+                  {DateUtil.dayNum(date)}
                 </span>
-                <span className="text-[11px] font-medium tabular text-muted-foreground">{DateUtil.spanLabel(start, end, lang)}</span>
-              </div>
-              <TimeRangeTrack
-                start={start}
-                end={end}
-                onChange={(s, e) => setRange({ start: s, end: e })}
-                booked={dayBooked}
-                pending={dayPending}
-                now={date === today ? nowMins : undefined}
-                invalid={!!timeProblem}
-                lang={lang}
-                labels={{ yours: t('lg_yours'), booked: t('lg_booked'), pending: t('lg_pending'), start: t('start_time'), end: t('end_time') }}
-              />
+                <div className="flex flex-col text-[12.5px] min-[380px]:text-[13px] font-bold leading-tight text-muted-foreground">
+                  <span>{DateUtil.weekdayShort(date, lang)}</span>
+                  <span>{monthShort(date, lang)}</span>
+                </div>
+              </button>
+
+              <TimeWheelPicker
+                open={timePick === 'start'}
+                onOpenChange={o => setTimePick(o ? 'start' : null)}
+                value={start}
+                onChange={changeStart}
+                title={t('start_time')}
+                labels={{ hour: t('a11y_hour', { label: '' }), minute: t('a11y_minute', { label: '' }) }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setTimePick('start')}
+                  className="mt-3.5 inline-flex flex-col items-start transition-opacity hover:opacity-80"
+                  aria-label={`${t('start_time')} ${formatAmPm(start)}`}
+                >
+                  <span className="text-[16px] min-[380px]:text-[17px] font-bold tracking-tight text-foreground">
+                    {formatAmPm(start)}
+                  </span>
+                  <span className="mt-1 h-[2.5px] w-full rounded-full bg-amber-400" />
+                </button>
+              </TimeWheelPicker>
+            </div>
+
+            {/* Right: Return */}
+            <div className="flex-1 pl-3 text-right">
+              <p className="text-[13px] font-semibold text-muted-foreground">{t('return_label')}</p>
+
+              <button
+                type="button"
+                onClick={() => setPicker(p => (p === 'dates' ? null : 'dates'))}
+                className="mt-2 flex items-center justify-end gap-2.5 text-right transition-opacity hover:opacity-80 ml-auto"
+                title={t('select_date')}
+              >
+                <span className="text-[40px] min-[380px]:text-[44px] font-black leading-none tracking-tight text-foreground tabular">
+                  {DateUtil.dayNum(endDate)}
+                </span>
+                <div className="flex flex-col text-[12.5px] min-[380px]:text-[13px] font-bold leading-tight text-muted-foreground text-left">
+                  <span>{DateUtil.weekdayShort(endDate, lang)}</span>
+                  <span>{monthShort(endDate, lang)}</span>
+                </div>
+              </button>
+
+              <TimeWheelPicker
+                open={timePick === 'end'}
+                onOpenChange={o => setTimePick(o ? 'end' : null)}
+                value={end}
+                onChange={changeEnd}
+                title={t('end_time')}
+                labels={{ hour: t('a11y_hour', { label: '' }), minute: t('a11y_minute', { label: '' }) }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setTimePick('end')}
+                  className="mt-3.5 inline-flex flex-col items-end transition-opacity hover:opacity-80 ml-auto"
+                  aria-label={`${t('end_time')} ${formatAmPm(end)}`}
+                >
+                  <span className="text-[16px] min-[380px]:text-[17px] font-bold tracking-tight text-foreground">
+                    {formatAmPm(end)}
+                  </span>
+                  <span className="mt-1 h-[2.5px] w-full rounded-full bg-amber-400" />
+                </button>
+              </TimeWheelPicker>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick duration presets with Hide / Show toggle */}
+        <div className="mt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] font-semibold text-muted-foreground flex items-center gap-1.5">
+              <Zap className="size-3.5 text-amber-500" />
+              {t('quick_duration')}
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowQuick(v => !v)}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[12px] font-semibold text-primary transition-colors hover:bg-primary-soft"
+            >
+              <span>{showQuick ? t('hide') : t('show')}</span>
+              <ChevronDown className={cn('size-3.5 transition-transform duration-200', showQuick && 'rotate-180')} />
+            </button>
+          </div>
+
+          {showQuick && (
+            <div className="mt-2 grid grid-cols-5 gap-1.5 min-[410px]:gap-2 animate-in fade-in-0 slide-in-from-top-1 duration-200">
+              {QUICK_DURATION_OPTIONS.map(item => {
+                const active = activeQuick === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => applyQuickDuration(item.key)}
+                    className={cn(
+                      'flex h-11 items-center justify-center rounded-2xl border px-1 text-center text-[13px] min-[380px]:text-[13.5px] font-bold transition-all active:scale-95 shadow-2xs',
+                      active
+                        ? 'border-primary bg-primary text-primary-foreground shadow-xs'
+                        : 'border-neutral-200/90 bg-card text-foreground hover:border-neutral-300 hover:bg-muted/40 dark:border-neutral-800'
+                    )}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
