@@ -519,30 +519,33 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           </button>
 
           {showQuick && (
-            <div className="mt-2 space-y-2.5 animate-in fade-in-0 slide-in-from-top-1 duration-200">
-              {/* Quick duration presets: 2 hr, 1 day, 2 days, 3 days, 1 week */}
-              <div className="grid grid-cols-5 gap-1.5 min-[410px]:gap-2">
-                {QUICK_DURATION_OPTIONS.map(item => {
-                  const active = activeQuick === item.key;
+            <div className="mt-2 space-y-2 rounded-2xl border border-neutral-200/90 bg-card p-2.5 shadow-2xs dark:border-neutral-800 animate-in fade-in-0 slide-in-from-top-1 duration-200">
+              {/* Today / Tomorrow day tabs (exact old style from user image) */}
+              <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-0.5" role="radiogroup" aria-label={t('date')}>
+                {[
+                  { d: today, label: t('today') },
+                  { d: tomorrow, label: t('tomorrow') },
+                ].map(o => {
+                  const on = date === o.d && !multiDay;
                   return (
                     <button
-                      key={item.key}
+                      key={o.d}
                       type="button"
-                      onClick={() => applyQuickDuration(item.key)}
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => (setDate(o.d), setEndDate(o.d), setPicker(null))}
                       className={cn(
-                        'flex h-10 items-center justify-center rounded-2xl border px-1 text-center text-[13px] min-[380px]:text-[13.5px] font-bold transition-all active:scale-95 shadow-2xs',
-                        active
-                          ? 'border-primary bg-primary text-primary-foreground shadow-xs'
-                          : 'border-neutral-200/90 bg-card text-foreground hover:border-neutral-300 hover:bg-muted/40 dark:border-neutral-800'
+                        'h-8 rounded-[10px] text-[12.5px] transition-all',
+                        on ? 'bg-primary font-semibold text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
                       )}
                     >
-                      {item.label}
+                      {o.label}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Time slot presets: Full day | Morning | Afternoon */}
+              {/* Time slot presets: Full day | Morning | Afternoon (exact old style) */}
               <div className="grid grid-cols-[auto_1fr_1.08fr] gap-1" role="radiogroup" aria-label={t('a11y_time_slot')}>
                 {QUICK_SLOTS.map(s => {
                   const on = preset?.key === s.key;
@@ -560,7 +563,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                         s.key === 'full_day' && 'px-2.5',
                         on
                           ? 'border-primary bg-primary-soft text-primary font-semibold'
-                          : 'border-neutral-200/90 bg-card text-muted-foreground enabled:hover:border-primary/40 enabled:hover:text-foreground dark:border-neutral-800'
+                          : 'border-border bg-card text-muted-foreground enabled:hover:border-primary/40 enabled:hover:text-foreground dark:border-neutral-800'
                       )}
                     >
                       <span className="text-[10.5px] min-[380px]:text-[11.5px] font-semibold">
@@ -574,6 +577,30 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Quick duration presets: 2 hr, 1 day, 2 days, 3 days, 1 week */}
+              <div className="pt-1.5 border-t border-border/50">
+                <div className="grid grid-cols-5 gap-1.5 min-[410px]:gap-2">
+                  {QUICK_DURATION_OPTIONS.map(item => {
+                    const active = activeQuick === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => applyQuickDuration(item.key)}
+                        className={cn(
+                          'flex h-9 items-center justify-center rounded-xl border px-1 text-center text-[12.5px] min-[380px]:text-[13px] font-bold transition-all active:scale-95 shadow-2xs',
+                          active
+                            ? 'border-primary bg-primary text-primary-foreground shadow-xs'
+                            : 'border-neutral-200/90 bg-muted/40 text-foreground hover:border-neutral-300 hover:bg-muted/70 dark:border-neutral-800'
+                        )}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
