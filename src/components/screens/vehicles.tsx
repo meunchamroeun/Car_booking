@@ -240,7 +240,6 @@ function VehicleCard({ car }: { car: Car }) {
   const win = inService || isPast ? null : suggestWindow(app, car.id);
   const anyWin = inService || isPast ? null : (selectedSlot === 'all' ? win : suggestWindow(app, car.id, 'all'));
   const canBook = can(currentUser, 'booking.create');
-  const canManage = can(currentUser, 'vehicle.maintenance');
   const targetWin = win ?? anyWin;
   const bookable = !isPast && canBook && !!targetWin;
   const book = () => targetWin && openBooking(car.id, targetWin[0], targetWin[1]);
@@ -296,27 +295,7 @@ function VehicleCard({ car }: { car: Car }) {
       {/* Maintenance note or today's bookings; nothing when the car is free */}
       <div className={cn('px-3', (inService || busy.length > 0) && 'pb-3')}>
         {inService ? (
-          <div
-            className={cn(
-              'group/maint rounded-2xl border border-warning/25 bg-warning-soft/70 p-3.5 text-warning transition-all',
-              canManage && 'cursor-pointer hover:border-warning/45 hover:bg-warning-soft/90 hover:shadow-xs'
-            )}
-            {...(canManage && {
-              role: 'button',
-              tabIndex: 0,
-              onClick: e => {
-                e.stopPropagation();
-                openSheet({ type: 'maintenance', carId: car.id });
-              },
-              onKeyDown: (e: React.KeyboardEvent) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  openSheet({ type: 'maintenance', carId: car.id });
-                }
-              },
-            })}
-          >
+          <div className="rounded-2xl border border-warning/25 bg-warning-soft/70 p-3.5 text-warning">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1.5 text-[12px] font-bold uppercase tracking-wider text-warning">
                 <span className="flex size-5 items-center justify-center rounded-full bg-warning/20">
@@ -343,14 +322,6 @@ function VehicleCard({ car }: { car: Car }) {
             <p className="mt-2 text-[13px] font-medium leading-snug text-foreground/90">
               {car.maintenance?.reason || t('nt_maint_title')}
             </p>
-
-            {canManage && (
-              <div className="mt-2 flex justify-end text-[11.5px]">
-                <span className="inline-flex items-center gap-0.5 font-medium text-warning group-hover/maint:underline">
-                  {t('manage')} <ChevronRight className="size-3" />
-                </span>
-              </div>
-            )}
           </div>
         ) : (
           <>
@@ -410,35 +381,28 @@ function VehicleCard({ car }: { car: Car }) {
         )}
       </div>
 
-      {(canBook || canManage) && (
+      {canBook && (
         <div className="flex gap-2 border-t px-3 py-2.5">
-          {canManage && (
-            <Button variant="outline" size="sm" className="h-9" onClick={e => (e.stopPropagation(), openSheet({ type: 'maintenance', carId: car.id }))}>
-              <Wrench /> {inService ? t('manage') : t('set_service')}
-            </Button>
-          )}
-          {canBook && (
-            <Button
-              size="sm"
-              className="h-9 min-w-0 flex-1"
-              variant={!win && anyWin ? 'outline' : 'default'}
-              disabled={!targetWin}
-              onClick={e => (e.stopPropagation(), book())}
-            >
-              {win ? (
-                t('book')
-              ) : anyWin ? (
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <span className="truncate opacity-75">{t('slot_full_book', { slot: t(selectedSlot) })}</span>
-                  <span className="shrink-0 tabular font-semibold">
-                    {anyWin[0]}–{anyWin[1]}
-                  </span>
+          <Button
+            size="sm"
+            className="h-9 min-w-0 flex-1"
+            variant={!win && anyWin ? 'outline' : 'default'}
+            disabled={!targetWin}
+            onClick={e => (e.stopPropagation(), book())}
+          >
+            {win ? (
+              t('book')
+            ) : anyWin ? (
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span className="truncate opacity-75">{t('slot_full_book', { slot: t(selectedSlot) })}</span>
+                <span className="shrink-0 tabular font-semibold">
+                  {anyWin[0]}–{anyWin[1]}
                 </span>
-              ) : (
-                t('unavailable')
-              )}
-            </Button>
-          )}
+              </span>
+            ) : (
+              t('unavailable')
+            )}
+          </Button>
         </div>
       )}
     </Card>

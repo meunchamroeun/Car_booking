@@ -1,22 +1,29 @@
 'use client';
 
 import * as React from 'react';
-import { Check, Languages, Mail, Moon, Phone, RotateCcw } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Languages, Mail, Moon, Phone, RotateCcw, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { UserRole } from '@/types';
+import { can } from '@/lib/permissions';
+import { DateUtil } from '@/lib/date-utils';
 import { Card, SectionHeader } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Segmented } from '@/components/ui/segmented';
+import { CarPhoto } from '@/components/common/car-photo';
 import { cn } from '@/lib/utils';
 
 // Driver accounts are not offered in the demo; company drivers are still assigned to bookings
 const ROLE_ORDER: UserRole[] = ['Employee', 'Approver', 'Admin'];
 
 export function ProfileScreen() {
-  const { currentUser, users, cars, t, theme, setTheme, lang, setLang, switchUser, resetDemoData } = useApp();
+  const { currentUser, users, cars, t, theme, setTheme, lang, setLang, switchUser, resetDemoData, isCarInMaintenance, openSheet } = useApp();
+  const [showMaintenance, setShowMaintenance] = React.useState(false);
+  const canManageMaintenance = can(currentUser, 'vehicle.maintenance');
+  const inServiceCount = cars.filter(c => isCarInMaintenance(c.id, DateUtil.todayStr())).length;
+  const scheduledCount = cars.filter(c => !isCarInMaintenance(c.id, DateUtil.todayStr()) && c.maintenance?.mode === 'scheduled').length;
 
   return (
     <div className="pt-2">
@@ -66,6 +73,83 @@ export function ProfileScreen() {
             ]}
           />
         </div>
+        {canManageMaintenance && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowMaintenance(v => !v)}
+              className="flex w-full items-center gap-3 p-3.5 text-left transition-colors hover:bg-muted/40"
+              aria-expanded={showMaintenance}
+            >
+              <span className="flex size-9 items-center justify-center rounded-lg bg-muted">
+                <Wrench className="size-[18px]" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <span className="text-[14px] font-semibold">{t('set_service_title')}</span>
+                <p className="text-[12px] text-muted-foreground">
+                  {inServiceCount > 0
+                    ? `${inServiceCount} ${t('st_service')}`
+                    : scheduledCount > 0
+                      ? `${scheduledCount} ${t('mode_scheduled')}`
+                      : t('st_available')}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {inServiceCount > 0 ? (
+                  <Badge tone="warning" dot>
+                    {inServiceCount} {t('st_service')}
+                  </Badge>
+                ) : (
+                  <Badge tone="success" dot>
+                    {t('st_available')}
+                  </Badge>
+                )}
+                <ChevronDown className={cn('size-4 text-muted-foreground transition-transform duration-200', showMaintenance && 'rotate-180')} />
+              </div>
+            </button>
+
+            {showMaintenance && (
+              <div className="divide-y border-t bg-muted/20">
+                {cars.map(c => {
+                  const service = isCarInMaintenance(c.id, DateUtil.todayStr());
+                  const scheduled = !service && c.maintenance?.mode === 'scheduled';
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => openSheet({ type: 'maintenance', carId: c.id })}
+                      className="flex w-full items-center gap-3 p-3.5 pl-4 text-left transition-colors hover:bg-muted/40"
+                    >
+                      <CarPhoto car={c} className="h-10 w-14 shrink-0 rounded-lg" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13.5px] font-semibold">{c.name}</p>
+                        <p className="truncate text-[11.5px] text-muted-foreground">
+                          <span className="font-mono">{c.plate}</span> · {t(`type_${c.type}`)}
+                        </p>
+                        {service && c.maintenance?.reason && (
+                          <p className="mt-0.5 truncate text-[11.5px] font-medium text-warning">
+                            <Wrench className="mr-1 inline size-3" />
+                            {c.maintenance.reason}
+                          </p>
+                        )}
+                        {scheduled && (
+                          <p className="mt-0.5 text-[11.5px] font-medium text-warning">
+                            <Wrench className="mr-1 inline size-3" />
+                            {DateUtil.friendly(c.maintenance!.startDate!, lang)} – {DateUtil.friendly(c.maintenance!.endDate!, lang)}
+                          </p>
+                        )}
+                      </div>
+                      <Badge tone={service ? 'warning' : 'success'} dot>
+                        {service ? t('st_service') : t('st_available')}
+                      </Badge>
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
       <SectionHeader title={t('switch_account')} action={<span className="text-[12px] text-muted-foreground">{t('switch_hint')}</span>} />

@@ -45,6 +45,7 @@ export function HistoryScreen() {
 
   const [scope, setScope] = React.useState<HistoryScope>('all');
   const [selectedCarId, setSelectedCarId] = React.useState<string>('all');
+  const [selectedUserId, setSelectedUserId] = React.useState<string>('all');
   const [statusFilter, setStatusFilter] = React.useState<StatusFilter>('all');
   const [periodFilter, setPeriodFilter] = React.useState<PeriodFilter>('all');
   const [customDate, setCustomDate] = React.useState<string>('');
@@ -52,6 +53,9 @@ export function HistoryScreen() {
   const [carDropdownOpen, setCarDropdownOpen] = React.useState<boolean>(false);
   const [carSearch, setCarSearch] = React.useState<string>('');
   const carSearchRef = React.useRef<HTMLInputElement>(null);
+  const [userDropdownOpen, setUserDropdownOpen] = React.useState<boolean>(false);
+  const [userSearch, setUserSearch] = React.useState<string>('');
+  const userSearchRef = React.useRef<HTMLInputElement>(null);
   const [search, setSearch] = React.useState('');
 
   // All historical bookings (Completed, Cancelled, Rejected, or past Approved)
@@ -79,6 +83,9 @@ export function HistoryScreen() {
       if (scope === 'mine' && b.requesterId !== currentUser.id) return false;
       if (scope === 'cars' && selectedCarId !== 'all' && b.carId !== selectedCarId) return false;
       if (scope !== 'cars' && selectedCarId !== 'all' && b.carId !== selectedCarId) return false;
+
+      // Booked By filter
+      if (scope !== 'mine' && selectedUserId !== 'all' && b.requesterId !== selectedUserId) return false;
 
       // Status filter
       if (statusFilter !== 'all') {
@@ -121,7 +128,7 @@ export function HistoryScreen() {
 
       return true;
     });
-  }, [allHistory, scope, selectedCarId, statusFilter, periodFilter, customDate, search, currentUser.id, cars, users, drivers, todayStr, currentMonthStr]);
+  }, [allHistory, scope, selectedCarId, selectedUserId, statusFilter, periodFilter, customDate, search, currentUser.id, cars, users, drivers, todayStr, currentMonthStr]);
 
   const selectedCar = React.useMemo(() => {
     return selectedCarId !== 'all' ? cars.find(c => c.id === selectedCarId) : null;
@@ -147,19 +154,38 @@ export function HistoryScreen() {
     );
   }, [cars, carSearch]);
 
+  const selectedUser = React.useMemo(() => {
+    return selectedUserId !== 'all' ? users.find(u => u.id === selectedUserId) : null;
+  }, [users, selectedUserId]);
+
+  const bookableUsers = React.useMemo(() => {
+    const userIdsWithBookings = new Set(allHistory.map(b => b.requesterId));
+    return users.filter(u => userIdsWithBookings.has(u.id));
+  }, [users, allHistory]);
+
+  const filteredUsers = React.useMemo(() => {
+    if (!userSearch.trim()) return bookableUsers;
+    const q = userSearch.toLowerCase().trim();
+    return bookableUsers.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+  }, [bookableUsers, userSearch]);
+
   const resetFilters = () => {
     setSelectedCarId('all');
+    setSelectedUserId('all');
     setStatusFilter('all');
     setPeriodFilter('all');
     setCustomDate('');
     setCalendarOpen(false);
     setSearch('');
     setCarSearch('');
+    setUserSearch('');
     setCarDropdownOpen(false);
+    setUserDropdownOpen(false);
   };
 
   const hasActiveFilters =
     selectedCarId !== 'all' ||
+    selectedUserId !== 'all' ||
     statusFilter !== 'all' ||
     periodFilter !== 'all' ||
     !!customDate ||
@@ -188,212 +214,405 @@ export function HistoryScreen() {
         ]}
       />
 
-      {/* Vehicle Selector (Dropdown) & Detail Card */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between px-0.5">
-          <p className="flex items-center gap-1.5 text-[12px] font-bold text-muted-foreground">
-            <CarFront className="size-3.5 text-primary" />
-            <span>{t('tab_car_history')}</span>
-          </p>
-          {selectedCarId !== 'all' && (
-            <button
-              type="button"
-              onClick={() => setSelectedCarId('all')}
-              className="text-[11.5px] font-semibold text-primary hover:underline"
-            >
-              {t('all_vehicles')}
-            </button>
-          )}
-        </div>
+      {/* Selectors: Vehicle & Booked By */}
+      <div className={cn('grid gap-2.5', scope !== 'mine' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1')}>
+        {/* Vehicle Selector (Dropdown) */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between px-0.5">
+            <p className="flex items-center gap-1.5 text-[12px] font-bold text-muted-foreground">
+              <CarFront className="size-3.5 text-primary" />
+              <span>{t('tab_car_history')}</span>
+            </p>
+            {selectedCarId !== 'all' && (
+              <button
+                type="button"
+                onClick={() => setSelectedCarId('all')}
+                className="text-[11.5px] font-semibold text-primary hover:underline"
+              >
+                {t('all_vehicles')}
+              </button>
+            )}
+          </div>
 
-        {/* Dropdown Select Menu */}
-        <Menu.Root open={carDropdownOpen} onOpenChange={setCarDropdownOpen} modal={false}>
-          <Menu.Trigger asChild>
-            <button
-              type="button"
-              className={cn(
-                'flex h-12 w-full items-center gap-2.5 rounded-xl border bg-card px-3 text-left transition-all shadow-2xs focus:outline-hidden',
-                carDropdownOpen
-                  ? 'border-primary ring-2 ring-primary/15'
-                  : selectedCar
-                  ? 'border-primary/40 bg-primary-soft/10 hover:border-primary/60'
-                  : 'border-border/80 hover:border-primary/30 hover:bg-muted/30'
-              )}
-            >
-              {selectedCar ? (
-                <CarPhoto car={selectedCar} zoomable={false} className="size-8 shrink-0 rounded-lg object-cover shadow-2xs" />
-              ) : (
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary shadow-2xs">
-                  <CarFront className="size-4.5" />
-                </div>
-              )}
+          {/* Dropdown Select Menu */}
+          <Menu.Root open={carDropdownOpen} onOpenChange={setCarDropdownOpen} modal={false}>
+            <Menu.Trigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  'flex h-12 w-full items-center gap-2.5 rounded-xl border bg-card px-3 text-left transition-all shadow-2xs focus:outline-hidden',
+                  carDropdownOpen
+                    ? 'border-primary ring-2 ring-primary/15'
+                    : selectedCar
+                    ? 'border-primary/40 bg-primary-soft/10 hover:border-primary/60'
+                    : 'border-border/80 hover:border-primary/30 hover:bg-muted/30'
+                )}
+              >
+                {selectedCar ? (
+                  <CarPhoto car={selectedCar} zoomable={false} className="size-8 shrink-0 rounded-lg object-cover shadow-2xs" />
+                ) : (
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary shadow-2xs">
+                    <CarFront className="size-4.5" />
+                  </div>
+                )}
 
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="truncate text-[13.5px] font-bold text-foreground">
-                    {selectedCar ? selectedCar.name : t('all_vehicles')}
-                  </span>
-                  {selectedCar ? (
-                    <span className="rounded bg-primary-soft px-1.5 py-0.2 font-mono text-[10.5px] font-bold text-primary">
-                      {selectedCar.plate}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate text-[13.5px] font-bold text-foreground">
+                      {selectedCar ? selectedCar.name : t('all_vehicles')}
                     </span>
-                  ) : (
-                    <span className="rounded-full bg-muted px-1.5 py-0.2 text-[10px] font-bold text-muted-foreground">
-                      {cars.length}
-                    </span>
-                  )}
+                    {selectedCar ? (
+                      <span className="rounded bg-primary-soft px-1.5 py-0.2 font-mono text-[10.5px] font-bold text-primary">
+                        {selectedCar.plate}
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-muted px-1.5 py-0.2 text-[10px] font-bold text-muted-foreground">
+                        {cars.length}
+                      </span>
+                    )}
+                  </div>
+                  <p className="truncate text-[11.5px] text-muted-foreground">
+                    {selectedCar
+                      ? `${selectedCar.type} · ${selectedCar.seats} ${t('seats', { n: selectedCar.seats })} · ${carStats?.total ?? 0} ${t('total_trips')}`
+                      : `${cars.length} ${t('vehicles')} · ${allHistory.length} ${t('total_trips')}`}
+                  </p>
                 </div>
-                <p className="truncate text-[11.5px] text-muted-foreground">
-                  {selectedCar
-                    ? `${selectedCar.type} · ${selectedCar.seats} ${t('seats', { n: selectedCar.seats })} · ${carStats?.total ?? 0} ${t('total_trips')}`
-                    : `${cars.length} ${t('vehicles')} · ${allHistory.length} ${t('total_trips')}`}
-                </p>
-              </div>
 
-              <div className="flex items-center gap-1">
-                {selectedCar && (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    onClick={e => {
-                      e.stopPropagation();
-                      setSelectedCarId('all');
-                    }}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' || e.key === ' ') {
+                <div className="flex items-center gap-1">
+                  {selectedCar && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={e => {
                         e.stopPropagation();
                         setSelectedCarId('all');
-                      }
-                    }}
-                    className="flex size-6 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-                    title={t('all_vehicles')}
-                  >
-                    <X className="size-3.5" />
-                  </span>
-                )}
-                <ChevronDown
-                  className={cn(
-                    'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
-                    carDropdownOpen && 'rotate-180'
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.stopPropagation();
+                          setSelectedCarId('all');
+                        }
+                      }}
+                      className="flex size-6 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                      title={t('all_vehicles')}
+                    >
+                      <X className="size-3.5" />
+                    </span>
                   )}
-                />
-              </div>
-            </button>
-          </Menu.Trigger>
-
-          <Menu.Portal>
-            <Menu.Content
-              align="start"
-              sideOffset={6}
-              collisionPadding={12}
-              className="z-[70] w-[calc(100vw-2rem)] max-w-[420px] overflow-hidden rounded-2xl border border-border/80 bg-card p-1.5 shadow-float outline-none animate-in fade-in-0 zoom-in-95"
-            >
-              {/* Search bar inside dropdown */}
-              <div className="relative mb-1 p-1">
-                <Search className="pointer-events-none absolute left-3.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  ref={carSearchRef}
-                  value={carSearch}
-                  onChange={e => setCarSearch(e.target.value)}
-                  placeholder={t('search_history_ph')}
-                  className="h-8.5 w-full rounded-xl border border-border/80 bg-background pl-8 pr-7 text-[12.5px] placeholder:text-muted-foreground/70 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
-                  onClick={e => e.stopPropagation()}
-                />
-                {carSearch && (
-                  <button
-                    type="button"
-                    onClick={() => setCarSearch('')}
-                    className="absolute right-3 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-                  >
-                    <X className="size-3" />
-                  </button>
-                )}
-              </div>
-
-              <div className="max-h-[280px] overflow-y-auto space-y-0.5">
-                {/* All Vehicles option */}
-                <Menu.Item
-                  onSelect={() => {
-                    setSelectedCarId('all');
-                    setCarSearch('');
-                  }}
-                  className={cn(
-                    'flex cursor-pointer select-none items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] outline-none transition-colors',
-                    selectedCarId === 'all'
-                      ? 'bg-primary font-semibold text-primary-foreground'
-                      : 'hover:bg-muted text-foreground'
-                  )}
-                >
-                  <div
+                  <ChevronDown
                     className={cn(
-                      'flex size-8 shrink-0 items-center justify-center rounded-lg',
-                      selectedCarId === 'all' ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'
+                      'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+                      carDropdownOpen && 'rotate-180'
+                    )}
+                  />
+                </div>
+              </button>
+            </Menu.Trigger>
+
+            <Menu.Portal>
+              <Menu.Content
+                align="start"
+                sideOffset={6}
+                collisionPadding={12}
+                className="z-[70] w-[calc(100vw-2rem)] max-w-[420px] overflow-hidden rounded-2xl border border-border/80 bg-card p-1.5 shadow-float outline-none animate-in fade-in-0 zoom-in-95"
+              >
+                {/* Search bar inside dropdown */}
+                <div className="relative mb-1 p-1">
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    ref={carSearchRef}
+                    value={carSearch}
+                    onChange={e => setCarSearch(e.target.value)}
+                    placeholder={t('search_history_ph')}
+                    className="h-8.5 w-full rounded-xl border border-border/80 bg-background pl-8 pr-7 text-[12.5px] placeholder:text-muted-foreground/70 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+                    onClick={e => e.stopPropagation()}
+                  />
+                  {carSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setCarSearch('')}
+                      className="absolute right-3 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-[280px] overflow-y-auto space-y-0.5">
+                  {/* All Vehicles option */}
+                  <Menu.Item
+                    onSelect={() => {
+                      setSelectedCarId('all');
+                      setCarSearch('');
+                    }}
+                    className={cn(
+                      'flex cursor-pointer select-none items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] outline-none transition-colors',
+                      selectedCarId === 'all'
+                        ? 'bg-primary font-semibold text-primary-foreground'
+                        : 'hover:bg-muted text-foreground'
                     )}
                   >
-                    <CarFront className="size-4" />
-                  </div>
+                    <div
+                      className={cn(
+                        'flex size-8 shrink-0 items-center justify-center rounded-lg',
+                        selectedCarId === 'all' ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'
+                      )}
+                    >
+                      <CarFront className="size-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold">{t('all_vehicles')}</p>
+                      <p className={cn('text-[11px]', selectedCarId === 'all' ? 'text-white/80' : 'text-muted-foreground')}>
+                        {cars.length} {t('vehicles')} · {allHistory.length} {t('total_trips')}
+                      </p>
+                    </div>
+                    {selectedCarId === 'all' && <Check className="size-4 shrink-0 text-white" strokeWidth={2.5} />}
+                  </Menu.Item>
+
+                  <div className="my-1 border-t border-border/60" />
+
+                  {/* Individual cars */}
+                  {filteredCars.map(c => {
+                    const active = selectedCarId === c.id;
+                    const count = allHistory.filter(b => b.carId === c.id).length;
+                    return (
+                      <Menu.Item
+                        key={c.id}
+                        onSelect={() => {
+                          setSelectedCarId(c.id);
+                          setCarSearch('');
+                        }}
+                        className={cn(
+                          'flex cursor-pointer select-none items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] outline-none transition-colors',
+                          active
+                            ? 'bg-primary font-semibold text-primary-foreground'
+                            : 'hover:bg-muted text-foreground'
+                        )}
+                      >
+                        <CarPhoto car={c} className="size-8 shrink-0 rounded-lg object-cover" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="truncate font-semibold">{c.name}</span>
+                            <span
+                              className={cn(
+                                'rounded px-1.5 py-0.2 font-mono text-[10.5px]',
+                                active ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'
+                              )}
+                            >
+                              {c.plate}
+                            </span>
+                          </div>
+                          <p className={cn('text-[11px]', active ? 'text-white/80' : 'text-muted-foreground')}>
+                            {c.type} · {c.seats} {t('seats', { n: c.seats })}
+                          </p>
+                        </div>
+                        <span
+                          className={cn(
+                            'rounded-full px-2 py-0.5 text-[10.5px] font-bold',
+                            active ? 'bg-white/25 text-white' : 'bg-muted text-foreground'
+                          )}
+                        >
+                          {count}
+                        </span>
+                        {active && <Check className="size-4 shrink-0 text-white" strokeWidth={2.5} />}
+                      </Menu.Item>
+                    );
+                  })}
+                </div>
+              </Menu.Content>
+            </Menu.Portal>
+          </Menu.Root>
+        </div>
+
+        {/* Booked By Selector */}
+        {scope !== 'mine' && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between px-0.5">
+              <p className="flex items-center gap-1.5 text-[12px] font-bold text-muted-foreground">
+                <UserRound className="size-3.5 text-primary" />
+                <span>{t('booking_by')}</span>
+              </p>
+              {selectedUserId !== 'all' && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedUserId('all')}
+                  className="text-[11.5px] font-semibold text-primary hover:underline"
+                >
+                  {t('all_users')}
+                </button>
+              )}
+            </div>
+
+            <Menu.Root open={userDropdownOpen} onOpenChange={setUserDropdownOpen} modal={false}>
+              <Menu.Trigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    'flex h-12 w-full items-center gap-2.5 rounded-xl border bg-card px-3 text-left transition-all shadow-2xs focus:outline-hidden',
+                    userDropdownOpen
+                      ? 'border-primary ring-2 ring-primary/15'
+                      : selectedUser
+                      ? 'border-primary/40 bg-primary-soft/10 hover:border-primary/60'
+                      : 'border-border/80 hover:border-primary/30 hover:bg-muted/30'
+                  )}
+                >
+                  {selectedUser ? (
+                    <Avatar initials={selectedUser.initials} seed={selectedUser.id} src={selectedUser.avatarUrl} className="size-8 text-[11px] shadow-2xs" />
+                  ) : (
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary shadow-2xs">
+                      <UserRound className="size-4.5" />
+                    </div>
+                  )}
+
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{t('all_vehicles')}</p>
-                    <p className={cn('text-[11px]', selectedCarId === 'all' ? 'text-white/80' : 'text-muted-foreground')}>
-                      {cars.length} {t('vehicles')} · {allHistory.length} {t('total_trips')}
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-[13.5px] font-bold text-foreground">
+                        {selectedUser ? selectedUser.name : t('all_users')}
+                      </span>
+                    </div>
+                    <p className="truncate text-[11.5px] text-muted-foreground">
+                      {selectedUser
+                        ? `${allHistory.filter(b => b.requesterId === selectedUser.id).length} ${t('total_trips')}`
+                        : `${bookableUsers.length} ${t('all_users').toLowerCase()} · ${allHistory.length} ${t('total_trips')}`}
                     </p>
                   </div>
-                  {selectedCarId === 'all' && <Check className="size-4 shrink-0 text-white" strokeWidth={2.5} />}
-                </Menu.Item>
 
-                <div className="my-1 border-t border-border/60" />
+                  <div className="flex items-center gap-1">
+                    {selectedUser && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={e => {
+                          e.stopPropagation();
+                          setSelectedUserId('all');
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.stopPropagation();
+                            setSelectedUserId('all');
+                          }
+                        }}
+                        className="flex size-6 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                        title={t('all_users')}
+                      >
+                        <X className="size-3.5" />
+                      </span>
+                    )}
+                    <ChevronDown
+                      className={cn(
+                        'size-4 shrink-0 text-muted-foreground transition-transform duration-200',
+                        userDropdownOpen && 'rotate-180'
+                      )}
+                    />
+                  </div>
+                </button>
+              </Menu.Trigger>
 
-                {/* Individual cars */}
-                {filteredCars.map(c => {
-                  const active = selectedCarId === c.id;
-                  const count = allHistory.filter(b => b.carId === c.id).length;
-                  return (
+              <Menu.Portal>
+                <Menu.Content
+                  align="start"
+                  sideOffset={6}
+                  collisionPadding={12}
+                  className="z-[70] w-[calc(100vw-2rem)] max-w-[420px] overflow-hidden rounded-2xl border border-border/80 bg-card p-1.5 shadow-float outline-none animate-in fade-in-0 zoom-in-95"
+                >
+                  {/* Search inside user dropdown */}
+                  <div className="relative mb-1 p-1">
+                    <Search className="pointer-events-none absolute left-3.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      ref={userSearchRef}
+                      value={userSearch}
+                      onChange={e => setUserSearch(e.target.value)}
+                      placeholder={t('search_users')}
+                      className="h-8.5 w-full rounded-xl border border-border/80 bg-background pl-8 pr-7 text-[12.5px] placeholder:text-muted-foreground/70 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+                      onClick={e => e.stopPropagation()}
+                    />
+                    {userSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setUserSearch('')}
+                        className="absolute right-3 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="max-h-[280px] overflow-y-auto space-y-0.5">
+                    {/* All Users option */}
                     <Menu.Item
-                      key={c.id}
                       onSelect={() => {
-                        setSelectedCarId(c.id);
-                        setCarSearch('');
+                        setSelectedUserId('all');
+                        setUserSearch('');
                       }}
                       className={cn(
                         'flex cursor-pointer select-none items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] outline-none transition-colors',
-                        active
+                        selectedUserId === 'all'
                           ? 'bg-primary font-semibold text-primary-foreground'
                           : 'hover:bg-muted text-foreground'
                       )}
                     >
-                      <CarPhoto car={c} className="size-8 shrink-0 rounded-lg object-cover" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="truncate font-semibold">{c.name}</span>
-                          <span
-                            className={cn(
-                              'rounded px-1.5 py-0.2 font-mono text-[10.5px]',
-                              active ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'
-                            )}
-                          >
-                            {c.plate}
-                          </span>
-                        </div>
-                        <p className={cn('text-[11px]', active ? 'text-white/80' : 'text-muted-foreground')}>
-                          {c.type} · {c.seats} {t('seats', { n: c.seats })}
-                        </p>
-                      </div>
-                      <span
+                      <div
                         className={cn(
-                          'rounded-full px-2 py-0.5 text-[10.5px] font-bold',
-                          active ? 'bg-white/25 text-white' : 'bg-muted text-foreground'
+                          'flex size-8 shrink-0 items-center justify-center rounded-lg',
+                          selectedUserId === 'all' ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'
                         )}
                       >
-                        {count}
-                      </span>
-                      {active && <Check className="size-4 shrink-0 text-white" strokeWidth={2.5} />}
+                        <UserRound className="size-4.5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold">{t('all_users')}</p>
+                        <p className={cn('text-[11px]', selectedUserId === 'all' ? 'text-white/80' : 'text-muted-foreground')}>
+                          {bookableUsers.length} {t('all_users').toLowerCase()} · {allHistory.length} {t('total_trips')}
+                        </p>
+                      </div>
+                      {selectedUserId === 'all' && <Check className="size-4 shrink-0 text-white" strokeWidth={2.5} />}
                     </Menu.Item>
-                  );
-                })}
-              </div>
-            </Menu.Content>
-          </Menu.Portal>
-        </Menu.Root>
+
+                    <div className="my-1 border-t border-border/60" />
+
+                    {/* Individual users */}
+                    {filteredUsers.map(u => {
+                      const active = selectedUserId === u.id;
+                      const count = allHistory.filter(b => b.requesterId === u.id).length;
+                      return (
+                        <Menu.Item
+                          key={u.id}
+                          onSelect={() => {
+                            setSelectedUserId(u.id);
+                            setUserSearch('');
+                          }}
+                          className={cn(
+                            'flex cursor-pointer select-none items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] outline-none transition-colors',
+                            active
+                              ? 'bg-primary font-semibold text-primary-foreground'
+                              : 'hover:bg-muted text-foreground'
+                          )}
+                        >
+                          <Avatar initials={u.initials} seed={u.id} src={u.avatarUrl} className="size-8 text-[11px]" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-semibold">{u.name}</p>
+                            <p className={cn('text-[11px]', active ? 'text-white/80' : 'text-muted-foreground')}>
+                              {u.dept}
+                            </p>
+                          </div>
+                          <span
+                            className={cn(
+                              'rounded-full px-2 py-0.5 text-[10.5px] font-bold',
+                              active ? 'bg-white/25 text-white' : 'bg-muted text-foreground'
+                            )}
+                          >
+                            {count}
+                          </span>
+                          {active && <Check className="size-4 shrink-0 text-white" strokeWidth={2.5} />}
+                        </Menu.Item>
+                      );
+                    })}
+                  </div>
+                </Menu.Content>
+              </Menu.Portal>
+            </Menu.Root>
+          </div>
+        )}
       </div>
 
       {/* Selected Vehicle Detail Card */}

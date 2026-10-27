@@ -39,6 +39,8 @@ const en = {
   period_last_month: 'Last Month',
   period_custom_date: 'Pick Date',
   period_date_range: 'Date Range',
+  all_users: 'All Users',
+  search_users: 'Search user...',
   filter_by_date: 'Filter by Date',
   yesterday: 'Yesterday',
 
@@ -505,6 +507,8 @@ const kh: Partial<Dict> = {
   period_last_month: 'ខែមុន',
   period_custom_date: 'រើសថ្ងៃ',
   period_date_range: 'ចន្លោះថ្ងៃ',
+  all_users: 'អ្នកប្រើប្រាស់ទាំងអស់',
+  search_users: 'ស្វែងរកអ្នកប្រើប្រាស់...',
   filter_by_date: 'ត្រងតាមថ្ងៃ',
   yesterday: 'ម្សិលមិញ',
 
