@@ -386,12 +386,14 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
             onClick={() => setShowQuick(v => !v)}
             aria-expanded={showQuick}
             className={cn(
-              'flex h-6 items-center gap-1 rounded-full px-2.5 text-[11.5px] font-semibold transition-colors',
-              showQuick ? 'bg-primary text-primary-foreground' : 'bg-primary-soft text-primary hover:bg-primary-soft/70'
+              'flex h-6.5 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] font-semibold transition-all shadow-2xs active:scale-95',
+              showQuick
+                ? 'border-primary bg-primary text-primary-foreground shadow-xs'
+                : 'border-primary/20 bg-primary-soft/60 text-primary hover:border-primary/35 hover:bg-primary-soft'
             )}
           >
             <Zap className="size-3" fill="currentColor" />
-            {t('quick_select')}
+            <span>{t('quick_select')}</span>
             <ChevronDown className={cn('size-3 transition-transform duration-200', showQuick && 'rotate-180')} />
           </button>
         }
@@ -590,10 +592,10 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
               onClick={() => setShowDuration(v => !v)}
               aria-expanded={showDuration}
               className={cn(
-                'flex h-6.5 items-center gap-1.5 rounded-full px-2.5 text-[11.5px] font-semibold transition-colors',
+                'flex h-6.5 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] font-semibold transition-all shadow-2xs active:scale-95',
                 showDuration
-                  ? 'bg-primary text-primary-foreground shadow-xs'
-                  : 'bg-primary-soft text-primary hover:bg-primary-soft/70'
+                  ? 'border-primary bg-primary text-primary-foreground shadow-xs'
+                  : 'border-primary/20 bg-primary-soft/60 text-primary hover:border-primary/35 hover:bg-primary-soft'
               )}
             >
               <Zap className="size-3" fill="currentColor" />
