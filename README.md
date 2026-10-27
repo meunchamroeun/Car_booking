@@ -71,16 +71,24 @@ from Wikimedia Commons, credited in **Profile → Vehicle photo credits**:
 For production, upload photos of the company's own vehicles and store their URLs in `imageUrl`.
 If a photo is missing or fails to load, the app falls back to a drawn illustration.
 
-## Telegram Mini App
+## Telegram Mini App & Bot Notifications
 
 The same build runs inside Telegram. `src/lib/telegram.ts` loads only when opened from Telegram and:
 expands to full height, follows the Telegram light/dark theme and header colour, wires Telegram's
 Back button to close sheets / return Home, and gives haptic feedback on success and errors.
 Outside Telegram it does nothing.
 
-Connect the bot (done once in @BotFather):
+### Connect the bot (done once in @BotFather):
 
 1. `/mybots` → **@car_booking_appbot** → **Bot Settings** → **Menu Button** → **Configure menu button**
    → send `https://car-booking-demo-app.vercel.app` → button title `Book a car`.
 2. Optional, for a direct link `t.me/car_booking_appbot/app`: send `/newapp` → choose the bot →
    title, description, a 640×360 photo → Web App URL `https://car-booking-demo-app.vercel.app` → short name `app`.
+
+### Real-time Booking Alerts via @car_booking_appbot:
+
+When staff submit, approve, reject, or cancel a booking, automated bilingual alerts (Khmer & English) are sent directly to Telegram through the `/api/telegram-notify` endpoint.
+
+Configure in `.env.local` or Vercel Environment Variables:
+- `TELEGRAM_BOT_TOKEN`: The bot API token from @BotFather for @car_booking_appbot.
+- `TELEGRAM_CHAT_ID`: The target Telegram user ID or group chat ID (e.g. `-100xxxxxxxxxx`). Multiple chat IDs can be separated by commas.

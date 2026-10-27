@@ -8,6 +8,7 @@ import { DateUtil } from '@/lib/date-utils';
 import { ROLE_DEFAULT_TAB, ROLE_TABS } from '@/lib/permissions';
 import * as svc from '@/lib/fleet-service';
 import { getTelegram, haptic, initTelegram, syncTelegramTheme } from '@/lib/telegram';
+import { sendTelegramNotification } from '@/lib/telegram-notify';
 import { cloudEnabled, loadCloud, saveCloud, subscribeCloud } from '@/lib/cloud';
 
 export interface ToastItem {
@@ -361,14 +362,107 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     openBooking,
 
     createBooking: input => {
-      const ok = run(() => svc.createBooking(data, currentUser, input));
-      if (ok) setCurrentTab(currentUser.role === 'Admin' ? 'home' : 'trips');
+      let createdBookingId: string | undefined;
+      const ok = run(() => {
+        const res = svc.createBooking(data, currentUser, input);
+        createdBookingId = res.bookingId;
+        return res;
+      });
+      if (ok) {
+        const car = data.cars.find(c => c.id === input.carId);
+        sendTelegramNotification({
+          event: 'created',
+          bookingId: createdBookingId || '',
+          requesterName: currentUser.name,
+          vehicleName: car?.name ?? input.carId,
+          plate: car?.plate,
+          startDate: input.date,
+          endDate: input.endDate,
+          startTime: input.startTime,
+          endTime: input.endTime,
+          purpose: input.purpose,
+          destination: input.destination,
+          needDriver: input.needDriver,
+          actorName: currentUser.name,
+        });
+        setCurrentTab(currentUser.role === 'Admin' ? 'home' : 'trips');
+      }
       return ok;
     },
     updateBooking: (id, input) => run(() => svc.updateBooking(data, currentUser, id, input)),
-    approveBooking: (id, driverId, assignDriver = true) => run(() => svc.approveBooking(data, currentUser, id, driverId, assignDriver)),
-    rejectBooking: (id, reason) => run(() => svc.rejectBooking(data, currentUser, id, reason)),
-    cancelBooking: (id, reason) => run(() => svc.cancelBooking(data, currentUser, id, reason)),
+    approveBooking: (id, driverId, assignDriver = true) => {
+      const b = data.bookings.find(x => x.id === id);
+      const ok = run(() => svc.approveBooking(data, currentUser, id, driverId, assignDriver));
+      if (ok && b) {
+        const car = data.cars.find(c => c.id === b.carId);
+        const requester = data.users.find(u => u.id === b.requesterId);
+        const driver = driverId ? data.drivers.find(d => d.id === driverId) : null;
+        sendTelegramNotification({
+          event: 'approved',
+          bookingId: id,
+          requesterName: requester?.name ?? b.requesterId,
+          vehicleName: car?.name ?? b.carId,
+          plate: car?.plate,
+          startDate: b.startDate,
+          endDate: b.endDate,
+          startTime: b.startTime,
+          endTime: b.endTime,
+          purpose: b.purpose,
+          destination: b.destination,
+          actorName: currentUser.name,
+          driverName: driver?.name,
+        });
+      }
+      return ok;
+    },
+    rejectBooking: (id, reason) => {
+      const b = data.bookings.find(x => x.id === id);
+      const ok = run(() => svc.rejectBooking(data, currentUser, id, reason));
+      if (ok && b) {
+        const car = data.cars.find(c => c.id === b.carId);
+        const requester = data.users.find(u => u.id === b.requesterId);
+        sendTelegramNotification({
+          event: 'rejected',
+          bookingId: id,
+          requesterName: requester?.name ?? b.requesterId,
+          vehicleName: car?.name ?? b.carId,
+          plate: car?.plate,
+          startDate: b.startDate,
+          endDate: b.endDate,
+          startTime: b.startTime,
+          endTime: b.endTime,
+          purpose: b.purpose,
+          destination: b.destination,
+          actorName: currentUser.name,
+          reason,
+        });
+      }
+      return ok;
+    },
+    cancelBooking: (id, reason) => {
+      const b = data.bookings.find(x => x.id === id);
+      const ok = run(() => svc.cancelBooking(data, currentUser, id, reason));
+      if (ok && b) {
+        const car = data.cars.find(c => c.id === b.carId);
+        const requester = data.users.find(u => u.id === b.requesterId);
+        sendTelegramNotification({
+          event: 'cancelled',
+          bookingId: id,
+          requesterName: requester?.name ?? b.requesterId,
+          vehicleName: car?.name ?? b.carId,
+          plate: car?.plate,
+          startDate: b.startDate,
+          endDate: b.endDate,
+          startTime: b.startTime,
+          endTime: b.endTime,
+          purpose: b.purpose,
+          destination: b.destination,
+          actorName: currentUser.name,
+          reason,
+        });
+      }
+      return ok;
+    },
     startTask: id => run(() => svc.startTask(data, currentUser, id), false),
     returnVehicle: (id, input) => run(() => svc.returnVehicle(data, currentUser, id, input)),
     setMaintenance: (carId, m) => run(() => svc.setMaintenance(data, currentUser, carId, m)),
