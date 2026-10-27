@@ -24,14 +24,6 @@ const QUICK_SLOTS = (['full_day', 'morning', 'afternoon'] as const).map(key => (
 /** Minutes since midnight → "HH:MM". */
 const spinTime = (m: number) => `${DateUtil.pad(Math.floor(m / 60))}:${DateUtil.pad(m % 60)}`;
 
-const QUICK_DURATION_OPTIONS = [
-  { key: '2hr', label: '2 hr' },
-  { key: '1d', label: '1 day' },
-  { key: '2d', label: '2 days' },
-  { key: '3d', label: '3 days' },
-  { key: '1w', label: '1 week' },
-] as const;
-
 const monthShort = (dateStr: string, lang: 'en' | 'kh' = 'en') => {
   const [y, m] = dateStr.split('-').map(Number);
   const names = DateUtil.names(lang);
@@ -104,8 +96,6 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   const [timePick, setTimePick] = React.useState<'start' | 'end' | null>(null);
   // Quick select shown on top next to the card (default hidden, shows on click only)
   const [showQuick, setShowQuick] = React.useState(false);
-  // Quick duration presets under the card (default hidden, shows on click only)
-  const [showDuration, setShowDuration] = React.useState(false);
   // Chosen time window; the Morning/Afternoon/Full day buttons are shortcuts that fill it
   const [range, setRange] = React.useState<{ start: string; end: string }>({ start: '08:00', end: '12:00' });
   const [purpose, setPurpose] = React.useState('');
@@ -116,7 +106,6 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   React.useEffect(() => {
     if (!open) return;
     setShowQuick(false);
-    setShowDuration(false);
     setTimePick(null);
     if (editing) {
       setCarId(editing.carId);
@@ -215,32 +204,6 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
     });
   const changeEnd = (v: string) => setRange(r => ({ ...r, end: v }));
 
-  const applyQuickDuration = (key: (typeof QUICK_DURATION_OPTIONS)[number]['key']) => {
-    if (key === '2hr') {
-      setEndDate(date);
-      const startM = DateUtil.toMins(start);
-      const endM = startM + 120;
-      if (endM < 1440) {
-        setRange(r => ({ ...r, end: spinTime(endM) }));
-      } else {
-        setEndDate(DateUtil.addDays(date, 1));
-        setRange(r => ({ ...r, end: spinTime(endM - 1440) }));
-      }
-    } else if (key === '1d') {
-      setEndDate(DateUtil.addDays(date, 1));
-      setRange(r => ({ ...r, end: r.start }));
-    } else if (key === '2d') {
-      setEndDate(DateUtil.addDays(date, 2));
-      setRange(r => ({ ...r, end: r.start }));
-    } else if (key === '3d') {
-      setEndDate(DateUtil.addDays(date, 3));
-      setRange(r => ({ ...r, end: r.start }));
-    } else if (key === '1w') {
-      setEndDate(DateUtil.addDays(date, 7));
-      setRange(r => ({ ...r, end: r.start }));
-    }
-  };
-
   const getBookingStatus = React.useCallback(
     (d: string): DayBookingStatus => {
       if (!car) return 'free';
@@ -253,19 +216,6 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
     },
     [car, app, editing, isCarInMaintenance]
   );
-
-  const activeQuick = React.useMemo(() => {
-    const days = DateUtil.dayDiff(date, endDate);
-    const startM = DateUtil.toMins(start);
-    const endM = DateUtil.toMins(end);
-    const diffM = days * 1440 + endM - startM;
-    if (diffM === 120 && days === 0) return '2hr';
-    if (diffM === 1440 && days === 1) return '1d';
-    if (diffM === 2880 && days === 2) return '2d';
-    if (diffM === 4320 && days === 3) return '3d';
-    if (diffM === 10080 && days === 7) return '1w';
-    return null;
-  }, [date, endDate, start, end]);
 
   const missing = timeProblem ?? (!purpose.trim() ? t('pick_purpose') : pickDriver && needDriver && !driverId ? t('err_assign_driver') : null);
 
@@ -582,52 +532,6 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Quick duration presets: 2 hr, 1 day, 2 days, 3 days, 1 week (with toggle label Quick Select, default hide) */}
-        <div className="mt-2.5">
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setShowDuration(v => !v)}
-              aria-expanded={showDuration}
-              className={cn(
-                'flex h-6.5 items-center gap-1.5 rounded-full border px-2.5 text-[11.5px] font-semibold transition-all shadow-2xs active:scale-95',
-                showDuration
-                  ? 'border-primary bg-primary text-primary-foreground shadow-xs'
-                  : 'border-primary/20 bg-primary-soft/60 text-primary hover:border-primary/35 hover:bg-primary-soft'
-              )}
-            >
-              <Zap className="size-3" fill="currentColor" />
-              <span>{t('quick_select')}</span>
-              <ChevronDown className={cn('size-3 transition-transform duration-200', showDuration && 'rotate-180')} />
-            </button>
-          </div>
-
-          {showDuration && (
-            <div className="mt-2 grid grid-cols-5 gap-1.5 min-[410px]:gap-2 animate-in fade-in-0 slide-in-from-top-1 duration-200" role="radiogroup" aria-label={t('quick_select')}>
-              {QUICK_DURATION_OPTIONS.map(item => {
-                const active = activeQuick === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={active}
-                    onClick={() => applyQuickDuration(item.key)}
-                    className={cn(
-                      'flex h-10 items-center justify-center rounded-2xl border px-1 text-center text-[13px] min-[380px]:text-[13.5px] font-bold transition-all active:scale-95 shadow-2xs',
-                      active
-                        ? 'border-primary bg-primary text-primary-foreground shadow-xs'
-                        : 'border-neutral-200/90 bg-card text-foreground hover:border-neutral-300 hover:bg-muted/40 dark:border-neutral-800'
-                    )}
-                  >
-                    {item.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
 
         {/* Interactive timeline slider track card (always shown, matching user design) */}
