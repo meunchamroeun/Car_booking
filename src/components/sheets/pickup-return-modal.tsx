@@ -142,8 +142,8 @@ export function PickupReturnModal({
         <Dialog.Content
           aria-describedby={undefined}
           className={cn(
-            'fixed inset-x-0 bottom-0 z-[81] mx-auto flex max-h-[95dvh] w-full max-w-[420px] flex-col overflow-y-auto overscroll-contain rounded-t-[28px] bg-background p-4 sm:p-5 shadow-float outline-none sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:rounded-[28px]',
-            'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom data-[state=open]:duration-250 data-[state=closed]:duration-200 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95'
+            'fixed inset-x-0 bottom-0 z-[81] mx-auto flex max-h-[92dvh] w-full max-w-[430px] flex-col overflow-y-auto overscroll-contain rounded-t-[28px] bg-background p-4 sm:p-5 pb-[max(env(safe-area-inset-bottom),20px)] shadow-float outline-none border-t sm:border-x sm:border-border',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom data-[state=open]:duration-300 data-[state=closed]:duration-200'
           )}
         >
           {/* Top drag handle indicator */}
