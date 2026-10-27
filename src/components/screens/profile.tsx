@@ -1,11 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { Check, ChevronDown, ChevronRight, Languages, Mail, Moon, Phone, RotateCcw, Wrench } from 'lucide-react';
+import { Bell, Check, ChevronDown, ChevronRight, Languages, Mail, Moon, Phone, RotateCcw, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { UserRole } from '@/types';
 import { can } from '@/lib/permissions';
 import { DateUtil } from '@/lib/date-utils';
+import { getNotificationPermissionStatus, requestNotificationPermission } from '@/lib/badging';
 import { Card, SectionHeader } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,17 @@ const PINNED_ACCOUNTS = ['u7', 'a2', 'a1'];
 export function ProfileScreen() {
   const { currentUser, users, cars, t, theme, setTheme, lang, setLang, switchUser, resetDemoData, isCarInMaintenance, openSheet } = useApp();
   const [showMaintenance, setShowMaintenance] = React.useState(false);
+  const [notifPerm, setNotifPerm] = React.useState<'default' | 'granted' | 'denied' | 'unsupported'>('default');
+
+  React.useEffect(() => {
+    setNotifPerm(getNotificationPermissionStatus());
+  }, []);
+
+  const handleRequestPerm = async () => {
+    const granted = await requestNotificationPermission();
+    setNotifPerm(granted ? 'granted' : getNotificationPermissionStatus());
+  };
+
   const canManageMaintenance = can(currentUser, 'vehicle.maintenance');
   const inServiceCount = cars.filter(c => isCarInMaintenance(c.id, DateUtil.todayStr())).length;
   const scheduledCount = cars.filter(c => !isCarInMaintenance(c.id, DateUtil.todayStr()) && c.maintenance?.mode === 'scheduled').length;
@@ -78,6 +90,28 @@ export function ProfileScreen() {
               { value: 'kh', label: 'ខ្មែរ' },
             ]}
           />
+        </div>
+        <div className="flex items-center gap-3 p-3.5">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-muted">
+            <Bell className="size-[18px]" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[14px] font-semibold">{t('badge_notif_title')}</p>
+            <p className="truncate text-[12px] text-muted-foreground">{t('badge_notif_sub')}</p>
+          </div>
+          {notifPerm === 'granted' ? (
+            <Badge tone="success" dot>
+              {t('badge_enabled')}
+            </Badge>
+          ) : notifPerm === 'denied' ? (
+            <Badge tone="neutral">
+              {t('badge_denied')}
+            </Badge>
+          ) : (
+            <Button size="sm" variant="outline" className="h-7 px-2.5 text-[12px]" onClick={handleRequestPerm}>
+              {t('badge_enable')}
+            </Button>
+          )}
         </div>
         {canManageMaintenance && (
           <div>

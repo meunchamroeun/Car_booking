@@ -9,6 +9,7 @@ import { ROLE_DEFAULT_TAB, ROLE_TABS } from '@/lib/permissions';
 import * as svc from '@/lib/fleet-service';
 import { getTelegram, haptic, initTelegram, syncTelegramTheme } from '@/lib/telegram';
 import { sendTelegramNotification } from '@/lib/telegram-notify';
+import { registerServiceWorker, updateAppBadge } from '@/lib/badging';
 import { cloudEnabled, loadCloud, saveCloud, subscribeCloud } from '@/lib/cloud';
 
 export interface ToastItem {
@@ -316,6 +317,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     () => data.notifications.filter(n => n.userId === currentUser.id && !n.read).length,
     [data.notifications, currentUser.id]
   );
+
+  // Register PWA service worker and sync unread count to Home Screen icon badge
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
+
+  useEffect(() => {
+    updateAppBadge(unreadNotifsCount);
+  }, [unreadNotifsCount]);
 
   const isCarInMaintenance = (carId: string, date = selectedDate, start?: string, end?: string) =>
     svc.isCarInMaintenance(data.cars.find(c => c.id === carId), date, start, end);
