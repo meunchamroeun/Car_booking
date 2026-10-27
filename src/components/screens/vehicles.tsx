@@ -384,7 +384,7 @@ function VehicleCard({ car }: { car: Car }) {
                           </p>
                           <p className="mt-1 text-[11.5px] leading-snug text-muted-foreground break-words whitespace-normal" title={b.purpose}>
                             <span className="text-muted-foreground/80 font-normal">{t('purpose')} : </span>
-                            <span className="font-medium text-foreground/85">{b.purpose || who?.dept || '—'}</span>
+                            <span className="font-medium text-foreground/85">{b.purpose || '—'}</span>
                           </p>
                         </div>
                         <div className="shrink-0 text-right">

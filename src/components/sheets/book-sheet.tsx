@@ -223,7 +223,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                       </p>
                       <p className="mt-1 text-[11.5px] leading-snug text-muted-foreground break-words whitespace-normal" title={b.purpose}>
                         <span className="text-muted-foreground/80 font-normal">{t('purpose')} : </span>
-                        <span className="font-medium text-foreground/85">{b.purpose || who?.dept || '—'}</span>
+                        <span className="font-medium text-foreground/85">{b.purpose || '—'}</span>
                       </p>
                     </div>
                     <span className="shrink-0 rounded-full border border-border/80 bg-background px-3 py-1 text-[12px] font-semibold tabular text-foreground shadow-2xs">

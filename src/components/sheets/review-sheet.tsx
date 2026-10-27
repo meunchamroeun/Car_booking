@@ -89,7 +89,6 @@ export function ReviewSheet({ open, id, startMode = 'approve' }: { open: boolean
               <span className="text-[12.5px] font-normal text-muted-foreground">{t('booking_by')} : </span>
               {requester.name}
             </p>
-            <p className="truncate text-[12.5px] text-muted-foreground">{requester.dept}</p>
           </div>
         </div>
         <p className="mt-3 rounded-xl bg-muted/70 px-3 py-2 text-[13.5px] leading-snug break-words whitespace-normal">
