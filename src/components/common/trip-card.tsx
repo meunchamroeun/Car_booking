@@ -82,7 +82,7 @@ export function TripCard({
           </span>
           <span className="ml-auto flex shrink-0 items-center gap-1 text-muted-foreground">
             <UserRound className="size-3.5" />
-            <span className="max-w-[110px] truncate">{b.needDriver ? driver?.name ?? t('with_driver') : t('self_drive')}</span>
+            <span className="max-w-[140px] truncate">{b.needDriver ? driver?.name ?? t('with_driver') : t('self_drive')}</span>
           </span>
         </div>
 

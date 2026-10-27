@@ -186,7 +186,7 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
                 </a>
               </span>
             ) : (
-              <span className="font-medium text-muted-foreground">{t('awaiting_driver')}</span>
+              <span className="font-medium text-muted-foreground">{t('with_driver')}</span>
             )
           ) : (
             t('driver_needed_no')
