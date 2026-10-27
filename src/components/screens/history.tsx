@@ -220,8 +220,8 @@ export function HistoryScreen() {
         ]}
       />
 
-      {/* Selectors: Vehicle & Booked By */}
-      <div className={cn('grid gap-2.5', scope !== 'mine' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1')}>
+      {/* Selectors: Vehicle & Booked By (always 1 line / 2 columns side-by-side on mobile and desktop) */}
+      <div className={cn('grid gap-2 sm:gap-2.5', scope !== 'mine' ? 'grid-cols-2' : 'grid-cols-1')}>
         {/* Vehicle Selector (Dropdown) */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between px-0.5">
@@ -246,7 +246,7 @@ export function HistoryScreen() {
               <button
                 type="button"
                 className={cn(
-                  'flex h-13 w-full items-center gap-2 sm:gap-2.5 rounded-2xl border bg-card px-2.5 sm:px-3 text-left transition-all shadow-2xs focus:outline-hidden',
+                  'flex h-13 w-full items-center gap-1.5 min-[380px]:gap-2 sm:gap-2.5 rounded-2xl border bg-card px-2 min-[380px]:px-2.5 sm:px-3 text-left transition-all shadow-2xs focus:outline-hidden',
                   carDropdownOpen
                     ? 'border-primary ring-2 ring-primary/20'
                     : selectedCar
@@ -453,7 +453,7 @@ export function HistoryScreen() {
                 <button
                   type="button"
                   className={cn(
-                    'flex h-13 w-full items-center gap-2 sm:gap-2.5 rounded-2xl border bg-card px-2.5 sm:px-3 text-left transition-all shadow-2xs focus:outline-hidden',
+                    'flex h-13 w-full items-center gap-1.5 min-[380px]:gap-2 sm:gap-2.5 rounded-2xl border bg-card px-2 min-[380px]:px-2.5 sm:px-3 text-left transition-all shadow-2xs focus:outline-hidden',
                     userDropdownOpen
                       ? 'border-primary ring-2 ring-primary/20'
                       : selectedUser
