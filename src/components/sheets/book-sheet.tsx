@@ -102,9 +102,9 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   const [calendarMode, setCalendarMode] = React.useState<'start' | 'end'>('start');
   // Which time the wheel picker popup is changing
   const [timePick, setTimePick] = React.useState<'start' | 'end' | null>(null);
-  // Quick select shown on top next to the card (kept exactly as original)
-  const [showQuick, setShowQuick] = React.useState(true);
-  // Quick duration presets under the card (default hide)
+  // Quick select shown on top next to the card (default hidden, shows on click only)
+  const [showQuick, setShowQuick] = React.useState(false);
+  // Quick duration presets under the card (default hidden, shows on click only)
   const [showDuration, setShowDuration] = React.useState(false);
   // Chosen time window; the Morning/Afternoon/Full day buttons are shortcuts that fill it
   const [range, setRange] = React.useState<{ start: string; end: string }>({ start: '08:00', end: '12:00' });
@@ -115,7 +115,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   // Reset each time the sheet opens, starting from the vehicle card's date and suggested time
   React.useEffect(() => {
     if (!open) return;
-    setShowQuick(true);
+    setShowQuick(false);
     setShowDuration(false);
     setTimePick(null);
     if (editing) {
