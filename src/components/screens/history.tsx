@@ -677,28 +677,39 @@ export function HistoryScreen() {
             )}
           >
             <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
-              <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('total_requests')}>
-                {t('total_requests')}
-              </p>
+              <div className="flex h-7 flex-col items-center justify-center leading-tight">
+                <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground">
+                  {t('stat_total_line1')}
+                </span>
+                <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground">
+                  {t('stat_total_line2')}
+                </span>
+              </div>
               <p className="text-[16px] font-bold text-primary tabular mt-0.5">{carStats.total}</p>
             </div>
             <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
-              <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_completed')}>
-                {t('status_completed')}
-              </p>
+              <div className="flex h-7 items-center justify-center leading-tight">
+                <span className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_completed')}>
+                  {t('status_completed')}
+                </span>
+              </div>
               <p className="text-[16px] font-bold text-success tabular mt-0.5">{carStats.completed}</p>
             </div>
             <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
-              <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_cancelled')}>
-                {t('status_cancelled')}
-              </p>
+              <div className="flex h-7 items-center justify-center leading-tight">
+                <span className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_cancelled')}>
+                  {t('status_cancelled')}
+                </span>
+              </div>
               <p className="text-[16px] font-bold text-muted-foreground tabular mt-0.5">{carStats.cancelled}</p>
             </div>
             {carStats.rejected > 0 && (
               <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
-                <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_rejected')}>
-                  {t('status_rejected')}
-                </p>
+                <div className="flex h-7 items-center justify-center leading-tight">
+                  <span className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_rejected')}>
+                    {t('status_rejected')}
+                  </span>
+                </div>
                 <p className="text-[16px] font-bold text-destructive tabular mt-0.5">{carStats.rejected}</p>
               </div>
             )}
@@ -736,28 +747,39 @@ export function HistoryScreen() {
             )}
           >
             <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
-              <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('total_requests')}>
-                {t('total_requests')}
-              </p>
+              <div className="flex h-7 flex-col items-center justify-center leading-tight">
+                <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground">
+                  {t('stat_total_line1')}
+                </span>
+                <span className="text-[10px] sm:text-[10.5px] font-semibold text-muted-foreground">
+                  {t('stat_total_line2')}
+                </span>
+              </div>
               <p className="text-[16px] font-bold text-primary tabular mt-0.5">{userStats.total}</p>
             </div>
             <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
-              <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_completed')}>
-                {t('status_completed')}
-              </p>
+              <div className="flex h-7 items-center justify-center leading-tight">
+                <span className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_completed')}>
+                  {t('status_completed')}
+                </span>
+              </div>
               <p className="text-[16px] font-bold text-success tabular mt-0.5">{userStats.completed}</p>
             </div>
             <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
-              <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_cancelled')}>
-                {t('status_cancelled')}
-              </p>
+              <div className="flex h-7 items-center justify-center leading-tight">
+                <span className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_cancelled')}>
+                  {t('status_cancelled')}
+                </span>
+              </div>
               <p className="text-[16px] font-bold text-muted-foreground tabular mt-0.5">{userStats.cancelled}</p>
             </div>
             {userStats.rejected > 0 && (
               <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
-                <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_rejected')}>
-                  {t('status_rejected')}
-                </p>
+                <div className="flex h-7 items-center justify-center leading-tight">
+                  <span className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_rejected')}>
+                    {t('status_rejected')}
+                  </span>
+                </div>
                 <p className="text-[16px] font-bold text-destructive tabular mt-0.5">{userStats.rejected}</p>
               </div>
             )}
