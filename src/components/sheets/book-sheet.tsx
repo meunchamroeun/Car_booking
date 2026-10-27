@@ -25,17 +25,11 @@ const QUICK_SLOTS = (['full_day', 'morning', 'afternoon'] as const).map(key => (
 const spinTime = (m: number) => `${DateUtil.pad(Math.floor(m / 60))}:${DateUtil.pad(m % 60)}`;
 
 const QUICK_DURATION_OPTIONS = [
-  { key: '1hr', label: '1 hr' },
   { key: '2hr', label: '2 hr' },
-  { key: '3hr', label: '3 hr' },
-  { key: '4hr', label: '4 hr' },
   { key: '1d', label: '1 day' },
   { key: '2d', label: '2 days' },
   { key: '3d', label: '3 days' },
-  { key: '4d', label: '4 days' },
-  { key: '5d', label: '5 days' },
   { key: '1w', label: '1 week' },
-  { key: '2w', label: '2 weeks' },
 ] as const;
 
 const monthShort = (dateStr: string, lang: 'en' | 'kh' = 'en') => {
@@ -109,7 +103,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   // Which time the wheel picker popup is changing
   const [timePick, setTimePick] = React.useState<'start' | 'end' | null>(null);
   // Quick select shown on top next to the card
-  const [showQuick, setShowQuick] = React.useState(true);
+  const [showQuick, setShowQuick] = React.useState(false);
   // Chosen time window; the Morning/Afternoon/Full day buttons are shortcuts that fill it
   const [range, setRange] = React.useState<{ start: string; end: string }>({ start: '08:00', end: '12:00' });
   const [purpose, setPurpose] = React.useState('');
@@ -119,7 +113,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   // Reset each time the sheet opens, starting from the vehicle card's date and suggested time
   React.useEffect(() => {
     if (!open) return;
-    setShowQuick(true);
+    setShowQuick(false);
     setTimePick(null);
     if (editing) {
       setCarId(editing.carId);
@@ -219,11 +213,10 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   const changeEnd = (v: string) => setRange(r => ({ ...r, end: v }));
 
   const applyQuickDuration = (key: (typeof QUICK_DURATION_OPTIONS)[number]['key']) => {
-    const startM = DateUtil.toMins(start);
-    if (key === '1hr' || key === '2hr' || key === '3hr' || key === '4hr') {
-      const addedMins = key === '1hr' ? 60 : key === '2hr' ? 120 : key === '3hr' ? 180 : 240;
+    if (key === '2hr') {
       setEndDate(date);
-      const endM = startM + addedMins;
+      const startM = DateUtil.toMins(start);
+      const endM = startM + 120;
       if (endM < 1440) {
         setRange(r => ({ ...r, end: spinTime(endM) }));
       } else {
@@ -239,17 +232,8 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
     } else if (key === '3d') {
       setEndDate(DateUtil.addDays(date, 3));
       setRange(r => ({ ...r, end: r.start }));
-    } else if (key === '4d') {
-      setEndDate(DateUtil.addDays(date, 4));
-      setRange(r => ({ ...r, end: r.start }));
-    } else if (key === '5d') {
-      setEndDate(DateUtil.addDays(date, 5));
-      setRange(r => ({ ...r, end: r.start }));
     } else if (key === '1w') {
       setEndDate(DateUtil.addDays(date, 7));
-      setRange(r => ({ ...r, end: r.start }));
-    } else if (key === '2w') {
-      setEndDate(DateUtil.addDays(date, 14));
       setRange(r => ({ ...r, end: r.start }));
     }
   };
@@ -272,17 +256,11 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
     const startM = DateUtil.toMins(start);
     const endM = DateUtil.toMins(end);
     const diffM = days * 1440 + endM - startM;
-    if (diffM === 60 && days === 0) return '1hr';
     if (diffM === 120 && days === 0) return '2hr';
-    if (diffM === 180 && days === 0) return '3hr';
-    if (diffM === 240 && days === 0) return '4hr';
     if (diffM === 1440 && days === 1) return '1d';
     if (diffM === 2880 && days === 2) return '2d';
     if (diffM === 4320 && days === 3) return '3d';
-    if (diffM === 5760 && days === 4) return '4d';
-    if (diffM === 7200 && days === 5) return '5d';
     if (diffM === 10080 && days === 7) return '1w';
-    if (diffM === 20160 && days === 14) return '2w';
     return null;
   }, [date, endDate, start, end]);
 
@@ -415,70 +393,6 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           </button>
         }
       >
-        {/* Quick card (Today / Tomorrow, Full day / Morning / Afternoon) shown on top next to the ticket card */}
-        {showQuick && (
-          <div className="mb-2.5 space-y-2 rounded-2xl border border-neutral-200/90 bg-card p-2.5 shadow-2xs dark:border-neutral-800 animate-in fade-in-0 slide-in-from-top-1 duration-200">
-            {/* Today / Tomorrow day tabs (exact old style from user image) */}
-            <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-0.5" role="radiogroup" aria-label={t('date')}>
-              {[
-                { d: today, label: t('today') },
-                { d: tomorrow, label: t('tomorrow') },
-              ].map(o => {
-                const on = date === o.d && !multiDay;
-                return (
-                  <button
-                    key={o.d}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    onClick={() => (setDate(o.d), setEndDate(o.d), setPicker(null))}
-                    className={cn(
-                      'h-8 rounded-[10px] text-[12.5px] transition-all',
-                      on ? 'bg-primary font-semibold text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
-                    )}
-                  >
-                    {o.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Time slot presets: Full day | Morning | Afternoon (exact old style from user image) */}
-            <div className="grid grid-cols-[auto_1fr_1.08fr] gap-1" role="radiogroup" aria-label={t('a11y_time_slot')}>
-              {QUICK_SLOTS.map(s => {
-                const on = preset?.key === s.key;
-                const blocked = !!slotProblem(s.start, s.end);
-                return (
-                  <button
-                    key={s.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    disabled={blocked}
-                    onClick={() => (setRange({ start: s.start, end: s.end }), setPicker(null))}
-                    className={cn(
-                      'flex h-8 min-w-0 items-center justify-center whitespace-nowrap rounded-full border px-1.5 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-40',
-                      s.key === 'full_day' && 'px-2.5',
-                      on
-                        ? 'border-primary bg-primary-soft text-primary font-semibold'
-                        : 'border-border bg-card text-muted-foreground enabled:hover:border-primary/40 enabled:hover:text-foreground dark:border-neutral-800'
-                    )}
-                  >
-                    <span className="text-[10.5px] min-[380px]:text-[11.5px] font-semibold">
-                      {t(s.key)}
-                      {s.key !== 'full_day' && (
-                        <span className="ml-1 font-medium tabular opacity-80">
-                          {s.start}–{s.end}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Ticket Date & Time Card (compact, fit and clean) */}
         <div
           role="button"
@@ -601,9 +515,9 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           </div>
         </div>
 
-        {/* Quick duration presets: rounded capsule card with more choices */}
-        <div className="mt-2.5 rounded-full border border-neutral-200/90 bg-card p-1.5 shadow-2xs dark:border-neutral-800">
-          <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto px-1 py-0.5" role="radiogroup" aria-label={t('quick_select')}>
+        {/* Quick duration presets: 2 hr, 1 day, 2 days, 3 days, 1 week (controlled by Quick Select button to hide or show) */}
+        {showQuick && (
+          <div className="mt-2.5 grid grid-cols-5 gap-1.5 min-[410px]:gap-2 animate-in fade-in-0 slide-in-from-top-1 duration-200" role="radiogroup" aria-label={t('quick_select')}>
             {QUICK_DURATION_OPTIONS.map(item => {
               const active = activeQuick === item.key;
               return (
@@ -614,10 +528,10 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                   aria-checked={active}
                   onClick={() => applyQuickDuration(item.key)}
                   className={cn(
-                    'flex h-8.5 min-[380px]:h-9 shrink-0 items-center justify-center rounded-full border px-3.5 sm:px-4 text-center text-[12.5px] min-[380px]:text-[13.5px] font-bold whitespace-nowrap transition-all active:scale-95',
+                    'flex h-10 items-center justify-center rounded-2xl border px-1 text-center text-[13px] min-[380px]:text-[13.5px] font-bold transition-all active:scale-95 shadow-2xs',
                     active
                       ? 'border-primary bg-primary text-primary-foreground shadow-xs'
-                      : 'border-neutral-200/90 bg-background text-foreground hover:border-neutral-300 hover:bg-muted/40 dark:border-neutral-700/80 dark:bg-card dark:text-foreground'
+                      : 'border-neutral-200/90 bg-card text-foreground hover:border-neutral-300 hover:bg-muted/40 dark:border-neutral-800'
                   )}
                 >
                   {item.label}
@@ -625,7 +539,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
               );
             })}
           </div>
-        </div>
+        )}
 
         {/* Interactive timeline slider track card (always shown, matching user design) */}
         <div className="mt-2.5 rounded-2xl border border-neutral-200/90 bg-muted/40 p-3 shadow-2xs dark:border-neutral-800">
