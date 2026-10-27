@@ -196,11 +196,6 @@ export function HistoryScreen() {
       <PageHeader
         title={t('history_title')}
         subtitle={t('history_sub')}
-        action={
-          <span className="rounded-full bg-primary-soft px-2.5 py-1 font-mono text-[11.5px] font-bold text-primary">
-            {filteredList.length}
-          </span>
-        }
       />
 
       {/* Scope Segmented Control */}
