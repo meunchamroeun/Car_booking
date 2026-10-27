@@ -140,7 +140,8 @@ export function HistoryScreen() {
     const carBookings = allHistory.filter(b => b.carId === selectedCar.id);
     const completed = carBookings.filter(b => b.status === 'Completed' || b.status === 'Approved').length;
     const cancelled = carBookings.filter(b => b.status === 'Cancelled').length;
-    return { total: carBookings.length, completed, cancelled };
+    const rejected = carBookings.filter(b => b.status === 'Rejected').length;
+    return { total: carBookings.length, completed, cancelled, rejected };
   }, [allHistory, selectedCar]);
 
   const filteredCars = React.useMemo(() => {
@@ -157,6 +158,16 @@ export function HistoryScreen() {
   const selectedUser = React.useMemo(() => {
     return selectedUserId !== 'all' ? users.find(u => u.id === selectedUserId) : null;
   }, [users, selectedUserId]);
+
+  // User specific stats
+  const userStats = React.useMemo(() => {
+    if (!selectedUser) return null;
+    const userBookings = allHistory.filter(b => b.requesterId === selectedUser.id);
+    const completed = userBookings.filter(b => b.status === 'Completed' || b.status === 'Approved').length;
+    const cancelled = userBookings.filter(b => b.status === 'Cancelled').length;
+    const rejected = userBookings.filter(b => b.status === 'Rejected').length;
+    return { total: userBookings.length, completed, cancelled, rejected };
+  }, [allHistory, selectedUser]);
 
   const bookableUsers = React.useMemo(() => {
     const userIdsWithBookings = new Set(allHistory.map(b => b.requesterId));
@@ -659,19 +670,97 @@ export function HistoryScreen() {
           </div>
 
           {/* Historical Trips Analytics for this vehicle */}
-          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/60 pt-2.5 text-center">
+          <div
+            className={cn(
+              'mt-3 grid gap-2 border-t border-border/60 pt-2.5 text-center',
+              carStats.rejected > 0 ? 'grid-cols-4' : 'grid-cols-3'
+            )}
+          >
             <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
-              <p className="text-[10.5px] font-medium text-muted-foreground">{t('total_trips')}</p>
+              <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('total_requests')}>
+                {t('total_requests')}
+              </p>
               <p className="text-[16px] font-bold text-primary tabular mt-0.5">{carStats.total}</p>
             </div>
             <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
-              <p className="text-[10.5px] font-medium text-muted-foreground">{t('status_completed')}</p>
+              <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_completed')}>
+                {t('status_completed')}
+              </p>
               <p className="text-[16px] font-bold text-success tabular mt-0.5">{carStats.completed}</p>
             </div>
             <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
-              <p className="text-[10.5px] font-medium text-muted-foreground">{t('status_cancelled')}</p>
+              <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_cancelled')}>
+                {t('status_cancelled')}
+              </p>
               <p className="text-[16px] font-bold text-muted-foreground tabular mt-0.5">{carStats.cancelled}</p>
             </div>
+            {carStats.rejected > 0 && (
+              <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
+                <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_rejected')}>
+                  {t('status_rejected')}
+                </p>
+                <p className="text-[16px] font-bold text-destructive tabular mt-0.5">{carStats.rejected}</p>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {/* Selected User Detail Card */}
+      {!selectedCar && selectedUser && userStats && (
+        <Card className="overflow-hidden border border-primary/25 bg-gradient-to-br from-primary-soft/40 via-card to-background p-3.5 shadow-sm animate-in fade-in-0 duration-200">
+          <div className="flex items-center gap-3">
+            <Avatar initials={selectedUser.initials} seed={selectedUser.id} src={selectedUser.avatarUrl} className="size-11 text-sm shadow-xs rounded-full" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <h3 className="truncate text-[15px] font-bold text-foreground leading-tight">{selectedUser.name}</h3>
+                <button
+                  type="button"
+                  onClick={() => setSelectedUserId('all')}
+                  className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground shrink-0"
+                  title={t('all_users')}
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+              <p className="truncate text-[11.5px] text-muted-foreground mt-0.5">
+                {selectedUser.dept} · {selectedUser.email}
+              </p>
+            </div>
+          </div>
+
+          <div
+            className={cn(
+              'mt-3 grid gap-2 border-t border-border/60 pt-2.5 text-center',
+              userStats.rejected > 0 ? 'grid-cols-4' : 'grid-cols-3'
+            )}
+          >
+            <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
+              <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('total_requests')}>
+                {t('total_requests')}
+              </p>
+              <p className="text-[16px] font-bold text-primary tabular mt-0.5">{userStats.total}</p>
+            </div>
+            <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
+              <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_completed')}>
+                {t('status_completed')}
+              </p>
+              <p className="text-[16px] font-bold text-success tabular mt-0.5">{userStats.completed}</p>
+            </div>
+            <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
+              <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_cancelled')}>
+                {t('status_cancelled')}
+              </p>
+              <p className="text-[16px] font-bold text-muted-foreground tabular mt-0.5">{userStats.cancelled}</p>
+            </div>
+            {userStats.rejected > 0 && (
+              <div className="rounded-xl bg-card/90 p-2 shadow-2xs border border-border/40">
+                <p className="truncate text-[10.5px] font-semibold text-muted-foreground" title={t('status_rejected')}>
+                  {t('status_rejected')}
+                </p>
+                <p className="text-[16px] font-bold text-destructive tabular mt-0.5">{userStats.rejected}</p>
+              </div>
+            )}
           </div>
         </Card>
       )}
