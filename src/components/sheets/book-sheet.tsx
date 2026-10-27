@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { AlertTriangle, Briefcase, CalendarDays, CarFront, Check, CheckCircle2, ChevronDown, Clock, UserRound, Users, Zap } from 'lucide-react';
+import { AlertTriangle, Briefcase, CalendarDays, CarFront, Check, CheckCircle2, ChevronDown, UserRound, Users, Zap } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { occupyingBookings } from '@/lib/fleet-service';
@@ -481,15 +481,6 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
 
         {/* Interactive timeline slider track card (always shown, matching user design) */}
         <div className="mt-2.5 rounded-2xl border border-neutral-200/90 bg-muted/40 p-3 shadow-2xs dark:border-neutral-800">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary-soft px-2.5 py-0.5 text-[13px] font-bold text-primary">
-              <Clock className="size-3.5 shrink-0 text-primary" />
-              <span>{start} — {end}</span>
-            </span>
-            <span className="text-[11.5px] font-medium tabular text-muted-foreground">
-              {DateUtil.spanLabel(start, end, lang)}
-            </span>
-          </div>
           <TimeRangeTrack
             start={start}
             end={end}
