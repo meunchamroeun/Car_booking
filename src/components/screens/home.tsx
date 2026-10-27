@@ -318,7 +318,7 @@ function TripHero({ b, mode }: { b: Booking; mode: 'requester' | 'driver' }) {
           )}
           {mode === 'driver' && (
             <>
-              {requester && (
+              {requester?.phone && (
                 <Button variant="glass" size="icon" className="size-11 rounded-xl" asChild>
                   <a href={`tel:${requester.phone.replace(/\s/g, '')}`} aria-label={t('call')}>
                     <Phone />

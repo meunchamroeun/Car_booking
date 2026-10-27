@@ -16,13 +16,13 @@ Live demo: https://car-booking-demo-app.vercel.app — also runs as a Telegram M
 
 | Account | Role | What to try |
 |---|---|---|
-| Sokha Chan | Employee | Home → Vehicles → Book this car → date & time, purpose, who drives → Book now; My Booking; return early |
-| Sophea Lim | Manager | Approvals → assign a driver (busy/off-duty drivers are blocked) or reject with reason; Home → Vehicles → Service to set a car to maintenance. Own requests need an Admin |
-| Rithy Kong / Bona Sam | Driver | Home hero → Start trip → Complete trip (return time + odometer) |
-| Chanthy Ouk | Fleet admin | Dashboard KPIs & utilisation, Fleet → vehicle service (out now / scheduled), drivers on/off duty |
+| Rotanak Vichea (and 18 other staff) | Employee | Home → Vehicles → Book this vehicle → date & time, purpose, company driver → Book now; My Booking; edit or cancel; return early |
+| មុន្នី អ៊ឹង | Manager | Approvals → assign a driver or reject with reason; edit requests; set a car to maintenance. Own requests need an Admin |
+| ប៊ុនណារ័ត្ន ឈុំ | Fleet admin | Approvals for everyone, Fleet → vehicle maintenance, drivers on/off duty |
+
+The seed data is the approved history of the EPower Resource Booking bot (BKG-2026-000094 … 000152, 8–28 Oct 2026) with the real fleet (5 cars) and company drivers. Bookings already past their end time show as Completed.
 
 Data persists in `localStorage`; **Profile → Reset demo data** restores the seed.
-Seed trips are placed around the current hour so there is always a live trip to show.
 
 ## Structure
 

@@ -17,6 +17,8 @@ import { cn } from '@/lib/utils';
 
 // Driver accounts are not offered in the demo; company drivers are still assigned to bookings
 const ROLE_ORDER: UserRole[] = ['Employee', 'Approver', 'Admin'];
+// Shown first in Demo accounts: ចាន់តារា សូនី (staff), មុន្នី អ៊ឹង (manager), ប៊ុនណារ័ត្ន ឈុំ (fleet admin)
+const PINNED_ACCOUNTS = ['u7', 'a2', 'a1'];
 
 export function ProfileScreen() {
   const { currentUser, users, cars, t, theme, setTheme, lang, setLang, switchUser, resetDemoData, isCarInMaintenance, openSheet } = useApp();
@@ -39,12 +41,16 @@ export function ProfileScreen() {
           </div>
         </div>
         <div className="mt-4 space-y-1 text-[13px] text-white/75">
-          <p className="flex items-center gap-2">
-            <Mail className="size-3.5" /> {currentUser.email}
-          </p>
-          <p className="flex items-center gap-2">
-            <Phone className="size-3.5" /> {currentUser.phone}
-          </p>
+          {currentUser.email && (
+            <p className="flex items-center gap-2">
+              <Mail className="size-3.5" /> {currentUser.email}
+            </p>
+          )}
+          {currentUser.phone && (
+            <p className="flex items-center gap-2">
+              <Phone className="size-3.5" /> {currentUser.phone}
+            </p>
+          )}
         </div>
       </Card>
 
@@ -154,7 +160,7 @@ export function ProfileScreen() {
 
       <SectionHeader title={t('switch_account')} action={<span className="text-[12px] text-muted-foreground">{t('switch_hint')}</span>} />
       <Card className="divide-y">
-        {ROLE_ORDER.flatMap(role => users.filter(u => u.role === role)).map(u => {
+        {[...PINNED_ACCOUNTS.map(id => users.find(u => u.id === id)).filter((u): u is NonNullable<typeof u> => !!u && ROLE_ORDER.includes(u.role)), ...ROLE_ORDER.flatMap(role => users.filter(u => u.role === role && !PINNED_ACCOUNTS.includes(u.id)))].map(u => {
           const active = u.id === currentUser.id;
           return (
             <button key={u.id} type="button" onClick={() => !active && switchUser(u.id)} className={cn('flex w-full items-center gap-3 p-3.5 text-left transition-colors', active ? 'bg-primary-soft/60' : 'hover:bg-muted/40')}>

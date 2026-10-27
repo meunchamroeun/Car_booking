@@ -48,9 +48,8 @@ export function ApprovalsScreen() {
     .filter(b => canReview(currentUser, b))
     .sort((a, b) => (a.startDate + a.startTime).localeCompare(b.startDate + b.startTime));
   const decided = bookings
-    // Requests this approver said yes to (still upcoming, in use, or already completed)
+    // All approved requests (upcoming, in use or completed) — managers see the same full history as the fleet admin
     .filter(b => (b.status === 'Approved' || b.status === 'Completed') && b.approverId && b.requesterId !== currentUser.id)
-    .filter(b => currentUser.role === 'Admin' || b.approverId === currentUser.id)
     .sort((a, b) => (b.decisionAt ?? '').localeCompare(a.decisionAt ?? ''));
 
   const pendingCount = pending.filter(matchesDate).length;

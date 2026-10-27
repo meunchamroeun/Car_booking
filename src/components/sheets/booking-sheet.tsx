@@ -168,9 +168,11 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
           <InfoRow icon={<UserRound />} label={t('requester')}>
             <span className="flex items-center justify-between gap-2">
               <span>{requester.name}</span>
-              <a href={`tel:${requester.phone.replace(/\s/g, '')}`} className="flex size-8 items-center justify-center rounded-full bg-primary-soft text-primary" aria-label={t('call')}>
-                <Phone className="size-4" />
-              </a>
+              {requester.phone && (
+                <a href={`tel:${requester.phone.replace(/\s/g, '')}`} className="flex size-8 items-center justify-center rounded-full bg-primary-soft text-primary" aria-label={t('call')}>
+                  <Phone className="size-4" />
+                </a>
+              )}
             </span>
           </InfoRow>
         )}

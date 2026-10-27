@@ -85,8 +85,8 @@ interface AppContextType extends FleetData {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const DATA_KEY = 'oone_fleet_data_v9';
-const USER_KEY = 'oone_fleet_user_v3';
+const DATA_KEY = 'oone_fleet_data_v11';
+const USER_KEY = 'oone_fleet_user_v4';
 const THEME_KEY = 'oone_fleet_theme_v3';
 const LANG_KEY = 'oone_fleet_lang_v3';
 

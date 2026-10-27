@@ -5,7 +5,6 @@ import { Booking } from '@/types';
 import { ChevronRight, X } from 'lucide-react';
 import { DateUtil } from '@/lib/date-utils';
 import { useApp } from '@/lib/store';
-import { can } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -229,8 +228,8 @@ function SegmentDetail({
   const b = bookings.find(x => x.id === sel.id);
   if (!b) return null;
   const who = users.find(u => u.id === b.requesterId);
-  const mine = b.requesterId === currentUser.id;
-  const canOpen = allowOpenBooking && (mine || can(currentUser, 'booking.view_all'));
+  // Anyone can open the booking details; actions inside still follow permissions
+  const canOpen = allowOpenBooking;
   return shell(
     <div className="flex gap-2.5">
       <Avatar initials={who?.initials ?? '?'} seed={who?.id} src={who?.avatarUrl} className="size-8 text-[11px]" />

@@ -161,8 +161,9 @@ export function createBooking(data: FleetData, actor: User, input: CreateBooking
   const conflict = checkConflict(data, input.carId, input.date, input.startTime, input.endTime, undefined, endDate);
   if (!conflict.ok) throw new ServiceError(conflict.msg);
 
-  const max = data.bookings.reduce((m, b) => Math.max(m, Number(b.id.replace(/\D/g, '')) || 0), 0);
-  const id = `BK-${String(max + 1).padStart(4, '0')}`;
+  // Same reference style as the booking bot: BKG-<year>-<6-digit number>, numbered on from the last one
+  const max = data.bookings.reduce((m, b) => Math.max(m, Number(b.id.match(/(\d+)$/)?.[1]) || 0), 0);
+  const id = `BKG-${new Date().getFullYear()}-${String(max + 1).padStart(6, '0')}`;
 
   const booking: Booking = {
     id,

@@ -37,7 +37,7 @@ export function TasksScreen() {
           const footer =
             filter === 'active' ? (
               <>
-                {passenger && (
+                {passenger?.phone && (
                   <Button variant="outline" size="sm" className="h-10" asChild>
                     <a href={`tel:${passenger.phone.replace(/\s/g, '')}`}>
                       <Phone /> {t('call')}

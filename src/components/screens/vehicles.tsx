@@ -14,7 +14,7 @@ import { DateKeyIn } from '@/components/ui/date-key-in';
 import { Segmented } from '@/components/ui/segmented';
 import { EmptyState } from '@/components/ui/empty';
 import { CarPhoto } from '@/components/common/car-photo';
-import { DAY_END, DAY_START } from '@/components/common/day-bar';
+import { DAY_START } from '@/components/common/day-bar';
 import { RangeCalendar } from '@/components/ui/range-calendar';
 import { cn } from '@/lib/utils';
 import { BOOKING_SLOTS, SLOT_ORDER } from '@/lib/slots';
@@ -233,7 +233,6 @@ function suggestWindow(app: ReturnType<typeof useApp>, carId: string, slotOverri
 function VehicleCard({ car }: { car: Car }) {
   const app = useApp();
   const { t, selectedDate, selectedSlot, currentUser, users, openBooking, openSheet, lang } = app;
-  const canSeeAll = can(currentUser, 'booking.view_all');
   const busy = occupyingBookings(app, car.id, selectedDate);
   const inService = app.isCarInMaintenance(car.id, selectedDate);
   const isPast = selectedDate < DateUtil.todayStr();
@@ -335,8 +334,8 @@ function VehicleCard({ car }: { car: Car }) {
                     <li key={b.id}>
                       <button
                         type="button"
+                        // Anyone can open the booking details (actions inside still follow permissions)
                         onClick={e => {
-                          if (!(mine || canSeeAll)) return;
                           e.stopPropagation();
                           openSheet({ type: 'booking', id: b.id });
                         }}
@@ -344,8 +343,7 @@ function VehicleCard({ car }: { car: Car }) {
                           'group/bitem flex w-full items-center gap-3 rounded-2xl p-2.5 text-left border transition-all',
                           mine
                             ? 'bg-primary-soft/80 border-primary/25 hover:bg-primary-soft hover:border-primary/40 hover:shadow-xs'
-                            : 'bg-muted/40 border-border/60 hover:bg-muted/70 hover:border-border hover:shadow-xs',
-                          !(mine || canSeeAll) && 'cursor-default'
+                            : 'bg-muted/40 border-border/60 hover:bg-muted/70 hover:border-border hover:shadow-xs'
                         )}
                       >
                         <div className="min-w-0 flex-1">
@@ -359,17 +357,40 @@ function VehicleCard({ car }: { car: Car }) {
                           </p>
                         </div>
                         <div className="shrink-0 text-right">
-                          <span
-                            className={cn(
-                              'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[12px] font-semibold tabular shadow-2xs',
-                              done
-                                ? 'border-border bg-muted/80 text-muted-foreground'
-                                : 'border-border-strong border-foreground/25 bg-background text-foreground'
-                            )}
-                          >
-                            <Clock className="size-3 shrink-0 opacity-70" />
-                            <span>{DateUtil.timeSpan(app.bookings.find(x => x.id === b.id) ?? b, lang)}</span>
-                          </span>
+                          {(() => {
+                            const full = app.bookings.find(x => x.id === b.id) ?? b;
+                            const last = full.endDate || full.startDate;
+                            const box = cn(
+                              'rounded-lg border shadow-2xs tabular',
+                              done ? 'border-border bg-muted/80 text-muted-foreground' : 'border-foreground/20 bg-background text-foreground'
+                            );
+                            // One day: just the times
+                            if (last === full.startDate)
+                              return (
+                                <span className={cn(box, 'inline-flex items-center gap-1 px-2.5 py-1 text-[12px] font-semibold')}>
+                                  <Clock className="size-3 shrink-0 opacity-70" />
+                                  {DateUtil.timeSpan(full, lang)}
+                                </span>
+                              );
+                            // Several days: a small start → end timeline, dates muted and times aligned on the right
+                            const day = (d: string) => `${DateUtil.weekdayShort(d, lang)} ${d.slice(8, 10)}/${d.slice(5, 7)}`;
+                            const time = (t: string) => t.replace(/^0/, '');
+                            return (
+                              <span className={cn(box, 'grid grid-cols-[auto_auto_auto] items-center gap-x-2 gap-y-1 px-2.5 py-1.5 text-[11.5px]')}>
+                                <span className="relative flex h-full items-center justify-center">
+                                  <span className="size-1.5 rounded-full border border-current opacity-70" />
+                                  <span className="absolute left-1/2 top-1/2 h-[calc(100%+4px)] w-px -translate-x-1/2 translate-y-[3px] bg-current opacity-25" />
+                                </span>
+                                <span className="text-left text-muted-foreground">{day(full.startDate)}</span>
+                                <span className="text-right font-semibold">{time(full.startTime)}</span>
+                                <span className="flex items-center justify-center">
+                                  <span className="size-1.5 rounded-full bg-current opacity-70" />
+                                </span>
+                                <span className="text-left text-muted-foreground">{day(last)}</span>
+                                <span className="text-right font-semibold">{time(full.endTime)}</span>
+                              </span>
+                            );
+                          })()}
                         </div>
                       </button>
                     </li>
@@ -411,12 +432,13 @@ function VehicleCard({ car }: { car: Car }) {
 
 function Timeline({ cars }: { cars: Car[] }) {
   const app = useApp();
-  const { t, selectedDate, currentUser, users, openBooking, openSheet, showToast } = app;
-  const hours = Array.from({ length: DAY_END - DAY_START }, (_, i) => DAY_START + i);
-  const span = (DAY_END - DAY_START) * 60;
+  const { t, selectedDate, currentUser, users, openBooking, openSheet } = app;
+  // The timeline shows 08:00–21:00 (labels 08 … 20), wider than the 08–18 day bars, so evening trips fit
+  const TL_END = 21;
+  const hours = Array.from({ length: TL_END - DAY_START }, (_, i) => DAY_START + i);
+  const span = (TL_END - DAY_START) * 60;
   const pct = (time: string) => ((DateUtil.toMins(time) - DAY_START * 60) / span) * 100;
   const canBook = can(currentUser, 'booking.create');
-  const canSeeAll = can(currentUser, 'booking.view_all');
   const isToday = selectedDate === DateUtil.todayStr();
   const now = pct(DateUtil.nowTimeStr());
   const nowM = DateUtil.toMins(DateUtil.nowTimeStr());
@@ -424,14 +446,14 @@ function Timeline({ cars }: { cars: Car[] }) {
   return (
     <Card className="overflow-hidden">
       <p className="border-b px-3 py-2 text-[11.5px] text-muted-foreground">{canBook ? t('timeline_hint') : DateUtil.friendly(selectedDate, app.lang)}</p>
-      {/* Fits the phone width: one column per hour, labels every 2 hours */}
-      <div>
-        <div>
+      {/* One line per car; swipe sideways when it doesn't fit (car names stay pinned on the left) */}
+      <div className="no-scrollbar overflow-x-auto">
+        <div className="min-w-[760px]">
           <div className="flex border-b bg-muted/40">
-            <div className="w-[92px] shrink-0" />
+            <div className="sticky left-0 z-20 w-[158px] shrink-0 border-r bg-muted" />
             <div className="relative h-6 flex-1">
+              {/* A label for every hour */}
               {hours
-                .filter(h => (h - DAY_START) % 2 === 0)
                 .map(h => (
                   <span
                     key={h}
@@ -455,11 +477,12 @@ function Timeline({ cars }: { cars: Car[] }) {
                   disabled={!win}
                   onClick={() => win && openBooking(c.id, win[0], win[1])}
                   aria-label={win ? `${t('book_short')} ${c.name} ${win[0]}–${win[1]}` : c.name}
-                  className="group flex h-10 w-[92px] shrink-0 items-center border-r bg-card px-2 text-left transition-colors enabled:hover:bg-primary-soft enabled:active:bg-primary-soft disabled:cursor-default"
+                  className="group sticky left-0 z-20 flex h-11 w-[158px] shrink-0 items-center border-r bg-card px-2.5 text-left transition-colors enabled:hover:bg-primary-soft enabled:active:bg-primary-soft disabled:cursor-default"
                 >
+                  {/* Full car name on one line */}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[11.5px] font-semibold leading-tight group-enabled:group-hover:text-primary">{c.name}</span>
-                    <span className="block font-mono text-[9.5px] leading-tight text-muted-foreground">{c.plate}</span>
+                    <span className="block truncate whitespace-nowrap text-[11.5px] font-semibold leading-tight group-enabled:group-hover:text-primary">{c.name}</span>
+                    <span className="mt-0.5 inline-block rounded-[5px] border border-[#163280] bg-muted/60 px-1 py-[1px] font-mono text-[9.5px] font-semibold leading-none text-foreground/85 shadow-2xs">{c.plate}</span>
                   </span>
                 </button>
                 <div className="relative flex flex-1">
@@ -490,19 +513,40 @@ function Timeline({ cars }: { cars: Car[] }) {
                     busy.map(b => {
                       const mine = b.requesterId === currentUser.id || b.driverId === currentUser.driverId;
                       const who = users.find(u => u.id === b.requesterId);
+                      const full = app.bookings.find(x => x.id === b.id) ?? b;
+                      // Keep the bar inside the day: a booking from an earlier day / into the next day is cut at the edge
+                      const left = Math.max(0, pct(b.startTime));
+                      const right = Math.min(100, pct(b.endTime));
+                      if (right <= left) return null;
+                      // Square edge where the bar is cut (other day, or outside the hours shown)
+                      const fromBefore = full.startDate < selectedDate || pct(b.startTime) < 0;
+                      const intoAfter = (full.endDate || full.startDate) > selectedDate || pct(b.endTime) > 100;
+                      // Times by real days: "← 19:30" = continues from an earlier day and ends 19:30 today
+                      const earlierDay = full.startDate < selectedDate;
+                      const laterDay = (full.endDate || full.startDate) > selectedDate;
+                      const times = earlierDay && laterDay ? `← ${t('full_day')} →` : earlierDay ? `← ${full.endTime}` : laterDay ? `${full.startTime} →` : `${full.startTime}–${full.endTime}`;
+                      const label = `${t('booking_by')}: ${who?.name ?? '—'} · ${DateUtil.window(full, app.lang)}`;
                       return (
                         <button
                           key={b.id}
                           type="button"
-                          onClick={() => (mine || canSeeAll ? openSheet({ type: 'booking', id: b.id }) : showToast(`${b.startTime}–${b.endTime} · ${who?.name}`, 'info'))}
+                          title={label}
+                          aria-label={label}
+                          onClick={() => openSheet({ type: 'booking', id: b.id })}
                           className={cn(
-                            'absolute inset-y-1 overflow-hidden rounded-md px-1 text-left text-[10px] font-semibold leading-tight',
+                            'absolute inset-y-1.5 flex items-center overflow-hidden whitespace-nowrap rounded-md px-2 text-left text-[10.5px] font-semibold',
+                            fromBefore && 'rounded-l-none',
+                            intoAfter && 'rounded-r-none',
                             b.status === 'Completed' ? 'bg-muted text-muted-foreground' : mine ? 'bg-primary text-primary-foreground' : 'bg-navy text-navy-foreground dark:bg-primary/40'
                           )}
-                          style={{ left: `${pct(b.startTime)}%`, width: `${pct(b.endTime) - pct(b.startTime)}%` }}
+                          style={{ left: `${left}%`, width: `${right - left}%` }}
                         >
-                          <span className="block truncate">{who?.name.split(' ')[0]}</span>
-                          <span className="block truncate text-[9px] font-normal opacity-75 tabular">{b.startTime}</span>
+                          {/* One line: Booked By: name · time */}
+                          <span className="truncate">
+                            {right - left >= 25 && <span className="font-normal opacity-70">{t('booking_by')}: </span>}
+                            {who?.name ?? '—'}
+                            <span className="font-normal opacity-75 tabular"> · {times}</span>
+                          </span>
                         </button>
                       );
                     })}

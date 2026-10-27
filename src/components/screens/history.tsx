@@ -736,7 +736,7 @@ export function HistoryScreen() {
                 </button>
               </div>
               <p className="truncate text-[11.5px] text-muted-foreground mt-0.5">
-                {selectedUser.dept} · {selectedUser.email}
+                {[selectedUser.dept, selectedUser.email].filter(Boolean).join(' · ')}
               </p>
             </div>
           </div>
