@@ -87,7 +87,7 @@ interface AppContextType extends FleetData {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const DATA_KEY = 'oone_fleet_data_v11';
-const USER_KEY = 'oone_fleet_user_v4';
+const USER_KEY = 'oone_fleet_user_v5';
 const THEME_KEY = 'oone_fleet_theme_v3';
 const LANG_KEY = 'oone_fleet_lang_v3';
 
@@ -110,7 +110,7 @@ const store = {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<FleetData>(() => getDefaultMockData());
-  const [currentUserId, setCurrentUserId] = useState('u1');
+  const [currentUserId, setCurrentUserId] = useState('u7');
   const [currentTab, setCurrentTab] = useState<AppTab>('home');
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
   const [theme, setThemeState] = useState<ThemeMode>('light');
