@@ -102,8 +102,10 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   const [calendarMode, setCalendarMode] = React.useState<'start' | 'end'>('start');
   // Which time the wheel picker popup is changing
   const [timePick, setTimePick] = React.useState<'start' | 'end' | null>(null);
-  // Quick select shown on top next to the card
-  const [showQuick, setShowQuick] = React.useState(false);
+  // Quick select shown on top next to the card (kept exactly as original)
+  const [showQuick, setShowQuick] = React.useState(true);
+  // Quick duration presets under the card (default hide)
+  const [showDuration, setShowDuration] = React.useState(false);
   // Chosen time window; the Morning/Afternoon/Full day buttons are shortcuts that fill it
   const [range, setRange] = React.useState<{ start: string; end: string }>({ start: '08:00', end: '12:00' });
   const [purpose, setPurpose] = React.useState('');
@@ -113,7 +115,8 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   // Reset each time the sheet opens, starting from the vehicle card's date and suggested time
   React.useEffect(() => {
     if (!open) return;
-    setShowQuick(false);
+    setShowQuick(true);
+    setShowDuration(false);
     setTimePick(null);
     if (editing) {
       setCarId(editing.carId);
@@ -393,67 +396,69 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           </button>
         }
       >
-        {/* Quick card (Today / Tomorrow, Full day / Morning / Afternoon) always shown on top of the ticket card */}
-        <div className="mb-2.5 space-y-2 rounded-2xl border border-neutral-200/90 bg-card p-2.5 shadow-2xs dark:border-neutral-800">
-          {/* Today / Tomorrow day tabs (exact old style from user image) */}
-          <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-0.5" role="radiogroup" aria-label={t('date')}>
-            {[
-              { d: today, label: t('today') },
-              { d: tomorrow, label: t('tomorrow') },
-            ].map(o => {
-              const on = date === o.d && !multiDay;
-              return (
-                <button
-                  key={o.d}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  onClick={() => (setDate(o.d), setEndDate(o.d), setPicker(null))}
-                  className={cn(
-                    'h-8 rounded-[10px] text-[12.5px] transition-all',
-                    on ? 'bg-primary font-semibold text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
-                  )}
-                >
-                  {o.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Time slot presets: Full day | Morning | Afternoon (exact old style from user image) */}
-          <div className="grid grid-cols-[auto_1fr_1.08fr] gap-1" role="radiogroup" aria-label={t('a11y_time_slot')}>
-            {QUICK_SLOTS.map(s => {
-              const on = preset?.key === s.key;
-              const blocked = !!slotProblem(s.start, s.end);
-              return (
-                <button
-                  key={s.key}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  disabled={blocked}
-                  onClick={() => (setRange({ start: s.start, end: s.end }), setPicker(null))}
-                  className={cn(
-                    'flex h-8 min-w-0 items-center justify-center whitespace-nowrap rounded-full border px-1.5 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-40',
-                    s.key === 'full_day' && 'px-2.5',
-                    on
-                      ? 'border-primary bg-primary-soft text-primary font-semibold'
-                      : 'border-border bg-card text-muted-foreground enabled:hover:border-primary/40 enabled:hover:text-foreground dark:border-neutral-800'
-                  )}
-                >
-                  <span className="text-[10.5px] min-[380px]:text-[11.5px] font-semibold">
-                    {t(s.key)}
-                    {s.key !== 'full_day' && (
-                      <span className="ml-1 font-medium tabular opacity-80">
-                        {s.start}–{s.end}
-                      </span>
+        {/* Quick card (Today / Tomorrow, Full day / Morning / Afternoon) shown on top next to the ticket card */}
+        {showQuick && (
+          <div className="mb-2.5 space-y-2 rounded-2xl border border-neutral-200/90 bg-card p-2.5 shadow-2xs dark:border-neutral-800 animate-in fade-in-0 slide-in-from-top-1 duration-200">
+            {/* Today / Tomorrow day tabs (exact old style from user image) */}
+            <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-0.5" role="radiogroup" aria-label={t('date')}>
+              {[
+                { d: today, label: t('today') },
+                { d: tomorrow, label: t('tomorrow') },
+              ].map(o => {
+                const on = date === o.d && !multiDay;
+                return (
+                  <button
+                    key={o.d}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    onClick={() => (setDate(o.d), setEndDate(o.d), setPicker(null))}
+                    className={cn(
+                      'h-8 rounded-[10px] text-[12.5px] transition-all',
+                      on ? 'bg-primary font-semibold text-primary-foreground shadow-sm' : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
                     )}
-                  </span>
-                </button>
-              );
-            })}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Time slot presets: Full day | Morning | Afternoon (exact old style from user image) */}
+            <div className="grid grid-cols-[auto_1fr_1.08fr] gap-1" role="radiogroup" aria-label={t('a11y_time_slot')}>
+              {QUICK_SLOTS.map(s => {
+                const on = preset?.key === s.key;
+                const blocked = !!slotProblem(s.start, s.end);
+                return (
+                  <button
+                    key={s.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    disabled={blocked}
+                    onClick={() => (setRange({ start: s.start, end: s.end }), setPicker(null))}
+                    className={cn(
+                      'flex h-8 min-w-0 items-center justify-center whitespace-nowrap rounded-full border px-1.5 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+                      s.key === 'full_day' && 'px-2.5',
+                      on
+                        ? 'border-primary bg-primary-soft text-primary font-semibold'
+                        : 'border-border bg-card text-muted-foreground enabled:hover:border-primary/40 enabled:hover:text-foreground dark:border-neutral-800'
+                    )}
+                  >
+                    <span className="text-[10.5px] min-[380px]:text-[11.5px] font-semibold">
+                      {t(s.key)}
+                      {s.key !== 'full_day' && (
+                        <span className="ml-1 font-medium tabular opacity-80">
+                          {s.start}–{s.end}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Ticket Date & Time Card (compact, fit and clean) */}
         <div
@@ -582,22 +587,22 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           <div className="flex items-center justify-between">
             <button
               type="button"
-              onClick={() => setShowQuick(v => !v)}
-              aria-expanded={showQuick}
+              onClick={() => setShowDuration(v => !v)}
+              aria-expanded={showDuration}
               className={cn(
                 'flex h-6.5 items-center gap-1.5 rounded-full px-2.5 text-[11.5px] font-semibold transition-colors',
-                showQuick
+                showDuration
                   ? 'bg-primary text-primary-foreground shadow-xs'
                   : 'bg-primary-soft text-primary hover:bg-primary-soft/70'
               )}
             >
               <Zap className="size-3" fill="currentColor" />
               <span>{t('quick_select')}</span>
-              <ChevronDown className={cn('size-3 transition-transform duration-200', showQuick && 'rotate-180')} />
+              <ChevronDown className={cn('size-3 transition-transform duration-200', showDuration && 'rotate-180')} />
             </button>
           </div>
 
-          {showQuick && (
+          {showDuration && (
             <div className="mt-2 grid grid-cols-5 gap-1.5 min-[410px]:gap-2 animate-in fade-in-0 slide-in-from-top-1 duration-200" role="radiogroup" aria-label={t('quick_select')}>
               {QUICK_DURATION_OPTIONS.map(item => {
                 const active = activeQuick === item.key;
