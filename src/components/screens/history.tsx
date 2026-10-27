@@ -881,11 +881,11 @@ function HistoryBookingCard({ b, onClick }: { b: Booking; onClick: () => void })
       <button type="button" onClick={onClick} className="block w-full p-3 text-left">
         {/* Top: Car Name + Plate and Status Badge */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <CarPhoto car={car} className="size-8 shrink-0 rounded-lg object-cover" />
+          <div className="flex min-w-0 items-center gap-2.5">
+            <CarPhoto car={car} zoomable className="h-11 w-15 shrink-0 rounded-xl object-cover border border-border/60 shadow-2xs" />
             <div className="min-w-0">
-              <p className="truncate text-[13.5px] font-bold leading-tight">{car?.name || '—'}</p>
-              <span className="inline-block mt-0.5 rounded-[5px] border border-[#163280] bg-muted/60 px-1.5 py-[1px] font-mono text-[10px] font-semibold text-foreground/85 shadow-2xs leading-none">
+              <p className="truncate text-[14px] font-bold leading-tight">{car?.name || '—'}</p>
+              <span className="inline-block mt-1 rounded-[5px] border border-[#163280] bg-muted/60 px-1.5 py-[1px] font-mono text-[10px] font-semibold text-foreground/85 shadow-2xs leading-none">
                 {car?.plate}
               </span>
             </div>
