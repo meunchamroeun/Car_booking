@@ -221,7 +221,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                         <span className="text-muted-foreground font-normal">{t('booking_by')} : </span>
                         <span className="font-semibold text-foreground">{who?.name ?? '—'}</span>
                       </p>
-                      <p className="mt-1 truncate text-[11.5px] leading-tight text-muted-foreground" title={b.purpose}>
+                      <p className="mt-1 text-[11.5px] leading-snug text-muted-foreground break-words whitespace-normal" title={b.purpose}>
                         <span className="text-muted-foreground/80 font-normal">{t('purpose')} : </span>
                         <span className="font-medium text-foreground/85">{b.purpose || who?.dept || '—'}</span>
                       </p>

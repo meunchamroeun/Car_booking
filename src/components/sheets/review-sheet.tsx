@@ -92,7 +92,7 @@ export function ReviewSheet({ open, id, startMode = 'approve' }: { open: boolean
             <p className="truncate text-[12.5px] text-muted-foreground">{requester.dept}</p>
           </div>
         </div>
-        <p className="mt-3 rounded-xl bg-muted/70 px-3 py-2 text-[13.5px]">
+        <p className="mt-3 rounded-xl bg-muted/70 px-3 py-2 text-[13.5px] leading-snug break-words whitespace-normal">
           <span className="font-normal text-muted-foreground">{t('purpose')} : </span>
           <span className="font-medium text-foreground/90">{b.purpose}</span>
         </p>

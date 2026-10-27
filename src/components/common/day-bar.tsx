@@ -242,7 +242,7 @@ function SegmentDetail({
         </p>
         <p className="tabular text-muted-foreground">{DateUtil.window(b, lang)}</p>
         {b.purpose && (
-          <p className="mt-0.5 text-foreground/85">
+          <p className="mt-0.5 text-foreground/85 leading-snug break-words whitespace-normal">
             <span className="font-normal text-muted-foreground">{t('purpose')} : </span>
             {b.purpose}
           </p>

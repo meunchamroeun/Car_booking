@@ -87,7 +87,7 @@ export function TripCard({
         </div>
 
         {perspective !== 'driver' && b.purpose && (
-          <p className="mt-2 line-clamp-2 rounded-lg bg-muted/60 px-2.5 py-1.5 text-[12px] text-muted-foreground">
+          <p className="mt-2 rounded-lg bg-muted/60 px-2.5 py-1.5 text-[12px] text-muted-foreground leading-snug break-words whitespace-normal">
             <span className="font-normal text-muted-foreground/80">{t('purpose')} : </span>
             <span className="font-medium text-foreground/85">{b.purpose}</span>
           </p>

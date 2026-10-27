@@ -180,7 +180,7 @@ const en = {
   booked_slots: 'Booked',
   free_from: 'Free from {time}',
   book: 'Book this vehicle',
-  booking_by: 'Booking by',
+  booking_by: 'Booked By',
   book_short: 'Book',
   book_slot: 'Book {start}–{end}',
   unavailable: 'Not available',

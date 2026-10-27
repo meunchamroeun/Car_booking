@@ -199,10 +199,10 @@ function BookingNowCard({ b }: { b: Booking }) {
       </p>
 
       {b.purpose && (
-        <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
-          <FileText className="size-3 shrink-0" />
-          <span className="font-normal text-muted-foreground/80">{t('purpose')} : </span>
-          <span className="truncate font-medium text-foreground/85">{b.purpose}</span>
+        <p className="mt-1 flex min-w-0 items-start gap-1.5 text-[12px] text-muted-foreground leading-snug">
+          <FileText className="size-3 shrink-0 mt-0.5" />
+          <span className="font-normal text-muted-foreground/80 shrink-0">{t('purpose')} : </span>
+          <span className="font-medium text-foreground/85 break-words whitespace-normal">{b.purpose}</span>
         </p>
       )}
 

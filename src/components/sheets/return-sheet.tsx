@@ -57,7 +57,7 @@ export function ReturnSheet({ open, id, mode }: { open: boolean; id?: string; mo
         {b.purpose && (
           <p className="flex items-start gap-2 text-muted-foreground">
             <FileText className="mt-0.5 size-3.5 shrink-0" />
-            <span className="line-clamp-2 leading-snug">{b.purpose}</span>
+            <span className="leading-snug break-words whitespace-normal">{b.purpose}</span>
           </p>
         )}
       </div>
