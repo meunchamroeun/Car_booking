@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { AlertTriangle, CarFront, Check, ClipboardCheck, Pencil, UserRound, X } from 'lucide-react';
+import { AlertTriangle, CarFront, Check, ClipboardCheck, UserRound, X } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { canReview } from '@/lib/permissions';
 import { DateUtil } from '@/lib/date-utils';
@@ -240,9 +240,6 @@ function PendingCard({ b }: { b: Booking }) {
         beforeFooter={choice}
         footer={
           <>
-            <Button variant="outline" size="sm" className="h-10 w-10 shrink-0 px-0" aria-label={t('edit')} onClick={() => openSheet({ type: 'book', editId: b.id })}>
-              <Pencil />
-            </Button>
             <Button variant="destructive-soft" size="sm" className="h-10 flex-1" onClick={() => openSheet({ type: 'review', id: b.id, mode: 'reject' })}>
               <X /> {t('reject')}
             </Button>
