@@ -244,9 +244,9 @@ export function HistoryScreen() {
                 )}
               >
                 {selectedCar ? (
-                  <CarPhoto car={selectedCar} zoomable={false} className="h-9 w-12 shrink-0 rounded-xl object-cover shadow-2xs border border-border/60" />
+                  <CarPhoto car={selectedCar} zoomable={false} className="size-8.5 shrink-0 rounded-full object-cover shadow-2xs border border-border/60" />
                 ) : (
-                  <div className="flex h-9 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary shadow-2xs border border-primary/20">
+                  <div className="flex size-8.5 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary shadow-2xs">
                     <CarFront className="size-4.5" />
                   </div>
                 )}
@@ -349,8 +349,8 @@ export function HistoryScreen() {
                   >
                     <div
                       className={cn(
-                        'flex h-9 w-12 shrink-0 items-center justify-center rounded-xl',
-                        selectedCarId === 'all' ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground border border-border/50'
+                        'flex size-9 shrink-0 items-center justify-center rounded-full',
+                        selectedCarId === 'all' ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'
                       )}
                     >
                       <CarFront className="size-4.5" />
@@ -382,7 +382,7 @@ export function HistoryScreen() {
                             : 'hover:bg-muted/70 text-foreground'
                         )}
                       >
-                        <CarPhoto car={c} className="h-9 w-12 shrink-0 rounded-xl object-cover border border-border/60 shadow-2xs" />
+                        <CarPhoto car={c} className="size-9 shrink-0 rounded-full object-cover border border-border/50" />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
                             <span className="truncate font-semibold text-[13.5px]">{c.name}</span>
@@ -451,9 +451,9 @@ export function HistoryScreen() {
                   )}
                 >
                   {selectedUser ? (
-                    <Avatar initials={selectedUser.initials} seed={selectedUser.id} src={selectedUser.avatarUrl} className="size-8.5 text-[11px] rounded-xl shadow-2xs" />
+                    <Avatar initials={selectedUser.initials} seed={selectedUser.id} src={selectedUser.avatarUrl} className="size-8.5 text-[11px] rounded-full shadow-2xs" />
                   ) : (
-                    <div className="flex size-8.5 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary shadow-2xs border border-primary/20">
+                    <div className="flex size-8.5 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary shadow-2xs">
                       <UserRound className="size-4.5" />
                     </div>
                   )}
@@ -547,8 +547,8 @@ export function HistoryScreen() {
                     >
                       <div
                         className={cn(
-                          'flex size-9 shrink-0 items-center justify-center rounded-xl',
-                          selectedUserId === 'all' ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground border border-border/50'
+                          'flex size-9 shrink-0 items-center justify-center rounded-full',
+                          selectedUserId === 'all' ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'
                         )}
                       >
                         <UserRound className="size-4.5" />
@@ -580,7 +580,7 @@ export function HistoryScreen() {
                               : 'hover:bg-muted/70 text-foreground'
                           )}
                         >
-                          <Avatar initials={u.initials} seed={u.id} src={u.avatarUrl} className="size-9 text-[11.5px] rounded-xl" />
+                          <Avatar initials={u.initials} seed={u.id} src={u.avatarUrl} className="size-9 text-[11.5px] rounded-full" />
                           <div className="min-w-0 flex-1">
                             <p className="truncate font-semibold text-[13.5px]">{u.name}</p>
                             <p className={cn('text-[11.5px]', active ? 'text-white/80' : 'text-muted-foreground')}>
