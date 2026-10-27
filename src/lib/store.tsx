@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppTab, CarType, FleetData, Language, Msg, MsgVar, SheetState, ThemeMode, User, ViewMode } from '@/types';
 import { getDefaultMockData } from '@/lib/mock-data';
 import { translate } from '@/lib/i18n';
@@ -8,6 +8,7 @@ import { DateUtil } from '@/lib/date-utils';
 import { ROLE_DEFAULT_TAB, ROLE_TABS } from '@/lib/permissions';
 import * as svc from '@/lib/fleet-service';
 import { getTelegram, haptic, initTelegram, syncTelegramTheme } from '@/lib/telegram';
+import { cloudEnabled, loadCloud, saveCloud, subscribeCloud } from '@/lib/cloud';
 
 export interface ToastItem {
   id: string;
@@ -170,9 +171,47 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(id);
   }, []);
 
+  // Shared data in Supabase: last JSON loaded or saved, so our own saves echoed back by Realtime are skipped
+  const lastSynced = useRef('');
+  // Saves go to Supabase only after the shared data is loaded, so stale local data never overwrites it
+  const cloudReady = useRef(false);
+  const applyRemote = useCallback((next: FleetData) => {
+    const json = JSON.stringify(next);
+    if (json === lastSynced.current) return;
+    lastSynced.current = json;
+    setData(next);
+    store.set(DATA_KEY, json);
+  }, []);
+
+  // After local hydrate: load the shared data (or seed it on first run), then follow live changes
+  useEffect(() => {
+    if (!hydrated || !cloudEnabled()) return;
+    let alive = true;
+    loadCloud()
+      .then(remote => {
+        if (!alive) return;
+        cloudReady.current = true;
+        if (remote) applyRemote(remote);
+        else {
+          const seed = getDefaultMockData();
+          applyRemote(seed);
+          return saveCloud(seed);
+        }
+      })
+      .catch(err => console.warn('Supabase load failed, using local data', err));
+    const unsubscribe = subscribeCloud(applyRemote);
+    return () => {
+      alive = false;
+      unsubscribe();
+    };
+  }, [hydrated, applyRemote]);
+
   const commit = (next: FleetData) => {
     setData(next);
-    store.set(DATA_KEY, JSON.stringify(next));
+    const json = JSON.stringify(next);
+    store.set(DATA_KEY, json);
+    lastSynced.current = json;
+    if (cloudReady.current) saveCloud(next).catch(err => console.warn('Supabase save failed', err));
   };
 
   const currentUser = useMemo(() => data.users.find(u => u.id === currentUserId) ?? data.users[0], [data.users, currentUserId]);
