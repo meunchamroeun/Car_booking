@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarDays, CarFront, ChevronRight, Clock, LayoutList, Users, Wrench } from 'lucide-react';
+import { CalendarDays, CarFront, ChevronRight, Clock, GalleryHorizontal, LayoutList, Users, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
 import { can } from '@/lib/permissions';
@@ -57,6 +57,7 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
             value={viewMode}
             onChange={setViewMode}
             options={[
+              { value: 'one', label: <GalleryHorizontal className="size-4" aria-label={t('one_at_time')} /> },
               { value: 'cards', label: <LayoutList className="size-4" aria-label={t('cards')} /> },
               { value: 'timeline', label: <CalendarDays className="size-4" aria-label={t('timeline')} /> },
             ]}
@@ -166,6 +167,8 @@ export function VehiclesScreen({ embedded = false }: { embedded?: boolean }) {
       <div className="mt-4">
         {filtered.length === 0 ? (
           <EmptyState icon={<CarFront />} title={t('no_results')} />
+        ) : viewMode === 'one' ? (
+          <OneAtATime cars={filtered} />
         ) : viewMode === 'cards' ? (
           <div className="space-y-3">
             {filtered.map(c => (
@@ -558,5 +561,214 @@ function Timeline({ cars }: { cars: Car[] }) {
         </div>
       </div>
     </Card>
+  );
+}
+
+/**
+ * "One at a time" view, laid out like the EPower Resource Booking bot:
+ * dark hero with the car name and plate, the photo sitting on a wave edge, a next arrow (or swipe),
+ * a "1 of 5" pager, then the day's status, a pick-up/return ticket and one action button.
+ */
+function OneAtATime({ cars }: { cars: Car[] }) {
+  const app = useApp();
+  const { t, lang, selectedDate, currentUser, users, openBooking, openSheet } = app;
+  const [index, setIndex] = React.useState(0);
+  const touchX = React.useRef<number | null>(null);
+  const i = Math.min(index, cars.length - 1);
+  const car = cars[i];
+  // Direction of the last move, so the next car slides in from that side
+  const [dir, setDir] = React.useState<1 | -1>(1);
+  const go = (d: number) => (setDir(d < 0 ? -1 : 1), setIndex((i + d + cars.length) % cars.length));
+  const jump = (n: number) => (setDir(n < i ? -1 : 1), setIndex(n));
+
+  const busy = occupyingBookings(app, car.id, selectedDate);
+  const inService = app.isCarInMaintenance(car.id, selectedDate);
+  const isPast = selectedDate < DateUtil.todayStr();
+  const win = inService || isPast ? null : suggestWindow(app, car.id);
+  const canBook = can(currentUser, 'booking.create');
+  // Another car that is free for the chosen time, offered when this one isn't
+  const freeIdx = win || isPast ? -1 : cars.findIndex(c => c.id !== car.id && !app.isCarInMaintenance(c.id, selectedDate) && !!suggestWindow(app, c.id));
+  const freeCar = freeIdx >= 0 ? cars[freeIdx] : null;
+  const freeName = freeCar ? `${freeCar.name} (${freeCar.plate})` : '';
+  // Ticket shows this car's free time, or the time the suggested car is free
+  const ticket = win ?? (freeCar ? suggestWindow(app, freeCar.id) : null);
+  const month = (d: string) => DateUtil.names(lang).monthShort[Number(d.slice(5, 7)) - 1];
+  // "PP-2AX 7664" → province label on top, number below, like a Cambodian plate
+  const [, plateNo = car.plate] = car.plate.match(/^[A-Z]{2,3}-(.+)$/) ?? [];
+
+  return (
+    <div>
+      <div
+        className="relative overflow-hidden rounded-3xl bg-[#111214] text-white"
+        onTouchStart={e => (touchX.current = e.touches[0].clientX)}
+        onTouchEnd={e => {
+          if (touchX.current === null) return;
+          const dx = e.changedTouches[0].clientX - touchX.current;
+          if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+          touchX.current = null;
+        }}
+      >
+        {/* Road-map style grid behind the title */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.13]"
+          style={{
+            backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
+            backgroundSize: '34px 34px',
+            maskImage: 'linear-gradient(to bottom, transparent, #000 25%, #000 70%, transparent)',
+          }}
+        />
+
+        <div key={`title-${car.id}`} className="relative px-4 pt-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
+          <button type="button" onClick={() => go(1)} className="flex w-full items-start justify-between gap-2 text-left">
+            <span className="text-[26px] font-bold leading-[1.1] tracking-tight">{car.name}</span>
+            <ChevronRight className="mt-1.5 size-5 shrink-0 text-white/60" />
+          </button>
+          <span className="mt-2 inline-flex flex-col items-center rounded-[4px] border border-black/40 bg-white px-1.5 pb-[2px] pt-[1px] leading-none text-black shadow-sm">
+            <span className="text-[7px] font-semibold">ភ្នំពេញ</span>
+            <span className="font-mono text-[11.5px] font-bold">{plateNo}</span>
+          </span>
+        </div>
+
+        {/* Photo sitting on the wave between the dark and light parts */}
+        <div className="relative mt-3 h-[196px]">
+          <svg aria-hidden viewBox="0 0 400 80" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 h-[92px] w-full fill-background">
+            <path d="M0 52 C 120 20, 260 8, 400 30 L400 80 L0 80 Z" />
+          </svg>
+          <div
+            key={`photo-${car.id}`}
+            className={cn(
+              'absolute inset-x-8 -top-2 h-[178px] animate-in fade-in-0 duration-700 ease-out',
+              dir > 0 ? 'slide-in-from-right-full' : 'slide-in-from-left-full'
+            )}
+          >
+            <CarCutout car={car} />
+          </div>
+          {cars.length > 1 && (
+            <button
+              type="button"
+              aria-label={t('next_car')}
+              onClick={() => go(1)}
+              className="absolute right-1 top-[75px] flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-[#5a5a5e]/90 text-white shadow-md backdrop-blur-sm transition-colors hover:bg-[#6a6a6e]"
+            >
+              <ChevronRight className="size-5" />
+            </button>
+          )}
+          <div key={`thumb-${car.id}`} className="absolute bottom-1 left-4 overflow-hidden rounded-lg ring-1 ring-black/10 animate-in fade-in-0 zoom-in-90 duration-500">
+            <CarPhoto car={car} className="h-10 w-14" />
+          </div>
+        </div>
+      </div>
+
+      <div className="-mt-1 flex justify-center">
+        <span className="inline-flex items-center gap-2 rounded-full bg-[#111214] px-3 py-1.5 text-[12.5px] font-semibold text-white">
+          <span className="flex items-center gap-1">
+            {cars.map((c, n) => (
+              <span key={c.id} className={cn('h-1.5 rounded-full transition-all duration-300', n === i ? 'w-4 bg-[#f5c518]' : 'w-1.5 bg-white/35')} />
+            ))}
+          </span>
+          <span className="tabular">{t('car_n_of', { n: i + 1, total: cars.length })}</span>
+        </span>
+      </div>
+
+      {/* Status for the chosen day */}
+      <div key={`status-${car.id}`} className="mt-3 space-y-1 animate-in fade-in-0 slide-in-from-bottom-1 duration-500">
+        {inService ? (
+          <p className="flex items-center gap-2 text-[18px] font-bold text-warning">
+            <Wrench className="size-4" /> {t('st_service')}
+          </p>
+        ) : busy.length === 0 ? (
+          <p className="flex items-center gap-2 text-[18px] font-bold">
+            <span className="size-2.5 rounded-full bg-success" /> {t('st_available')}
+          </p>
+        ) : (
+          busy.map(b => {
+            const full = app.bookings.find(x => x.id === b.id) ?? b;
+            const who = users.find(u => u.id === b.requesterId);
+            return (
+              <button key={b.id} type="button" onClick={() => openSheet({ type: 'booking', id: b.id })} className="block w-full text-left">
+                <span className="flex items-center gap-2 text-[18px] font-bold">
+                  <span className="size-2.5 shrink-0 rounded-full bg-[#b7791f]" />
+                  <span className="tabular">{t('booked_at', { time: DateUtil.timeSpan(full, lang) })}</span>
+                </span>
+                <span className="ml-[18px] block truncate text-[12.5px] text-muted-foreground">
+                  {t('booking_by')} : <span className="font-semibold text-foreground">{who?.name ?? '—'}</span>
+                </span>
+              </button>
+            );
+          })
+        )}
+        {!win && freeCar && <p className="text-[13.5px] text-muted-foreground">{t('free_instead', { name: freeName })}</p>}
+        {ticket && <p className="text-[12.5px] font-semibold text-[#b7791f]">{t('needs_approval')}</p>}
+      </div>
+
+      {/* Pick-up / return ticket with notches on the dashed divider */}
+      {ticket && (
+        <div key={`ticket-${car.id}`} className="relative mt-3 grid grid-cols-[1fr_auto_1fr] animate-in fade-in-0 duration-500 items-center rounded-2xl border bg-card p-4">
+          <span aria-hidden className="absolute -top-px left-1/2 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border bg-background" />
+          <span aria-hidden className="absolute -bottom-px left-1/2 size-4 -translate-x-1/2 translate-y-1/2 rounded-full border bg-background" />
+          {[
+            { label: t('pick_up'), time: ticket[0] },
+            null,
+            { label: t('return_label'), time: ticket[1] },
+          ].map((side, n) =>
+            side ? (
+              <div key={n} className={n === 2 ? 'text-right' : 'text-left'}>
+                <p className="text-[12.5px] text-muted-foreground">{side.label}</p>
+                <p className={cn('mt-1 flex items-center gap-1.5', n === 2 && 'justify-end')}>
+                  <span className="text-[34px] font-bold leading-none tabular">{DateUtil.dayNum(selectedDate)}</span>
+                  <span className="text-[12px] font-medium leading-tight text-muted-foreground">
+                    {DateUtil.weekdayShort(selectedDate, lang)}
+                    <br />
+                    {month(selectedDate)}
+                  </span>
+                </p>
+                <p className="mt-2 inline-block border-b-2 border-[#f5c518] pb-0.5 text-[15px] font-semibold tabular">{side.time}</p>
+              </div>
+            ) : (
+              <div key={n} className="flex h-full flex-col items-center justify-center px-2">
+                <span className="w-px flex-1 border-l border-dashed" />
+                <span className="my-1.5 text-[12.5px] font-semibold tabular">{DateUtil.duration(selectedDate, ticket[0], selectedDate, ticket[1], lang)}</span>
+                <span className="w-px flex-1 border-l border-dashed" />
+              </div>
+            )
+          )}
+        </div>
+      )}
+
+      <button
+        type="button"
+        disabled={!(win && canBook) && !freeCar}
+        onClick={() => (win && canBook ? openBooking(car.id, win[0], win[1]) : freeCar && jump(freeIdx))}
+        className="mt-3 flex h-12 w-full items-center justify-center rounded-2xl bg-[#111214] px-4 text-[14.5px] font-semibold text-white transition-colors hover:bg-black disabled:opacity-40 dark:bg-white dark:text-black"
+      >
+        <span className="truncate">{win && canBook ? t('book') : freeCar ? t('show_car', { name: freeName }) : t('unavailable')}</span>
+      </button>
+    </div>
+  );
+}
+
+/**
+ * The car cut out of its photo (public/cars-cutout/<id>.png) with a ground shadow and headlight glow,
+ * like the bot's 3D render. Falls back to the normal photo when there is no cut-out for the car.
+ */
+function CarCutout({ car }: { car: Car }) {
+  const [failed, setFailed] = React.useState(false);
+  if (failed) return <CarPhoto car={car} zoomable className="size-full rounded-2xl shadow-[0_18px_30px_-12px_rgba(0,0,0,0.6)]" />;
+  return (
+    <div className="relative size-full">
+      {/* Soft shadow on the ground under the wheels */}
+      <span aria-hidden className="absolute inset-x-[8%] bottom-[2px] h-5 rounded-[50%] bg-black/45 blur-md" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/cars-cutout/${car.id}.png`}
+        alt={car.name}
+        draggable={false}
+        onError={() => setFailed(true)}
+        className="relative size-full select-none object-contain object-bottom drop-shadow-[0_10px_14px_rgba(0,0,0,0.35)]"
+      />
+      {/* Headlight glow */}
+      <span aria-hidden className="absolute bottom-[38%] left-[6%] size-6 rounded-full bg-[#ffd27a]/50 blur-lg motion-safe:animate-pulse" />
+    </div>
   );
 }

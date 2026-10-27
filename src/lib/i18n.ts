@@ -487,6 +487,14 @@ const en = {
   a11y_main_nav: 'Main menu',
   a11y_view_mode: 'View',
   a11y_time_slot: 'Time slot',
+  one_at_time: 'One at a time',
+  booked_at: 'Booked {time}',
+  car_n_of: '{n} of {total}',
+  free_instead: '{name} is free for this time.',
+  show_car: 'Show {name}',
+  prev_car: 'Previous vehicle',
+  next_car: 'Next vehicle',
+  needs_approval: 'Needs approval',
 };
 
 type Dict = Record<keyof typeof en, string>;
@@ -964,6 +972,14 @@ const kh: Partial<Dict> = {
   type_SUV: 'SUV',
   type_Van: 'ឡានវ៉ាន់',
   type_Pickup: 'ភីកអាប់',
+  one_at_time: 'ម្តងមួយ',
+  booked_at: 'បានកក់ {time}',
+  car_n_of: '{n} នៃ {total}',
+  free_instead: '{name} ទំនេរនៅម៉ោងនេះ។',
+  show_car: 'បង្ហាញ {name}',
+  prev_car: 'យានយន្តមុន',
+  next_car: 'យានយន្តបន្ទាប់',
+  needs_approval: 'ត្រូវការការអនុម័ត',
 };
 
 export const I18N_DICTIONARY: Record<Language, Record<string, string>> = { en, kh: kh as Record<string, string> };

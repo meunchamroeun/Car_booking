@@ -137,7 +137,7 @@ export interface FleetData {
 
 export type Language = 'en' | 'kh';
 export type ThemeMode = 'light' | 'dark';
-export type ViewMode = 'cards' | 'timeline';
+export type ViewMode = 'cards' | 'timeline' | 'one';
 export type AppTab = 'home' | 'vehicles' | 'trips' | 'history' | 'tasks' | 'approvals' | 'fleet' | 'profile';
 
 /** Fleet-today numbers that open a detail list. */
