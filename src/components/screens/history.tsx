@@ -324,7 +324,7 @@ export function HistoryScreen() {
                     value={carSearch}
                     onChange={e => setCarSearch(e.target.value)}
                     placeholder={t('search_history_ph')}
-                    className="h-9 w-full rounded-xl border border-border/80 bg-muted/40 pl-8.5 pr-8 text-[12.5px] placeholder:text-muted-foreground/70 focus:border-primary focus:bg-background focus:outline-hidden focus:ring-1 focus:ring-primary"
+                    className="h-9 w-full rounded-xl border border-border/80 bg-muted/40 pl-9 pr-8 text-[12.5px] placeholder:text-muted-foreground/70 focus:border-primary focus:bg-background focus:outline-hidden focus:ring-1 focus:ring-primary"
                     onClick={e => e.stopPropagation()}
                   />
                   {carSearch && (
@@ -522,7 +522,7 @@ export function HistoryScreen() {
                       value={userSearch}
                       onChange={e => setUserSearch(e.target.value)}
                       placeholder={t('search_users')}
-                      className="h-9 w-full rounded-xl border border-border/80 bg-muted/40 pl-8.5 pr-8 text-[12.5px] placeholder:text-muted-foreground/70 focus:border-primary focus:bg-background focus:outline-hidden focus:ring-1 focus:ring-primary"
+                      className="h-9 w-full rounded-xl border border-border/80 bg-muted/40 pl-9 pr-8 text-[12.5px] placeholder:text-muted-foreground/70 focus:border-primary focus:bg-background focus:outline-hidden focus:ring-1 focus:ring-primary"
                       onClick={e => e.stopPropagation()}
                     />
                     {userSearch && (
