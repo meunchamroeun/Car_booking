@@ -479,8 +479,32 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           </div>
         </div>
 
+        {/* Interactive timeline slider track card (always shown, matching user design) */}
+        <div className="mt-2.5 rounded-2xl border border-neutral-200/90 bg-muted/40 p-3 shadow-2xs dark:border-neutral-800">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary-soft px-2.5 py-0.5 text-[13px] font-bold text-primary">
+              <Clock className="size-3.5 shrink-0 text-primary" />
+              <span>{start} — {end}</span>
+            </span>
+            <span className="text-[11.5px] font-medium tabular text-muted-foreground">
+              {DateUtil.spanLabel(start, end, lang)}
+            </span>
+          </div>
+          <TimeRangeTrack
+            start={start}
+            end={end}
+            onChange={(s, e) => setRange({ start: s, end: e })}
+            booked={dayBooked}
+            pending={dayPending}
+            now={date === today ? nowMins : undefined}
+            invalid={!!timeProblem}
+            lang={lang}
+            labels={{ yours: t('lg_yours'), booked: t('lg_booked'), pending: t('lg_pending'), start: t('start_time'), end: t('end_time') }}
+          />
+        </div>
+
         {/* Quick Select presets with toggle */}
-        <div className="mt-3">
+        <div className="mt-2.5">
           <button
             type="button"
             onClick={() => setShowQuick(v => !v)}
@@ -550,30 +574,6 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                     </button>
                   );
                 })}
-              </div>
-
-              {/* Interactive timeline track card (from user screenshot) */}
-              <div className="rounded-2xl border border-neutral-200/90 bg-muted/40 p-3 shadow-2xs dark:border-neutral-800">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary-soft px-2.5 py-0.5 text-[13px] font-bold text-primary">
-                    <Clock className="size-3.5 shrink-0 text-primary" />
-                    <span>{start} — {end}</span>
-                  </span>
-                  <span className="text-[11.5px] font-medium tabular text-muted-foreground">
-                    {DateUtil.spanLabel(start, end, lang)}
-                  </span>
-                </div>
-                <TimeRangeTrack
-                  start={start}
-                  end={end}
-                  onChange={(s, e) => setRange({ start: s, end: e })}
-                  booked={dayBooked}
-                  pending={dayPending}
-                  now={date === today ? nowMins : undefined}
-                  invalid={!!timeProblem}
-                  lang={lang}
-                  labels={{ yours: t('lg_yours'), booked: t('lg_booked'), pending: t('lg_pending'), start: t('start_time'), end: t('end_time') }}
-                />
               </div>
             </div>
           )}
