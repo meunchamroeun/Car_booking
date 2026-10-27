@@ -11,10 +11,9 @@ import { Textarea } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { CarPhoto } from '@/components/common/car-photo';
 import { cn } from '@/lib/utils';
-import { CalendarPopup } from '@/components/ui/calendar-popup';
 import { TimeRangeTrack } from '@/components/ui/time-range-track';
 import { TimeWheelPicker } from '@/components/ui/time-wheel-picker';
-import { RangeCalendar } from '@/components/ui/range-calendar';
+import { PickupReturnModal, DayBookingStatus } from '@/components/sheets/pickup-return-modal';
 import { BOOKING_SLOTS, SLOT_ORDER } from '@/lib/slots';
 import { can, needsReapproval } from '@/lib/permissions';
 import { DriverSelect } from '@/components/common/driver-select';
@@ -100,6 +99,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   const [date, setDate] = React.useState(today); // start date
   const [endDate, setEndDate] = React.useState(today);
   const [picker, setPicker] = React.useState<'dates' | 'from' | 'to' | null>(null);
+  const [calendarMode, setCalendarMode] = React.useState<'start' | 'end'>('start');
   // Which time the wheel picker popup is changing
   const [timePick, setTimePick] = React.useState<'start' | 'end' | null>(null);
   // Quick select shown on top next to the card
@@ -237,6 +237,19 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
       setRange(r => ({ ...r, end: r.start }));
     }
   };
+
+  const getBookingStatus = React.useCallback(
+    (d: string): DayBookingStatus => {
+      if (!car) return 'free';
+      if (isCarInMaintenance(car.id, d)) return 'service';
+      const occ = occupyingBookings(app, car.id, d).filter(b => b.id !== editing?.id);
+      if (occ.length === 0) return 'free';
+      const approved = occ.filter(b => b.status === 'Approved');
+      if (approved.some(b => b.startTime <= '08:30' && b.endTime >= '17:00')) return 'all_day';
+      return 'part_day';
+    },
+    [car, app, editing, isCarInMaintenance]
+  );
 
   const activeQuick = React.useMemo(() => {
     const days = DateUtil.dayDiff(date, endDate);
@@ -445,7 +458,22 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
         )}
 
         {/* Ticket Date & Time Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-neutral-200/90 bg-card p-4 sm:p-5 shadow-xs dark:border-neutral-800">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            setCalendarMode('start');
+            setPicker('dates');
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setCalendarMode('start');
+              setPicker('dates');
+            }
+          }}
+          className="relative cursor-pointer select-none overflow-hidden rounded-3xl border border-neutral-200/90 bg-card p-4 sm:p-5 shadow-xs transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:hover:border-neutral-700"
+        >
           {/* Top center cutout notch */}
           <div className="pointer-events-none absolute -top-3.5 left-1/2 -translate-x-1/2 size-7 rounded-full border border-neutral-200/90 bg-background dark:border-neutral-800" />
           {/* Bottom center cutout notch */}
@@ -460,15 +488,17 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
 
           <div className="flex items-start justify-between">
             {/* Left: Pick-up */}
-            <div className="flex-1 pr-3">
+            <div
+              className="flex-1 pr-3"
+              onClick={e => {
+                e.stopPropagation();
+                setCalendarMode('start');
+                setPicker('dates');
+              }}
+            >
               <p className="text-[13px] font-semibold text-muted-foreground">{t('pick_up')}</p>
 
-              <button
-                type="button"
-                onClick={() => setPicker(p => (p === 'dates' ? null : 'dates'))}
-                className="mt-2 flex items-center gap-2.5 text-left transition-opacity hover:opacity-80"
-                title={t('select_date')}
-              >
+              <div className="mt-2 flex items-center gap-2.5 text-left transition-opacity hover:opacity-80">
                 <span className="text-[40px] min-[380px]:text-[44px] font-black leading-none tracking-tight text-foreground tabular">
                   {DateUtil.dayNum(date)}
                 </span>
@@ -476,40 +506,44 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                   <span>{DateUtil.weekdayShort(date, lang)}</span>
                   <span>{monthShort(date, lang)}</span>
                 </div>
-              </button>
+              </div>
 
-              <TimeWheelPicker
-                open={timePick === 'start'}
-                onOpenChange={o => setTimePick(o ? 'start' : null)}
-                value={start}
-                onChange={changeStart}
-                title={t('start_time')}
-                labels={{ hour: t('a11y_hour', { label: '' }), minute: t('a11y_minute', { label: '' }) }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setTimePick('start')}
-                  className="mt-3.5 inline-flex flex-col items-start transition-opacity hover:opacity-80"
-                  aria-label={`${t('start_time')} ${formatAmPm(start)}`}
+              <div onClick={e => e.stopPropagation()}>
+                <TimeWheelPicker
+                  open={timePick === 'start'}
+                  onOpenChange={o => setTimePick(o ? 'start' : null)}
+                  value={start}
+                  onChange={changeStart}
+                  title={t('start_time')}
+                  labels={{ hour: t('a11y_hour', { label: '' }), minute: t('a11y_minute', { label: '' }) }}
                 >
-                  <span className="text-[16px] min-[380px]:text-[17px] font-bold tracking-tight text-foreground">
-                    {formatAmPm(start)}
-                  </span>
-                  <span className="mt-1 h-[2.5px] w-full rounded-full bg-amber-400" />
-                </button>
-              </TimeWheelPicker>
+                  <button
+                    type="button"
+                    onClick={() => setTimePick('start')}
+                    className="mt-3.5 inline-flex flex-col items-start transition-opacity hover:opacity-80"
+                    aria-label={`${t('start_time')} ${formatAmPm(start)}`}
+                  >
+                    <span className="text-[16px] min-[380px]:text-[17px] font-bold tracking-tight text-foreground">
+                      {formatAmPm(start)}
+                    </span>
+                    <span className="mt-1 h-[2.5px] w-full rounded-full bg-amber-400" />
+                  </button>
+                </TimeWheelPicker>
+              </div>
             </div>
 
             {/* Right: Return */}
-            <div className="flex-1 pl-3 text-right">
+            <div
+              className="flex-1 pl-3 text-right"
+              onClick={e => {
+                e.stopPropagation();
+                setCalendarMode('end');
+                setPicker('dates');
+              }}
+            >
               <p className="text-[13px] font-semibold text-muted-foreground">{t('return_label')}</p>
 
-              <button
-                type="button"
-                onClick={() => setPicker(p => (p === 'dates' ? null : 'dates'))}
-                className="mt-2 flex items-center justify-end gap-2.5 text-right transition-opacity hover:opacity-80 ml-auto"
-                title={t('select_date')}
-              >
+              <div className="mt-2 flex items-center justify-end gap-2.5 text-right transition-opacity hover:opacity-80 ml-auto">
                 <span className="text-[40px] min-[380px]:text-[44px] font-black leading-none tracking-tight text-foreground tabular">
                   {DateUtil.dayNum(endDate)}
                 </span>
@@ -517,28 +551,30 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                   <span>{DateUtil.weekdayShort(endDate, lang)}</span>
                   <span>{monthShort(endDate, lang)}</span>
                 </div>
-              </button>
+              </div>
 
-              <TimeWheelPicker
-                open={timePick === 'end'}
-                onOpenChange={o => setTimePick(o ? 'end' : null)}
-                value={end}
-                onChange={changeEnd}
-                title={t('end_time')}
-                labels={{ hour: t('a11y_hour', { label: '' }), minute: t('a11y_minute', { label: '' }) }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setTimePick('end')}
-                  className="mt-3.5 inline-flex flex-col items-end transition-opacity hover:opacity-80 ml-auto"
-                  aria-label={`${t('end_time')} ${formatAmPm(end)}`}
+              <div onClick={e => e.stopPropagation()}>
+                <TimeWheelPicker
+                  open={timePick === 'end'}
+                  onOpenChange={o => setTimePick(o ? 'end' : null)}
+                  value={end}
+                  onChange={changeEnd}
+                  title={t('end_time')}
+                  labels={{ hour: t('a11y_hour', { label: '' }), minute: t('a11y_minute', { label: '' }) }}
                 >
-                  <span className="text-[16px] min-[380px]:text-[17px] font-bold tracking-tight text-foreground">
-                    {formatAmPm(end)}
-                  </span>
-                  <span className="mt-1 h-[2.5px] w-full rounded-full bg-amber-400" />
-                </button>
-              </TimeWheelPicker>
+                  <button
+                    type="button"
+                    onClick={() => setTimePick('end')}
+                    className="mt-3.5 inline-flex flex-col items-end transition-opacity hover:opacity-80 ml-auto"
+                    aria-label={`${t('end_time')} ${formatAmPm(end)}`}
+                  >
+                    <span className="text-[16px] min-[380px]:text-[17px] font-bold tracking-tight text-foreground">
+                      {formatAmPm(end)}
+                    </span>
+                    <span className="mt-1 h-[2.5px] w-full rounded-full bg-amber-400" />
+                  </button>
+                </TimeWheelPicker>
+              </div>
             </div>
           </div>
         </div>
@@ -584,19 +620,21 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           />
         </div>
 
-        {/* Calendar pops up over the screen so the whole month shows; picking the end date closes it */}
-        <CalendarPopup open={picker === 'dates'} onOpenChange={o => !o && setPicker(null)} title={t('select_date')}>
-          <RangeCalendar
-            start={date}
-            end={endDate}
-            min={today}
-            lang={lang}
-            onChange={(s, e) => (setDate(s), setEndDate(e))}
-            onDone={() => setPicker(null)}
-            markDay={d => (car && isCarInMaintenance(car.id, d) ? 'service' : car && occupyingBookings(app, car.id, d).some(b => b.status === 'Approved') ? 'booked' : undefined)}
-            labels={{ pickStart: t('cal_pick_start'), pickEnd: t('cal_pick_end'), booked: t('cal_booked'), unavailable: t('unavailable'), prev: t('a11y_prev_month'), next: t('a11y_next_month') }}
-          />
-        </CalendarPopup>
+        {/* Pick-up and return dates sheet matching user design */}
+        <PickupReturnModal
+          open={picker === 'dates'}
+          onOpenChange={o => !o && setPicker(null)}
+          startDate={date}
+          endDate={endDate}
+          minDate={today}
+          initialMode={calendarMode}
+          lang={lang}
+          getBookingStatus={getBookingStatus}
+          onChange={(s, e) => {
+            setDate(s);
+            setEndDate(e);
+          }}
+        />
 
         {/* One-line result; old style status */}
         <p
