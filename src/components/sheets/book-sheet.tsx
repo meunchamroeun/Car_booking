@@ -457,7 +457,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           </div>
         )}
 
-        {/* Ticket Date & Time Card */}
+        {/* Ticket Date & Time Card (compact, fit and clean) */}
         <div
           role="button"
           tabIndex={0}
@@ -472,37 +472,37 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
               setPicker('dates');
             }
           }}
-          className="relative cursor-pointer select-none overflow-hidden rounded-3xl border border-neutral-200/90 bg-card p-4 sm:p-5 shadow-xs transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:hover:border-neutral-700"
+          className="relative cursor-pointer select-none overflow-hidden rounded-2xl border border-neutral-200/90 bg-card p-3 sm:p-3.5 shadow-2xs transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:hover:border-neutral-700"
         >
           {/* Top center cutout notch */}
-          <div className="pointer-events-none absolute -top-3.5 left-1/2 -translate-x-1/2 size-7 rounded-full border border-neutral-200/90 bg-background dark:border-neutral-800" />
+          <div className="pointer-events-none absolute -top-3 left-1/2 -translate-x-1/2 size-6 rounded-full border border-neutral-200/90 bg-background dark:border-neutral-800" />
           {/* Bottom center cutout notch */}
-          <div className="pointer-events-none absolute -bottom-3.5 left-1/2 -translate-x-1/2 size-7 rounded-full border border-neutral-200/90 bg-background dark:border-neutral-800" />
+          <div className="pointer-events-none absolute -bottom-3 left-1/2 -translate-x-1/2 size-6 rounded-full border border-neutral-200/90 bg-background dark:border-neutral-800" />
           {/* Vertical dashed center divider */}
-          <div className="pointer-events-none absolute top-4 bottom-4 left-1/2 -translate-x-1/2 border-l border-dashed border-neutral-300 dark:border-neutral-700" />
+          <div className="pointer-events-none absolute top-3 bottom-3 left-1/2 -translate-x-1/2 border-l border-dashed border-neutral-300 dark:border-neutral-700" />
 
           {/* Duration in the middle */}
-          <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 rounded-md bg-card px-2 py-0.5 text-[12.5px] font-bold text-foreground tabular whitespace-nowrap">
+          <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 rounded-md bg-card px-1.5 py-0.5 text-[11.5px] font-bold text-foreground tabular whitespace-nowrap">
             {formatTicketDuration(date, start, endDate, end, lang)}
           </div>
 
           <div className="flex items-start justify-between">
             {/* Left: Pick-up */}
             <div
-              className="flex-1 pr-3"
+              className="flex-1 pr-2.5"
               onClick={e => {
                 e.stopPropagation();
                 setCalendarMode('start');
                 setPicker('dates');
               }}
             >
-              <p className="text-[13px] font-semibold text-muted-foreground">{t('pick_up')}</p>
+              <p className="text-[12px] font-semibold text-muted-foreground">{t('pick_up')}</p>
 
-              <div className="mt-2 flex items-center gap-2.5 text-left transition-opacity hover:opacity-80">
-                <span className="text-[40px] min-[380px]:text-[44px] font-black leading-none tracking-tight text-foreground tabular">
+              <div className="mt-1 flex items-center gap-2 text-left transition-opacity hover:opacity-80">
+                <span className="text-[30px] min-[380px]:text-[34px] font-black leading-none tracking-tight text-foreground tabular">
                   {DateUtil.dayNum(date)}
                 </span>
-                <div className="flex flex-col text-[12.5px] min-[380px]:text-[13px] font-bold leading-tight text-muted-foreground">
+                <div className="flex flex-col text-[11.5px] min-[380px]:text-[12px] font-bold leading-tight text-muted-foreground">
                   <span>{DateUtil.weekdayShort(date, lang)}</span>
                   <span>{monthShort(date, lang)}</span>
                 </div>
@@ -520,13 +520,13 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                   <button
                     type="button"
                     onClick={() => setTimePick('start')}
-                    className="mt-3.5 inline-flex flex-col items-start transition-opacity hover:opacity-80"
+                    className="mt-2 inline-flex flex-col items-start transition-opacity hover:opacity-80"
                     aria-label={`${t('start_time')} ${formatAmPm(start)}`}
                   >
-                    <span className="text-[16px] min-[380px]:text-[17px] font-bold tracking-tight text-foreground">
+                    <span className="text-[14.5px] min-[380px]:text-[15px] font-bold tracking-tight text-foreground">
                       {formatAmPm(start)}
                     </span>
-                    <span className="mt-1 h-[2.5px] w-full rounded-full bg-amber-400" />
+                    <span className="mt-0.5 h-[2px] w-full rounded-full bg-amber-400" />
                   </button>
                 </TimeWheelPicker>
               </div>
@@ -534,20 +534,20 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
 
             {/* Right: Return */}
             <div
-              className="flex-1 pl-3 text-right"
+              className="flex-1 pl-2.5 text-right"
               onClick={e => {
                 e.stopPropagation();
                 setCalendarMode('end');
                 setPicker('dates');
               }}
             >
-              <p className="text-[13px] font-semibold text-muted-foreground">{t('return_label')}</p>
+              <p className="text-[12px] font-semibold text-muted-foreground">{t('return_label')}</p>
 
-              <div className="mt-2 flex items-center justify-end gap-2.5 text-right transition-opacity hover:opacity-80 ml-auto">
-                <span className="text-[40px] min-[380px]:text-[44px] font-black leading-none tracking-tight text-foreground tabular">
+              <div className="mt-1 flex items-center justify-end gap-2 text-right transition-opacity hover:opacity-80 ml-auto">
+                <span className="text-[30px] min-[380px]:text-[34px] font-black leading-none tracking-tight text-foreground tabular">
                   {DateUtil.dayNum(endDate)}
                 </span>
-                <div className="flex flex-col text-[12.5px] min-[380px]:text-[13px] font-bold leading-tight text-muted-foreground text-left">
+                <div className="flex flex-col text-[11.5px] min-[380px]:text-[12px] font-bold leading-tight text-muted-foreground text-left">
                   <span>{DateUtil.weekdayShort(endDate, lang)}</span>
                   <span>{monthShort(endDate, lang)}</span>
                 </div>
@@ -565,13 +565,13 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                   <button
                     type="button"
                     onClick={() => setTimePick('end')}
-                    className="mt-3.5 inline-flex flex-col items-end transition-opacity hover:opacity-80 ml-auto"
+                    className="mt-2 inline-flex flex-col items-end transition-opacity hover:opacity-80 ml-auto"
                     aria-label={`${t('end_time')} ${formatAmPm(end)}`}
                   >
-                    <span className="text-[16px] min-[380px]:text-[17px] font-bold tracking-tight text-foreground">
+                    <span className="text-[14.5px] min-[380px]:text-[15px] font-bold tracking-tight text-foreground">
                       {formatAmPm(end)}
                     </span>
-                    <span className="mt-1 h-[2.5px] w-full rounded-full bg-amber-400" />
+                    <span className="mt-0.5 h-[2px] w-full rounded-full bg-amber-400" />
                   </button>
                 </TimeWheelPicker>
               </div>
