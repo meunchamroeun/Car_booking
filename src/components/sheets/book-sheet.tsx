@@ -12,6 +12,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { CarPhoto } from '@/components/common/car-photo';
 import { cn } from '@/lib/utils';
 import { CalendarPopup } from '@/components/ui/calendar-popup';
+import { TimeRangeTrack } from '@/components/ui/time-range-track';
 import { TimeWheelPicker } from '@/components/ui/time-wheel-picker';
 import { RangeCalendar } from '@/components/ui/range-calendar';
 import { BOOKING_SLOTS, SLOT_ORDER } from '@/lib/slots';
@@ -19,6 +20,8 @@ import { can, needsReapproval } from '@/lib/permissions';
 import { DriverSelect } from '@/components/common/driver-select';
 
 const SLOTS = SLOT_ORDER.map(key => ({ key, ...BOOKING_SLOTS[key] }));
+/** Order of the quick slot chips: Full day, Morning, Afternoon. */
+const QUICK_SLOTS = (['full_day', 'morning', 'afternoon'] as const).map(key => ({ key, ...BOOKING_SLOTS[key] }));
 /** Minutes since midnight → "HH:MM". */
 const spinTime = (m: number) => `${DateUtil.pad(Math.floor(m / 60))}:${DateUtil.pad(m % 60)}`;
 
@@ -476,12 +479,12 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           </div>
         </div>
 
-        {/* Quick duration presets with Hide / Show toggle */}
+        {/* Quick Select presets with Hide / Show toggle */}
         <div className="mt-3">
           <div className="flex items-center justify-between">
             <span className="text-[12px] font-semibold text-muted-foreground flex items-center gap-1.5">
               <Zap className="size-3.5 text-amber-500" />
-              {t('quick_duration')}
+              {t('quick_select')}
             </span>
             <button
               type="button"
@@ -494,25 +497,86 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           </div>
 
           {showQuick && (
-            <div className="mt-2 grid grid-cols-5 gap-1.5 min-[410px]:gap-2 animate-in fade-in-0 slide-in-from-top-1 duration-200">
-              {QUICK_DURATION_OPTIONS.map(item => {
-                const active = activeQuick === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => applyQuickDuration(item.key)}
-                    className={cn(
-                      'flex h-11 items-center justify-center rounded-2xl border px-1 text-center text-[13px] min-[380px]:text-[13.5px] font-bold transition-all active:scale-95 shadow-2xs',
-                      active
-                        ? 'border-primary bg-primary text-primary-foreground shadow-xs'
-                        : 'border-neutral-200/90 bg-card text-foreground hover:border-neutral-300 hover:bg-muted/40 dark:border-neutral-800'
-                    )}
-                  >
-                    {item.label}
-                  </button>
-                );
-              })}
+            <div className="mt-2 space-y-2.5 animate-in fade-in-0 slide-in-from-top-1 duration-200">
+              {/* Quick duration presets: 2 hr, 1 day, 2 days, 3 days, 1 week */}
+              <div className="grid grid-cols-5 gap-1.5 min-[410px]:gap-2">
+                {QUICK_DURATION_OPTIONS.map(item => {
+                  const active = activeQuick === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => applyQuickDuration(item.key)}
+                      className={cn(
+                        'flex h-10 items-center justify-center rounded-2xl border px-1 text-center text-[13px] min-[380px]:text-[13.5px] font-bold transition-all active:scale-95 shadow-2xs',
+                        active
+                          ? 'border-primary bg-primary text-primary-foreground shadow-xs'
+                          : 'border-neutral-200/90 bg-card text-foreground hover:border-neutral-300 hover:bg-muted/40 dark:border-neutral-800'
+                      )}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Time slot presets: Full day | Morning | Afternoon */}
+              <div className="grid grid-cols-[auto_1fr_1.08fr] gap-1" role="radiogroup" aria-label={t('a11y_time_slot')}>
+                {QUICK_SLOTS.map(s => {
+                  const on = preset?.key === s.key;
+                  const blocked = !!slotProblem(s.start, s.end);
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      disabled={blocked}
+                      onClick={() => (setRange({ start: s.start, end: s.end }), setPicker(null))}
+                      className={cn(
+                        'flex h-8 min-w-0 items-center justify-center whitespace-nowrap rounded-full border px-1.5 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+                        s.key === 'full_day' && 'px-2.5',
+                        on
+                          ? 'border-primary bg-primary-soft text-primary font-semibold'
+                          : 'border-neutral-200/90 bg-card text-muted-foreground enabled:hover:border-primary/40 enabled:hover:text-foreground dark:border-neutral-800'
+                      )}
+                    >
+                      <span className="text-[10.5px] min-[380px]:text-[11.5px] font-semibold">
+                        {t(s.key)}
+                        {s.key !== 'full_day' && (
+                          <span className="ml-1 font-medium tabular opacity-80">
+                            {s.start}–{s.end}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Interactive timeline track card (from user screenshot) */}
+              <div className="rounded-2xl border border-neutral-200/90 bg-muted/40 p-3 shadow-2xs dark:border-neutral-800">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary-soft px-2.5 py-0.5 text-[13px] font-bold text-primary">
+                    <Clock className="size-3.5 shrink-0 text-primary" />
+                    <span>{start} — {end}</span>
+                  </span>
+                  <span className="text-[11.5px] font-medium tabular text-muted-foreground">
+                    {DateUtil.spanLabel(start, end, lang)}
+                  </span>
+                </div>
+                <TimeRangeTrack
+                  start={start}
+                  end={end}
+                  onChange={(s, e) => setRange({ start: s, end: e })}
+                  booked={dayBooked}
+                  pending={dayPending}
+                  now={date === today ? nowMins : undefined}
+                  invalid={!!timeProblem}
+                  lang={lang}
+                  labels={{ yours: t('lg_yours'), booked: t('lg_booked'), pending: t('lg_pending'), start: t('start_time'), end: t('end_time') }}
+                />
+              </div>
             </div>
           )}
         </div>
