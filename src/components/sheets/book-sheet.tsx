@@ -25,11 +25,17 @@ const QUICK_SLOTS = (['full_day', 'morning', 'afternoon'] as const).map(key => (
 const spinTime = (m: number) => `${DateUtil.pad(Math.floor(m / 60))}:${DateUtil.pad(m % 60)}`;
 
 const QUICK_DURATION_OPTIONS = [
+  { key: '1hr', label: '1 hr' },
   { key: '2hr', label: '2 hr' },
+  { key: '3hr', label: '3 hr' },
+  { key: '4hr', label: '4 hr' },
   { key: '1d', label: '1 day' },
   { key: '2d', label: '2 days' },
   { key: '3d', label: '3 days' },
+  { key: '4d', label: '4 days' },
+  { key: '5d', label: '5 days' },
   { key: '1w', label: '1 week' },
+  { key: '2w', label: '2 weeks' },
 ] as const;
 
 const monthShort = (dateStr: string, lang: 'en' | 'kh' = 'en') => {
@@ -213,10 +219,11 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
   const changeEnd = (v: string) => setRange(r => ({ ...r, end: v }));
 
   const applyQuickDuration = (key: (typeof QUICK_DURATION_OPTIONS)[number]['key']) => {
-    if (key === '2hr') {
+    const startM = DateUtil.toMins(start);
+    if (key === '1hr' || key === '2hr' || key === '3hr' || key === '4hr') {
+      const addedMins = key === '1hr' ? 60 : key === '2hr' ? 120 : key === '3hr' ? 180 : 240;
       setEndDate(date);
-      const startM = DateUtil.toMins(start);
-      const endM = startM + 120;
+      const endM = startM + addedMins;
       if (endM < 1440) {
         setRange(r => ({ ...r, end: spinTime(endM) }));
       } else {
@@ -232,8 +239,17 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
     } else if (key === '3d') {
       setEndDate(DateUtil.addDays(date, 3));
       setRange(r => ({ ...r, end: r.start }));
+    } else if (key === '4d') {
+      setEndDate(DateUtil.addDays(date, 4));
+      setRange(r => ({ ...r, end: r.start }));
+    } else if (key === '5d') {
+      setEndDate(DateUtil.addDays(date, 5));
+      setRange(r => ({ ...r, end: r.start }));
     } else if (key === '1w') {
       setEndDate(DateUtil.addDays(date, 7));
+      setRange(r => ({ ...r, end: r.start }));
+    } else if (key === '2w') {
+      setEndDate(DateUtil.addDays(date, 14));
       setRange(r => ({ ...r, end: r.start }));
     }
   };
@@ -256,11 +272,17 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
     const startM = DateUtil.toMins(start);
     const endM = DateUtil.toMins(end);
     const diffM = days * 1440 + endM - startM;
+    if (diffM === 60 && days === 0) return '1hr';
     if (diffM === 120 && days === 0) return '2hr';
+    if (diffM === 180 && days === 0) return '3hr';
+    if (diffM === 240 && days === 0) return '4hr';
     if (diffM === 1440 && days === 1) return '1d';
     if (diffM === 2880 && days === 2) return '2d';
     if (diffM === 4320 && days === 3) return '3d';
+    if (diffM === 5760 && days === 4) return '4d';
+    if (diffM === 7200 && days === 5) return '5d';
     if (diffM === 10080 && days === 7) return '1w';
+    if (diffM === 20160 && days === 14) return '2w';
     return null;
   }, [date, endDate, start, end]);
 
@@ -579,9 +601,9 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
           </div>
         </div>
 
-        {/* Quick duration presets: 2 hr, 1 day, 2 days, 3 days, 1 week (card directly under the Ticket Card as in user image) */}
-        <div className="mt-2.5 rounded-2xl border border-neutral-200/90 bg-card p-2 sm:p-2.5 shadow-2xs dark:border-neutral-800">
-          <div className="grid grid-cols-5 gap-1.5 min-[410px]:gap-2" role="radiogroup" aria-label={t('quick_select')}>
+        {/* Quick duration presets: rounded capsule card with more choices */}
+        <div className="mt-2.5 rounded-full border border-neutral-200/90 bg-card p-1.5 shadow-2xs dark:border-neutral-800">
+          <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto px-1 py-0.5" role="radiogroup" aria-label={t('quick_select')}>
             {QUICK_DURATION_OPTIONS.map(item => {
               const active = activeQuick === item.key;
               return (
@@ -592,7 +614,7 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
                   aria-checked={active}
                   onClick={() => applyQuickDuration(item.key)}
                   className={cn(
-                    'flex h-9 sm:h-9.5 items-center justify-center rounded-full border px-1 text-center text-[12.5px] min-[380px]:text-[13.5px] font-bold transition-all active:scale-95',
+                    'flex h-8.5 min-[380px]:h-9 shrink-0 items-center justify-center rounded-full border px-3.5 sm:px-4 text-center text-[12.5px] min-[380px]:text-[13.5px] font-bold whitespace-nowrap transition-all active:scale-95',
                     active
                       ? 'border-primary bg-primary text-primary-foreground shadow-xs'
                       : 'border-neutral-200/90 bg-background text-foreground hover:border-neutral-300 hover:bg-muted/40 dark:border-neutral-700/80 dark:bg-card dark:text-foreground'
