@@ -14,7 +14,6 @@ import {
   RotateCcw,
   Search,
   UserRound,
-  Users,
   X,
   XCircle,
 } from 'lucide-react';
@@ -34,7 +33,7 @@ import { CarPhoto } from '@/components/common/car-photo';
 import { BookingStatusBadge } from '@/components/common/status';
 import { cn } from '@/lib/utils';
 
-type HistoryScope = 'all' | 'cars' | 'mine';
+type HistoryScope = 'all' | 'mine';
 type StatusFilter = 'all' | 'Completed' | 'Cancelled' | 'Rejected';
 type PeriodFilter = 'all' | 'today' | 'this_month' | 'date';
 
@@ -45,7 +44,6 @@ export function HistoryScreen() {
 
   const [scope, setScope] = React.useState<HistoryScope>('all');
   const [selectedCarId, setSelectedCarId] = React.useState<string>('all');
-  const [selectedUserId, setSelectedUserId] = React.useState<string>('all');
   const [statusFilter, setStatusFilter] = React.useState<StatusFilter>('all');
   const [periodFilter, setPeriodFilter] = React.useState<PeriodFilter>('all');
   const [customDate, setCustomDate] = React.useState<string>('');
@@ -53,9 +51,6 @@ export function HistoryScreen() {
   const [carDropdownOpen, setCarDropdownOpen] = React.useState<boolean>(false);
   const [carSearch, setCarSearch] = React.useState<string>('');
   const carSearchRef = React.useRef<HTMLInputElement>(null);
-  const [userDropdownOpen, setUserDropdownOpen] = React.useState<boolean>(false);
-  const [userSearch, setUserSearch] = React.useState<string>('');
-  const userSearchRef = React.useRef<HTMLInputElement>(null);
   const [search, setSearch] = React.useState('');
 
   // All historical bookings (Completed, Cancelled, Rejected, or past Approved)
@@ -81,11 +76,7 @@ export function HistoryScreen() {
     return allHistory.filter(b => {
       // Scope filter
       if (scope === 'mine' && b.requesterId !== currentUser.id) return false;
-      if (scope === 'cars' && selectedCarId !== 'all' && b.carId !== selectedCarId) return false;
-      if (scope !== 'cars' && selectedCarId !== 'all' && b.carId !== selectedCarId) return false;
-
-      // Booked By filter
-      if (scope !== 'mine' && selectedUserId !== 'all' && b.requesterId !== selectedUserId) return false;
+      if (selectedCarId !== 'all' && b.carId !== selectedCarId) return false;
 
       // Status filter
       if (statusFilter !== 'all') {
@@ -128,7 +119,7 @@ export function HistoryScreen() {
 
       return true;
     });
-  }, [allHistory, scope, selectedCarId, selectedUserId, statusFilter, periodFilter, customDate, search, currentUser.id, cars, users, drivers, todayStr, currentMonthStr]);
+  }, [allHistory, scope, selectedCarId, statusFilter, periodFilter, customDate, search, currentUser.id, cars, users, drivers, todayStr, currentMonthStr]);
 
   const selectedCar = React.useMemo(() => {
     return selectedCarId !== 'all' ? cars.find(c => c.id === selectedCarId) : null;
@@ -155,48 +146,19 @@ export function HistoryScreen() {
     );
   }, [cars, carSearch]);
 
-  const selectedUser = React.useMemo(() => {
-    return selectedUserId !== 'all' ? users.find(u => u.id === selectedUserId) : null;
-  }, [users, selectedUserId]);
-
-  // User specific stats
-  const userStats = React.useMemo(() => {
-    if (!selectedUser) return null;
-    const userBookings = allHistory.filter(b => b.requesterId === selectedUser.id);
-    const completed = userBookings.filter(b => b.status === 'Completed' || b.status === 'Approved').length;
-    const cancelled = userBookings.filter(b => b.status === 'Cancelled').length;
-    const rejected = userBookings.filter(b => b.status === 'Rejected').length;
-    return { total: userBookings.length, completed, cancelled, rejected };
-  }, [allHistory, selectedUser]);
-
-  const bookableUsers = React.useMemo(() => {
-    const userIdsWithBookings = new Set(allHistory.map(b => b.requesterId));
-    return users.filter(u => userIdsWithBookings.has(u.id));
-  }, [users, allHistory]);
-
-  const filteredUsers = React.useMemo(() => {
-    if (!userSearch.trim()) return bookableUsers;
-    const q = userSearch.toLowerCase().trim();
-    return bookableUsers.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
-  }, [bookableUsers, userSearch]);
-
   const resetFilters = () => {
     setSelectedCarId('all');
-    setSelectedUserId('all');
     setStatusFilter('all');
     setPeriodFilter('all');
     setCustomDate('');
     setCalendarOpen(false);
     setSearch('');
     setCarSearch('');
-    setUserSearch('');
     setCarDropdownOpen(false);
-    setUserDropdownOpen(false);
   };
 
   const hasActiveFilters =
     selectedCarId !== 'all' ||
-    selectedUserId !== 'all' ||
     statusFilter !== 'all' ||
     periodFilter !== 'all' ||
     !!customDate ||
@@ -215,13 +177,12 @@ export function HistoryScreen() {
         onChange={setScope}
         options={[
           { value: 'all', label: t('tab_all_history') },
-          { value: 'cars', label: t('tab_car_history') },
           { value: 'mine', label: t('tab_my_history') },
         ]}
       />
 
-      {/* Selectors: Vehicle & Booked By (always 1 line / 2 columns side-by-side on mobile and desktop) */}
-      <div className={cn('grid gap-2 sm:gap-2.5', scope !== 'mine' ? 'grid-cols-2' : 'grid-cols-1')}>
+      {/* Vehicle selector */}
+      <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
         {/* Vehicle Selector (Dropdown) */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between px-0.5">
@@ -427,195 +388,6 @@ export function HistoryScreen() {
             </Menu.Portal>
           </Menu.Root>
         </div>
-
-        {/* Booked By Selector */}
-        {scope !== 'mine' && (
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between px-0.5">
-              <p className="flex items-center gap-1.5 text-[12px] font-bold text-muted-foreground">
-                <UserRound className="size-3.5 text-primary" />
-                <span>{t('booking_by')}</span>
-              </p>
-              {selectedUserId !== 'all' && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedUserId('all')}
-                  className="text-[11.5px] font-semibold text-primary hover:underline"
-                >
-                  {t('all_users')}
-                </button>
-              )}
-            </div>
-
-            {/* Dropdown Select Menu matching user design */}
-            <Menu.Root open={userDropdownOpen} onOpenChange={setUserDropdownOpen} modal={false}>
-              <Menu.Trigger asChild>
-                <button
-                  type="button"
-                  className={cn(
-                    'flex h-13 w-full items-center gap-1.5 min-[380px]:gap-2 sm:gap-2.5 rounded-2xl border bg-card px-2 min-[380px]:px-2.5 sm:px-3 text-left transition-all shadow-2xs focus:outline-hidden',
-                    userDropdownOpen
-                      ? 'border-primary ring-2 ring-primary/20'
-                      : selectedUser
-                      ? 'border-primary/40 bg-primary-soft/10 hover:border-primary/60'
-                      : 'border-neutral-200/90 hover:border-primary/30 hover:bg-muted/30 dark:border-neutral-800'
-                  )}
-                >
-                  {selectedUser ? (
-                    <Avatar initials={selectedUser.initials} seed={selectedUser.id} src={selectedUser.avatarUrl} className="size-8.5 text-[11px] rounded-full shadow-2xs" />
-                  ) : (
-                    <div className="flex size-8.5 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary shadow-2xs">
-                      <UserRound className="size-4.5" />
-                    </div>
-                  )}
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1">
-                      <span className="truncate text-[13px] sm:text-[13.5px] font-bold text-foreground">
-                        {selectedUser ? selectedUser.name : t('all_users')}
-                      </span>
-                    </div>
-                    <p className="truncate text-[11px] text-muted-foreground">
-                      {selectedUser
-                        ? `${allHistory.filter(b => b.requesterId === selectedUser.id).length} ${t('total_trips')}`
-                        : `${bookableUsers.length} ${t('all_users').toLowerCase()} · ${allHistory.length} ${t('total_trips')}`}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    {selectedUser && (
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        onClick={e => {
-                          e.stopPropagation();
-                          setSelectedUserId('all');
-                        }}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.stopPropagation();
-                            setSelectedUserId('all');
-                          }
-                        }}
-                        className="flex size-6 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-                        title={t('all_users')}
-                      >
-                        <X className="size-3.5" />
-                      </span>
-                    )}
-                    <ChevronDown
-                      className={cn(
-                        'size-4.5 shrink-0 text-muted-foreground transition-transform duration-200',
-                        userDropdownOpen && 'rotate-180'
-                      )}
-                    />
-                  </div>
-                </button>
-              </Menu.Trigger>
-
-              <Menu.Portal>
-                <Menu.Content
-                  align="end"
-                  sideOffset={6}
-                  collisionPadding={12}
-                  className="z-[70] w-[calc(100vw-2rem)] max-w-[398px] overflow-hidden rounded-2xl border border-neutral-300/90 bg-card p-2 shadow-float outline-none animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1 dark:border-neutral-700"
-                >
-                  {/* Search inside user dropdown */}
-                  <div className="relative mb-2">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      ref={userSearchRef}
-                      value={userSearch}
-                      onChange={e => setUserSearch(e.target.value)}
-                      placeholder={t('search_users')}
-                      className="h-9 w-full rounded-xl border border-border/80 bg-muted/40 pl-9 pr-8 text-[12.5px] placeholder:text-muted-foreground/70 focus:border-primary focus:bg-background focus:outline-hidden focus:ring-1 focus:ring-primary"
-                      onClick={e => e.stopPropagation()}
-                    />
-                    {userSearch && (
-                      <button
-                        type="button"
-                        onClick={() => setUserSearch('')}
-                        className="absolute right-2.5 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-                      >
-                        <X className="size-3" />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="max-h-[300px] overflow-y-auto space-y-1 pr-0.5">
-                    {/* All Users option */}
-                    <Menu.Item
-                      onSelect={() => {
-                        setSelectedUserId('all');
-                        setUserSearch('');
-                      }}
-                      className={cn(
-                        'flex cursor-pointer select-none items-center gap-3 rounded-2xl p-2.5 text-[13px] outline-none transition-colors',
-                        selectedUserId === 'all'
-                          ? 'bg-primary font-semibold text-primary-foreground shadow-xs'
-                          : 'hover:bg-muted text-foreground'
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          'flex size-9 shrink-0 items-center justify-center rounded-full',
-                          selectedUserId === 'all' ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground'
-                        )}
-                      >
-                        <UserRound className="size-4.5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold text-[13.5px]">{t('all_users')}</p>
-                        <p className={cn('text-[11.5px]', selectedUserId === 'all' ? 'text-white/80' : 'text-muted-foreground')}>
-                          {bookableUsers.length} {t('all_users').toLowerCase()} · {allHistory.length} {t('total_trips')}
-                        </p>
-                      </div>
-                      {selectedUserId === 'all' && <Check className="size-4.5 shrink-0 text-white" strokeWidth={2.5} />}
-                    </Menu.Item>
-
-                    {/* Individual users */}
-                    {filteredUsers.map(u => {
-                      const active = selectedUserId === u.id;
-                      const count = allHistory.filter(b => b.requesterId === u.id).length;
-                      return (
-                        <Menu.Item
-                          key={u.id}
-                          onSelect={() => {
-                            setSelectedUserId(u.id);
-                            setUserSearch('');
-                          }}
-                          className={cn(
-                            'flex cursor-pointer select-none items-center gap-3 rounded-2xl p-2 text-[13px] outline-none transition-colors',
-                            active
-                              ? 'bg-primary font-semibold text-primary-foreground shadow-xs'
-                              : 'hover:bg-muted/70 text-foreground'
-                          )}
-                        >
-                          <Avatar initials={u.initials} seed={u.id} src={u.avatarUrl} className="size-9 text-[11.5px] rounded-full" />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate font-semibold text-[13.5px]">{u.name}</p>
-                            <p className={cn('text-[11.5px]', active ? 'text-white/80' : 'text-muted-foreground')}>
-                              {u.dept}
-                            </p>
-                          </div>
-                          <span
-                            className={cn(
-                              'flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
-                              active ? 'bg-white/25 text-white' : 'bg-muted text-foreground'
-                            )}
-                          >
-                            {count}
-                          </span>
-                          {active && <Check className="size-4.5 shrink-0 text-white" strokeWidth={2.5} />}
-                        </Menu.Item>
-                      );
-                    })}
-                  </div>
-                </Menu.Content>
-              </Menu.Portal>
-            </Menu.Root>
-          </div>
-        )}
       </div>
 
       {/* Selected Vehicle Detail Card */}
@@ -712,77 +484,6 @@ export function HistoryScreen() {
                   {t('stat_lbl_rejected')}
                 </span>
                 <p className="text-[15px] sm:text-[16px] font-bold text-destructive tabular tracking-tight mt-0.5">{carStats.rejected}</p>
-              </div>
-            )}
-          </div>
-        </Card>
-      )}
-
-      {/* Selected User Detail Card */}
-      {!selectedCar && selectedUser && userStats && (
-        <Card className="overflow-hidden border border-primary/25 bg-gradient-to-br from-primary-soft/40 via-card to-background p-3.5 shadow-sm animate-in fade-in-0 duration-200">
-          <div className="flex items-center gap-3">
-            <Avatar initials={selectedUser.initials} seed={selectedUser.id} src={selectedUser.avatarUrl} className="size-11 text-sm shadow-xs rounded-full" />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-1.5">
-                <h3 className="truncate text-[15px] font-bold text-foreground leading-tight">{selectedUser.name}</h3>
-                <button
-                  type="button"
-                  onClick={() => setSelectedUserId('all')}
-                  className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground shrink-0"
-                  title={t('all_users')}
-                >
-                  <X className="size-4" />
-                </button>
-              </div>
-              <p className="truncate text-[11.5px] text-muted-foreground mt-0.5">
-                {[selectedUser.dept, selectedUser.email].filter(Boolean).join(' · ')}
-              </p>
-            </div>
-          </div>
-
-          <div
-            className={cn(
-              'mt-2 grid gap-1.5 border-t border-border/60 pt-2 text-center',
-              userStats.rejected > 0 ? 'grid-cols-4' : 'grid-cols-3'
-            )}
-          >
-            <div className="flex flex-col items-center justify-center rounded-xl bg-card/95 px-1 py-1 sm:py-1.5 shadow-2xs border border-border/60">
-              <span className="text-[9.5px] font-medium text-muted-foreground/80 leading-tight">
-                {t('stat_total_prefix')}
-              </span>
-              <span className="text-[10.5px] font-bold text-foreground leading-tight mt-0.5">
-                {t('stat_lbl_request')}
-              </span>
-              <p className="text-[15px] sm:text-[16px] font-bold text-primary tabular tracking-tight mt-0.5">{userStats.total}</p>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-xl bg-card/95 px-1 py-1 sm:py-1.5 shadow-2xs border border-border/60">
-              <span className="text-[9.5px] font-medium text-muted-foreground/80 leading-tight">
-                {t('stat_total_prefix')}
-              </span>
-              <span className="text-[10.5px] font-bold text-foreground leading-tight mt-0.5">
-                {t('stat_lbl_completed')}
-              </span>
-              <p className="text-[15px] sm:text-[16px] font-bold text-success tabular tracking-tight mt-0.5">{userStats.completed}</p>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-xl bg-card/95 px-1 py-1 sm:py-1.5 shadow-2xs border border-border/60">
-              <span className="text-[9.5px] font-medium text-muted-foreground/80 leading-tight">
-                {t('stat_total_prefix')}
-              </span>
-              <span className="text-[10.5px] font-bold text-foreground leading-tight mt-0.5">
-                {t('stat_lbl_cancelled')}
-              </span>
-              <p className="text-[15px] sm:text-[16px] font-bold text-muted-foreground tabular tracking-tight mt-0.5">{userStats.cancelled}</p>
-            </div>
-            {userStats.rejected > 0 && (
-              <div className="flex flex-col items-center justify-center rounded-xl bg-card/95 px-1 py-1 sm:py-1.5 shadow-2xs border border-border/60">
-                <span className="text-[9.5px] font-medium text-muted-foreground/80 leading-tight">
-                  {t('stat_total_prefix')}
-                </span>
-                <span className="text-[10.5px] font-bold text-foreground leading-tight mt-0.5">
-                  {t('stat_lbl_rejected')}
-                </span>
-                <p className="text-[15px] sm:text-[16px] font-bold text-destructive tabular tracking-tight mt-0.5">{userStats.rejected}</p>
               </div>
             )}
           </div>
