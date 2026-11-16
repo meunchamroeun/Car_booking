@@ -148,6 +148,14 @@ export function isDriverBusy(data: FleetData, driverId: string, b: Pick<Booking,
 
 /* ── Commands ──────────────────────────────────────────────────────────── */
 
+/** Successful new requests automatically cancel only these own maintenance conflicts. */
+export function maintenanceBookingsToCancel(data: FleetData, actor: User, window: BookingWindow): Booking[] {
+  return data.bookings.filter(b => b.requesterId === actor.id &&
+    (b.status === 'Approved' || b.status === 'Pending') &&
+    b.taskStatus !== 'In Progress' && !b.startedAt && spanOf(b)[1] > DateUtil.nowStamp() &&
+    overlaps(spanOf(b), spanOf(window)) && hasMaintenanceConflict(data.cars.find(c => c.id === b.carId), b));
+}
+
 export interface CreateBookingInput {
   carId: string;
   date: string;
@@ -172,7 +180,14 @@ export function createBooking(data: FleetData, actor: User, input: CreateBooking
   if (DateUtil.dayDiff(input.date, endDate) > 14) fail('max_days');
   if (DateUtil.stamp(endDate, input.endTime) <= DateUtil.stamp(input.date, input.startTime)) fail('err_end_time');
   if (input.passengers > car.seats) fail('err_seats', { car: car.name, n: car.seats });
-  const conflict = checkConflict(data, input.carId, input.date, input.startTime, input.endTime, undefined, endDate);
+  if (DateUtil.stamp(endDate, input.endTime) <= DateUtil.nowStamp()) fail('err_past');
+  const superseded = maintenanceBookingsToCancel(data, actor, {
+    startDate: input.date, endDate, startTime: input.startTime, endTime: input.endTime,
+  });
+  const supersededIds = new Set(superseded.map(b => b.id));
+  // Ignore only the bookings this successful request would cancel. Data is still immutable.
+  const availableData = { ...data, bookings: data.bookings.filter(b => !supersededIds.has(b.id)) };
+  const conflict = checkConflict(availableData, input.carId, input.date, input.startTime, input.endTime, undefined, endDate);
   if (!conflict.ok) throw new ServiceError(conflict.msg);
 
   // Same reference style as the booking bot: BKG-<year>-<6-digit number>, numbered on from the last one
@@ -210,9 +225,22 @@ export function createBooking(data: FleetData, actor: User, input: CreateBooking
     vars: { name: actor.name, car: car.name, win: winOf({ startDate: input.date, startTime: input.startTime, endDate, endTime: input.endTime }) },
   });
 
+  const cancelReason = translate('en', 'auto_cancel_maintenance_reason', { id });
+  const cancellationNotices = superseded.flatMap(b => notify(
+    [b.requesterId, b.approverId, driverUserId(data, b.driverId), ...reviewers(data)].filter(Boolean) as string[],
+    { kind: 'cancelled', bookingId: b.id, titleKey: 'nt_cancelled_title', textKey: 'nt_maint_replaced_text',
+      vars: { id: b.id, replacement: id, car: carLabel(data, b.carId) } }
+  ));
+
   return {
-    data: { ...data, bookings: [booking, ...data.bookings], notifications: [...notifs, ...data.notifications] },
-    message: msg('msg_requested', { id }),
+    data: {
+      ...data,
+      bookings: [booking, ...data.bookings.map(b => supersededIds.has(b.id)
+        ? { ...b, status: 'Cancelled' as const, taskStatus: null, cancelReason, replacedByBookingId: id }
+        : b)],
+      notifications: [...notifs, ...cancellationNotices, ...data.notifications],
+    },
+    message: superseded.length ? msg('msg_requested_auto_cancel', { id, n: superseded.length }) : msg('msg_requested', { id }),
     bookingId: id,
   };
 }

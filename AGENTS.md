@@ -32,8 +32,14 @@ Khmer translations. Read README.md, docs/API.md, and docs/MAINTENANCE.md first.
 Use shared maintenance overlap helpers for previews, conflicts, notifications and
 trip start checks. Never detect affected bookings using only `startDate`.
 Intervals are `[start, end)`; touching boundaries do not conflict. Keep approvals
-and trip history when maintenance is saved. Do not silently cancel, split, or
-reassign bookings. Ongoing trips must remain returnable/completable.
+and trip history when maintenance is saved. Do not split or reassign bookings; automatic cancellation is limited to the
+documented successful-creation rule below. Ongoing trips must remain returnable/completable. Successful new creation
+specifically auto-cancels own, overlapping, unstarted maintenance-conflicted
+bookings via `maintenanceBookingsToCancel`. Validate before changing state;
+creation/cancellations/notifications must commit together. Retain original audit
+history and `replacedByBookingId`. Do not cancel healthy/other-user/unrelated or
+actually started bookings. Do not add replacement selectors or cancellation
+banners to the new-booking form. Home cards expire at the exact end timestamp.
 
 The app currently persists fleet state in the browser; mirror service rules in a
 real backend before production. Do not expose `.env.local` or send real Telegram

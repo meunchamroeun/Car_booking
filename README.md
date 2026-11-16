@@ -176,3 +176,38 @@ When an unstarted booking has a maintenance conflict, its schedule line shows
 departure. The original booking time remains visible for reference. The normal
 countdown returns if the conflict is resolved; actually started trips retain
 their remaining-time display and return/completion actions.
+
+## Automatic cancellation after a new booking
+
+A successful new request automatically cancels older **own Pending/Approved
+bookings with a maintenance conflict** whose date-time interval overlaps the new
+request. Affected originals must not have `startedAt` or an In Progress task and
+must not have reached their end time. This also handles an unstarted blocked
+booking after its scheduled departure; ordinary manual cancellation permissions
+are unchanged.
+
+The old records become **Cancelled**, their taskStatus is cleared, and their
+approval/driver history is retained. `replacedByBookingId` links each original to
+the new request, with a translated cancellation reason in booking details. The
+original leaves Home and remains in History. The new request is **Pending** and
+still needs approval. It does not automatically restore the originals if later
+rejected or cancelled. The normal created/cancelled in-app and Telegram events
+are emitted, and the success toast indicates the cancellation count. The form
+uses its normal **Book now** button with no replacement selector or pre-submit
+cancellation banner.
+
+The shared `maintenanceBookingsToCancel` helper is used by creation and form
+availability validation. Validate the new request's full interval, future end,
+seats, purpose, and maintenance state before committing cancellation. Exclude
+only the original requests eligible for auto-cancellation from occupancy checks.
+If any validation fails, commit nothing: old bookings and notifications remain
+unchanged. Healthy bookings, other owners, unrelated date-time windows, ended
+bookings and actually started trips are unaffected. Half-open boundaries apply:
+ending one trip exactly when the other starts is not overlap.
+
+Persist creation, original cancellations and in-app notifications in one backend
+transaction. Old data without `replacedByBookingId` remains compatible. No
+`homeSupersededById` visibility field is used. Home Pending/Approved summaries end
+at the exact end timestamp, not midnight, so cancelled or ended old cards do not
+return when the new card ends. Actual In Progress return/completion behavior is
+unchanged.

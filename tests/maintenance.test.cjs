@@ -106,3 +106,108 @@ test('actual started trips are not relabeled as unable to start', () => {
   assert.equal(isDepartureBlocked({ ...booking, taskStatus: 'In Progress' }, unavailable), false);
   assert.equal(isDepartureBlocked({ ...booking, startedAt: '2026-11-01 09:00' }, unavailable), false);
 });
+
+const { myTrips } = require('../src/lib/selectors.ts');
+const homeEmployee = { id: 'employee', name: 'Employee', role: 'Employee' };
+const homeFixture = {
+  ...data,
+  cars: [{ ...car, seats: 5, maintenance: scheduled }, { ...car, id: 'c2', seats: 5 }],
+};
+const homeRequest = { carId: 'c2', date: '2026-11-05', endDate: '2026-11-05', startTime: '09:00', endTime: '17:00', purpose: 'New trip', destination: '', passengers: 1, needDriver: false };
+
+test('new overlapping booking atomically cancels old maintenance request and updates Home', () => {
+  const result = svc.createBooking(homeFixture, homeEmployee, homeRequest);
+  const old = result.data.bookings.find(b => b.id === 'B1');
+  assert.deepEqual(old, { ...booking, status: 'Cancelled', taskStatus: null, cancelReason: old.cancelReason, replacedByBookingId: result.bookingId });
+  assert.ok(old.cancelReason.includes(result.bookingId));
+  assert.equal(old.status, 'Cancelled');
+  assert.equal(old.taskStatus, null);
+  assert.equal(old.driverId, 'd1');
+  assert.ok(result.data.bookings.some(b => b.id === old.id));
+  assert.equal(myTrips(result.data, 'employee').hero.id, result.bookingId);
+  assert.equal(result.data.notifications.some(n => n.kind === 'cancelled' && n.bookingId === old.id), true);
+  assert.ok(result.data.notifications.some(n => n.kind === 'cancelled' && n.userId === 'driver-user'));
+  assert.equal(homeFixture.bookings[0].replacedByBookingId, undefined);
+});
+test('cancelled old booking stays cancelled after reload and new request outcomes', () => {
+  const result = svc.createBooking(homeFixture, homeEmployee, homeRequest);
+  const persisted = JSON.parse(JSON.stringify(result.data));
+  assert.equal(myTrips(persisted, 'employee').hero.id, result.bookingId);
+  for (const status of ['Completed', 'Rejected', 'Cancelled']) {
+    const changed = { ...persisted, bookings: persisted.bookings.map(b => b.id === result.bookingId ? { ...b, status } : b) };
+    assert.equal(myTrips(changed, 'employee').hero, undefined);
+    assert.equal(changed.bookings.find(b => b.id === 'B1').status, 'Cancelled');
+  }
+  assert.equal(myTrips({ ...persisted, bookings: persisted.bookings.filter(b => b.id !== result.bookingId) }, 'employee').hero, undefined);
+});
+test('neither the old card nor an expired new Pending card appears at their shared end time', () => {
+  const result = svc.createBooking(homeFixture, homeEmployee, homeRequest);
+  const originalNow = DateUtil.nowStamp;
+  try {
+    DateUtil.nowStamp = () => '2026-11-05 16:59';
+    assert.equal(myTrips(result.data, 'employee').hero.id, result.bookingId);
+    DateUtil.nowStamp = () => '2026-11-05 17:00';
+    assert.equal(myTrips(result.data, 'employee').hero, undefined);
+    DateUtil.nowStamp = () => '2026-11-05 17:01';
+    assert.equal(myTrips(result.data, 'employee').hero, undefined);
+  } finally { DateUtil.nowStamp = originalNow; }
+});
+test('unrelated dates, other users, normal bookings and actually started trips are not cancelled', () => {
+  const rows = [
+    { ...booking, id: 'other-user', requesterId: 'other' },
+    { ...booking, id: 'started', startedAt: '2026-11-01 09:00' },
+    { ...booking, id: 'driving', taskStatus: 'In Progress' },
+    { ...booking, id: 'different-dates', startDate: '2026-11-06', endDate: '2026-11-06' },
+    { ...booking, id: 'healthy-car', carId: 'c3' },
+    { ...booking, id: 'completed', status: 'Completed' },
+  ];
+  const result = svc.createBooking({ ...homeFixture, cars: [...homeFixture.cars, { ...car, id: 'c3' }], bookings: rows }, homeEmployee, homeRequest);
+  for (const old of rows) assert.deepEqual(result.data.bookings.find(b => b.id === old.id), old);
+});
+test('touching time boundaries and failed requests do not cancel old bookings', () => {
+  const before = JSON.stringify(homeFixture);
+  const result = svc.createBooking(homeFixture, homeEmployee, { ...homeRequest, startTime: '17:00', endTime: '18:00' });
+  assert.equal(result.data.bookings.find(b => b.id === 'B1').replacedByBookingId, undefined);
+  assert.throws(() => svc.createBooking(homeFixture, homeEmployee, { ...homeRequest, purpose: '' }));
+  assert.equal(JSON.stringify(homeFixture), before);
+});
+test('approved new card also expires at exact end and cannot expose its cancelled predecessor', () => {
+  const result = svc.createBooking(homeFixture, homeEmployee, homeRequest);
+  const approved = { ...result.data, bookings: result.data.bookings.map(b => b.id === result.bookingId ? { ...b, status: 'Approved' } : b) };
+  const originalNow = DateUtil.nowStamp;
+  try {
+    DateUtil.nowStamp = () => '2026-11-05 16:59';
+    assert.equal(myTrips(approved, 'employee').hero.id, result.bookingId);
+    DateUtil.nowStamp = () => '2026-11-05 17:00';
+    assert.equal(myTrips(approved, 'employee').hero, undefined);
+  } finally { DateUtil.nowStamp = originalNow; }
+});
+
+test('creation can reschedule same maintenance car outside its maintenance interval and cancels its old occupancy', () => {
+  const fixture = { ...homeFixture, cars: homeFixture.cars.map(c => c.id === 'c1' ? { ...c, maintenance: { ...scheduled, startTime: '15:00', endTime: '18:00' } } : c) };
+  const result = svc.createBooking(fixture, homeEmployee, { ...homeRequest, carId: 'c1', endTime: '12:00' });
+  assert.equal(result.data.bookings.find(b => b.id === 'B1').status, 'Cancelled');
+  assert.equal(result.data.bookings[0].status, 'Pending');
+  const before = JSON.stringify(fixture);
+  assert.throws(() => svc.createBooking(fixture, homeEmployee, { ...homeRequest, carId: 'c1' }), e => e.msg.key === 'conflict_maint');
+  assert.equal(JSON.stringify(fixture), before);
+});
+test('all matching own Pending/Approved conflicts are cancelled, and each cancellation is notified once per recipient', () => {
+  const fixture = { ...homeFixture, bookings: [booking, { ...booking, id: 'B2', status: 'Pending', approverId: null }] };
+  const result = svc.createBooking(fixture, homeEmployee, homeRequest);
+  assert.equal(result.data.bookings.filter(b => b.status === 'Cancelled').length, 2);
+  for (const id of ['B1', 'B2']) {
+    assert.equal(result.data.notifications.filter(n => n.bookingId === id && n.userId === 'employee' && n.kind === 'cancelled').length, 1);
+  }
+  assert.equal(result.message.key, 'msg_requested_auto_cancel');
+});
+test('past new requests and conflicts with healthy bookings cannot cancel originals', () => {
+  const before = JSON.stringify(homeFixture);
+  assert.throws(() => svc.createBooking(homeFixture, homeEmployee, { ...homeRequest, startTime: '06:00', endTime: '07:00' }), e => e.msg.key === 'err_past');
+  assert.equal(JSON.stringify(homeFixture), before);
+  const healthy = { ...booking, id: 'healthy', carId: 'c2', requesterId: 'someone-else' };
+  const fixture = { ...homeFixture, bookings: [booking, healthy] };
+  const snapshot = JSON.stringify(fixture);
+  assert.throws(() => svc.createBooking(fixture, homeEmployee, homeRequest), e => e.msg.key === 'conflict_booked');
+  assert.equal(JSON.stringify(fixture), snapshot);
+});

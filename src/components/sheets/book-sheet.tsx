@@ -4,7 +4,7 @@ import * as React from 'react';
 import { AlertTriangle, Briefcase, CalendarDays, CarFront, Check, CheckCircle2, ChevronDown, UserRound, Users, Zap } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
-import { occupyingBookings } from '@/lib/fleet-service';
+import { checkConflict as checkBookingConflict, maintenanceBookingsToCancel, occupyingBookings } from '@/lib/fleet-service';
 import { Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/input';
@@ -167,14 +167,19 @@ export function BookSheet({ open, init }: { open: boolean; init: { carId?: strin
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [carId, date]);
 
+  const autoCancelled = editing ? [] : maintenanceBookingsToCancel(app, currentUser, {
+    startDate: date, endDate, startTime: start, endTime: end,
+  });
+
   // Problem with the whole chosen window (may span several days)
   const timeProblem = (() => {
     if (DateUtil.stamp(endDate, end) <= DateUtil.stamp(date, start)) return t('end_after_start');
     if (DateUtil.stamp(endDate, end) <= DateUtil.nowStamp()) return t('time_passed');
     if (DateUtil.dayDiff(date, endDate) > 14) return t('max_days');
     if (!car) return null;
-    const c = checkConflict(car.id, date, start, end, editing?.id, endDate);
-    return c.ok ? null : c.reason;
+    const excluded = new Set(autoCancelled.map(b => b.id));
+    const c = checkBookingConflict({ ...app, bookings: app.bookings.filter(b => !excluded.has(b.id)) }, car.id, date, start, end, editing?.id, endDate);
+    return c.ok ? null : app.tm(c.msg);
   })();
   // Existing bookings for this car on any day of the window
   const booked = car

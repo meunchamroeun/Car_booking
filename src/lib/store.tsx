@@ -373,9 +373,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     createBooking: input => {
       let createdBookingId: string | undefined;
+      let autoCancelled: FleetData['bookings'] = [];
       const ok = run(() => {
         const res = svc.createBooking(data, currentUser, input);
         createdBookingId = res.bookingId;
+        autoCancelled = res.data.bookings.filter(b => b.status === 'Cancelled' && b.replacedByBookingId === res.bookingId);
         return res;
       });
       if (ok) {
@@ -395,6 +397,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           needDriver: input.needDriver,
           actorName: currentUser.name,
         });
+        for (const old of autoCancelled) {
+          const oldCar = data.cars.find(c => c.id === old.carId);
+          sendTelegramNotification({
+            event: 'cancelled', bookingId: old.id, requesterName: currentUser.name,
+            vehicleName: oldCar?.name ?? old.carId, plate: oldCar?.plate,
+            startDate: old.startDate, endDate: old.endDate, startTime: old.startTime, endTime: old.endTime,
+            purpose: old.purpose, destination: old.destination,
+            actorName: currentUser.name, reason: old.cancelReason,
+          });
+        }
         setCurrentTab(currentUser.role === 'Admin' ? 'home' : 'trips');
       }
       return ok;

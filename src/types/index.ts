@@ -87,6 +87,8 @@ export interface Booking {
   completedAt?: string;
   rejectReason?: string;
   cancelReason?: string;
+  /** New request that automatically superseded this maintenance-affected booking. */
+  replacedByBookingId?: string;
   endOdometer?: string;
   completionNotes?: string;
   /** Closed by the end-time job rather than by a person. */

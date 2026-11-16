@@ -90,3 +90,22 @@ explicitly cleared, regardless of `estimatedDate`. A legacy Maintenance car with
 metadata remains blocked. Date-only legacy schedules include the entire final day.
 See [MAINTENANCE.md](MAINTENANCE.md) for notifications and resolution rules.
 Re-check on approve — two pending requests for the same slot can't both be approved.
+
+## Auto-cancelling maintenance conflicts on creation
+
+After successful validation of `POST /bookings`, use
+`maintenanceBookingsToCancel` to identify older own Pending/Approved bookings
+with maintenance overlap, a future end, no `startedAt`, and no In Progress task.
+Their full date-time interval must overlap the new request. Exclude only these
+records when checking Approved occupancy; all other validation still applies,
+including a future end timestamp on the new request. Atomically create the new
+Pending request and mark originals Cancelled with taskStatus null, cancelReason,
+and optional `replacedByBookingId`. Retain original approver/driver/history fields.
+No user replacement ID or selector is required. On any error commit nothing.
+
+Send request and cancellation in-app notifications; the app also sends created
+and cancelled Telegram events. Ordinary manual cancellation permissions are
+unchanged; this is a specific creation rule for unstarted maintenance conflicts.
+Do not auto-restore originals if the new request is rejected, cancelled or deleted.
+Cancelled originals remain in History and are excluded from Home. Home
+Pending/Approved cards expire at their exact end time. See MAINTENANCE.md.

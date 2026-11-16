@@ -26,7 +26,7 @@ export function isDepartureBlocked(b: Booking, car: Car | undefined, now = DateU
 /** Approved/pending and not yet over. */
 export function isUpcoming(b: Booking): boolean {
   if (b.status !== 'Approved' && b.status !== 'Pending') return false;
-  if (b.taskStatus === 'In Progress' || (b.status === 'Pending' && (b.endDate || b.startDate) >= DateUtil.todayStr())) return true;
+  if (b.taskStatus === 'In Progress') return true;
   return endStamp(b) > DateUtil.nowStamp();
 }
 

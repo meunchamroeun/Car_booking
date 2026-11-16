@@ -162,7 +162,7 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
             </p>
             {b.rejectReason && b.decisionAt && <span className="shrink-0 text-[11px] tabular text-muted-foreground">{DateUtil.relative(b.decisionAt, lang)}</span>}
           </div>
-          <p className="mt-2 border-l-2 border-destructive/40 pl-2.5 text-[13px] leading-snug text-foreground/85">{b.rejectReason ?? b.cancelReason}</p>
+          <p className="mt-2 border-l-2 border-destructive/40 pl-2.5 text-[13px] leading-snug text-foreground/85">{b.rejectReason ?? (b.replacedByBookingId ? t('auto_cancel_maintenance_reason', { id: b.replacedByBookingId }) : b.cancelReason)}</p>
         </div>
       )}
 
