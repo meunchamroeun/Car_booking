@@ -1,4 +1,4 @@
-import { Booking, Car, FleetData, Msg, MsgVar, NotificationItem, User } from '@/types';
+import { Booking, Car, FleetData, MaintenanceInfo, Msg, MsgVar, NotificationItem, User } from '@/types';
 import { translate } from '@/lib/i18n';
 import { DateUtil } from '@/lib/date-utils';
 import { can, canCancel, canCompleteTask, canEdit, canReturnEarly, canReview, canStartTask, needsReapproval } from '@/lib/permissions';
@@ -84,19 +84,36 @@ export function occupyingBookings(data: FleetData, carId: string, date: string, 
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 }
 
-export function isCarInMaintenance(car: Car | undefined, date: string, start?: string, end?: string): boolean {
+type BookingWindow = Pick<Booking, 'startDate' | 'startTime' | 'endDate' | 'endTime'>;
+
+/** One half-open interval for all UI and command maintenance checks. */
+export function maintenanceOverlaps(m: MaintenanceInfo, window: BookingWindow): boolean {
+  const service: readonly [string, string] = m.mode === 'manual'
+    // Expected return is informational; only clearMaintenance releases the car.
+    ? [m.setAt || DateUtil.nowStamp(), '9999-12-31 23:59']
+    : [DateUtil.stamp(m.startDate!, m.startTime || '00:00'),
+       m.endTime ? DateUtil.stamp(m.endDate || m.startDate!, m.endTime)
+         : DateUtil.stamp(DateUtil.addDays(m.endDate || m.startDate!, 1), '00:00')];
+  return overlaps(spanOf(window), service);
+}
+
+export function affectedMaintenanceBookings(data: Pick<FleetData, 'bookings'>, carId: string, m: MaintenanceInfo): Booking[] {
+  return data.bookings.filter(b => b.carId === carId &&
+    (b.status === 'Approved' || b.status === 'Pending') && maintenanceOverlaps(m, b));
+}
+
+export function hasMaintenanceConflict(car: Car | undefined, window: BookingWindow): boolean {
   if (!car) return false;
-  if (car.status === 'Maintenance') return true;
-  const m = car.maintenance;
-  if (m?.mode === 'scheduled' && m.startDate) {
-    const e = m.endDate || m.startDate;
-    if (date < m.startDate || date > e) return false;
-    if (start && end && m.startDate === e && m.startTime && m.endTime) {
-      return DateUtil.isOverlap(start, end, m.startTime, m.endTime);
-    }
-    return true;
-  }
-  return false;
+  // A scheduled window is authoritative even for older data saved with Maintenance status.
+  if (car.maintenance) return maintenanceOverlaps(car.maintenance, window);
+  return car.status === 'Maintenance';
+}
+
+export function isCarInMaintenance(car: Car | undefined, date: string, start?: string, end?: string): boolean {
+  return hasMaintenanceConflict(car, {
+    startDate: date, startTime: start || '00:00',
+    endDate: end ? date : DateUtil.addDays(date, 1), endTime: end || '00:00',
+  });
 }
 
 export function checkConflict(
@@ -109,10 +126,7 @@ export function checkConflict(
   endDate: string = date
 ): { ok: true } | { ok: false; reason: string; msg: Msg; maintenance?: boolean } {
   const car = data.cars.find(c => c.id === carId);
-  const days = DateUtil.dateRange(date, endDate);
-  const inService = days.some(d =>
-    isCarInMaintenance(car, d, d === date ? start : '00:00', d === endDate ? end : '23:59')
-  );
+  const inService = hasMaintenanceConflict(car, { startDate: date, startTime: start, endDate, endTime: end });
   if (inService) {
     const m = msg('conflict_maint', { reason: car?.maintenance?.reason ?? '' });
     return { ok: false, maintenance: true, msg: m, reason: translate('en', m.key, m.vars) };
@@ -404,6 +418,9 @@ export function cancelBooking(data: FleetData, actor: User, id: string, reason?:
 export function startTask(data: FleetData, actor: User, id: string): Result {
   const b = findBooking(data, id);
   if (!canStartTask(actor, b)) fail('err_cannot_start');
+  if (hasMaintenanceConflict(data.cars.find(c => c.id === b.carId), b)) {
+    fail('conflict_maint', { reason: data.cars.find(c => c.id === b.carId)?.maintenance?.reason ?? '' });
+  }
   return {
     data: {
       ...data,
@@ -481,17 +498,22 @@ export function setMaintenance(
 ): Result {
   if (!can(actor, 'vehicle.maintenance')) fail('err_maint_role');
   if (!m.reason.trim()) fail('err_maint_reason');
-  const today = DateUtil.todayStr();
-  if (m.mode === 'scheduled' && (!m.startDate || !m.endDate || m.endDate < m.startDate)) fail('err_maint_dates');
-  const goesOfflineNow = m.mode === 'manual' || (m.startDate! <= today && today <= m.endDate!);
+  if (m.mode === 'scheduled' && (!m.startDate || !m.endDate ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(m.startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(m.endDate) ||
+    DateUtil.addDays(m.startDate, 0) !== m.startDate || DateUtil.addDays(m.endDate, 0) !== m.endDate ||
+    (m.startTime !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(m.startTime)) ||
+    (m.endTime !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(m.endTime)) ||
+    DateUtil.stamp(m.endDate, m.endTime || '23:59') <= DateUtil.stamp(m.startDate, m.startTime || '00:00'))) fail('err_maint_dates');
   const car = data.cars.find(c => c.id === carId) ?? fail('err_vehicle_not_found');
-
-  // Approved trips that now collide with the service window
-  const affected = data.bookings.filter(
-    b =>
-      b.carId === carId &&
-      (b.status === 'Approved' || b.status === 'Pending') &&
-      (m.mode === 'manual' ? b.startDate >= today && b.startDate <= (m.estimatedDate || today) : b.startDate >= m.startDate! && b.startDate <= m.endDate!)
+  const maintenance: MaintenanceInfo = {
+    ...m, reason: m.reason.trim(), estimatedDate: m.estimatedDate || null,
+    setAt: DateUtil.nowStamp(), setBy: actor.name, setByRole: actor.role,
+  };
+  const affected = affectedMaintenanceBookings(data, carId, maintenance);
+  const now = DateUtil.nowStamp();
+  const goesOfflineNow = m.mode === 'manual' || (
+    DateUtil.stamp(m.startDate!, m.startTime || '00:00') <= now &&
+    now < (m.endTime ? DateUtil.stamp(m.endDate!, m.endTime) : DateUtil.stamp(DateUtil.addDays(m.endDate!, 1), '00:00'))
   );
 
   return {
@@ -501,23 +523,17 @@ export function setMaintenance(
         c.id === carId
           ? {
               ...c,
-              status: goesOfflineNow ? 'Maintenance' : c.status,
-              maintenance: {
-                ...m,
-                reason: m.reason.trim(),
-                estimatedDate: m.estimatedDate || null,
-                setAt: DateUtil.nowStamp(),
-                setBy: actor.name,
-                setByRole: actor.role,
-              },
+              status: m.mode === 'manual' ? 'Maintenance' : 'Active',
+              maintenance,
             }
           : c
       ),
       notifications: [
-        ...notify(
-          affected.map(b => b.requesterId),
-          { kind: 'maintenance', titleKey: 'nt_unavail_title', textKey: 'nt_unavail_text', vars: { car: car.name, reason: m.reason.trim() } }
-        ),
+        ...affected.flatMap(b => notify(
+          [b.requesterId, ...reviewers(data), driverUserId(data, b.driverId)].filter(Boolean) as string[],
+          { kind: 'maintenance', bookingId: b.id, titleKey: 'nt_unavail_title', textKey: 'nt_unavail_text',
+            vars: { id: b.id, car: car.name, reason: maintenance.reason } }
+        )),
         ...data.notifications,
       ],
     },

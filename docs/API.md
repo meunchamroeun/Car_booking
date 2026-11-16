@@ -65,7 +65,7 @@ shortens `endTime`, sets `returnedEarly: true` — the freed slot is immediately
 | POST | `/bookings/:id/return` | `{ returnTime, notes? }` | `returnVehicle` | requester (or Admin), after the booking's start time and within its dates — self-drive **and** driver bookings; notifies the assigned driver |
 | POST | `/tasks/:id/start` | — | `startTask` | assigned driver; trip date ≤ today |
 | POST | `/tasks/:id/complete` | `{ returnTime, odometer?, notes? }` | `returnVehicle` | assigned driver; `odometer` ≥ car's current odometer (updates car) |
-| PUT | `/vehicles/:id/maintenance` | `{ mode: "manual", reason, estimatedDate? }` or `{ mode: "scheduled", reason, startDate, startTime, endDate, endTime }` | `setMaintenance` | Manager or Admin; notifies requesters of bookings inside the window |
+| PUT | `/vehicles/:id/maintenance` | `{ mode: "manual", reason, estimatedDate? }` or `{ mode: "scheduled", reason, startDate, startTime, endDate, endTime }` | `setMaintenance` | Manager or Admin; keeps bookings and notifies requesters, linked assigned drivers, and managers/admins for every overlapping Pending/Approved booking |
 | DELETE | `/vehicles/:id/maintenance` | — | `clearMaintenance` | Manager or Admin |
 | PATCH | `/drivers/:id` | `{ status: "Active" \| "OffDuty" }` | `toggleDriverDuty` | Admin |
 | POST | `/notifications/read-all` | — | `markNotificationsRead` | |
@@ -83,6 +83,10 @@ The car is then free for new bookings. Notify the requester and the assigned dri
 
 Bookings are date-time ranges `[startDate startTime, endDate endTime)` and may span several days.
 Two bookings conflict when they are for the same car, the existing one is `Approved`,
-and `startA < endB && startB < endA` (compare `"YYYY-MM-DD HH:MM"` stamps). The same rule decides whether a driver is busy. A car is unavailable when
-`status = "Maintenance"`, or it has a `scheduled` maintenance window covering the date (and time, for single-day windows).
+and `startA < endB && startB < endA` (compare `"YYYY-MM-DD HH:MM"` stamps). The same rule decides whether a driver is busy. Maintenance uses the same half-open date-time overlap rule, including the boundary times of multi-day schedules.
+A scheduled record is authoritative even if legacy data has `status = "Maintenance"`;
+outside that interval it does not block. A manual record blocks from `setAt` until
+explicitly cleared, regardless of `estimatedDate`. A legacy Maintenance car without
+metadata remains blocked. Date-only legacy schedules include the entire final day.
+See [MAINTENANCE.md](MAINTENANCE.md) for notifications and resolution rules.
 Re-check on approve — two pending requests for the same slot can't both be approved.

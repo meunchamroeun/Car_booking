@@ -1,6 +1,6 @@
-import { Booking, FleetData } from '@/types';
+import { Booking, Car, FleetData } from '@/types';
 import { DateUtil } from '@/lib/date-utils';
-import { isCarInMaintenance, occupyingBookings } from '@/lib/fleet-service';
+import { hasMaintenanceConflict, isCarInMaintenance, occupyingBookings } from '@/lib/fleet-service';
 
 const byTime = (a: Booking, b: Booking) => (a.startDate + a.startTime).localeCompare(b.startDate + b.startTime);
 
@@ -13,6 +13,14 @@ export function isLive(b: Booking): boolean {
   if (b.taskStatus === 'Completed') return false;
   const now = DateUtil.nowStamp();
   return startStamp(b) <= now && now < endStamp(b);
+}
+
+/** A due trip cannot imply departure while maintenance remains unresolved.
+ * Actual started trips retain their return/completion actions.
+ */
+export function isDepartureBlocked(b: Booking, car: Car | undefined, now = DateUtil.nowStamp()): boolean {
+  return b.status === 'Approved' && b.taskStatus !== 'In Progress' && !b.startedAt &&
+    startStamp(b) <= now && now < endStamp(b) && hasMaintenanceConflict(car, b);
 }
 
 /** Approved/pending and not yet over. */

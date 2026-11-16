@@ -92,3 +92,81 @@ When staff submit, approve, reject, or cancel a booking, automated bilingual ale
 Configure in `.env.local` or Vercel Environment Variables:
 - `TELEGRAM_BOT_TOKEN`: The bot API token from @BotFather for @car_booking_appbot.
 - `TELEGRAM_CHAT_ID`: The target Telegram user ID or group chat ID (e.g. `-100xxxxxxxxxx`). Multiple chat IDs can be separated by commas.
+
+## Maintenance conflicts (booking already approved)
+
+A booking for days 1–5 is affected if maintenance starts on day 5 **before the
+vehicle's return time**. Maintenance starting exactly at return time does not
+conflict. The same full date-time overlap rule applies to multi-day maintenance.
+
+The app preserves the booking's approval history and uses these visible states
+for an Approved booking that has a maintenance conflict and has not started:
+
+| When | English badge | Khmer badge | Progress |
+|---|---|---|---|
+| Before departure | Change vehicle or time | ត្រូវប្ដូររថយន្ត ឬពេលវេលា | Amber maintenance step; approval remains in history |
+| At departure (e.g. 08:00) | Cannot start | មិនអាចចាប់ផ្ដើម | Waiting for maintenance resolution or a replacement vehicle |
+| After the conflict is resolved | Normal booking status | Normal translated status | Normal flow resumes |
+
+At departure, the compact home card turns amber and reads **Cannot start ·
+Maintenance**. It does not imply **In use**, show a time-left countdown, or offer
+**Return early** merely because the start time has passed. The current badge no
+longer says Approved while an unstarted booking has an unresolved conflict;
+the stored status remains Approved for the audit history. Trips explicitly
+started (`In Progress` or `startedAt`) keep their return/completion flow.
+
+### Maintenance details and notifications
+
+- The home card retains its original compact style. A bottom section shows the
+  maintenance From/To dates and times and the reason when present. The booking
+  detail alert shows the same information in its existing style.
+- The maintenance editor lists affected Pending and Approved bookings, including
+  multi-day trips that started before the maintenance window.
+- Saving maintenance notifies the requester, linked assigned driver user, and
+  managers/admins in the app. Each notification opens its booking. Maintenance
+  alerts do not use the Telegram endpoint.
+- **Out now** blocks immediately until **Mark available** is used. Expected back
+  is informational, clearly labeled as an estimate, and never releases the car
+  or limits notifications to future bookings.
+- **Schedule** blocks only its exact date-time interval. Saving replaces that
+  car's previous maintenance record; only one maintenance window per car is
+  currently supported.
+
+### Resolving a conflict
+
+Before departure, a manager/admin can edit the booking to use an available
+vehicle or change its dates/times, subject to existing permission, approval and
+driver rules. Creating, editing, approving and starting driver trips enforce
+maintenance conflicts in the service.
+
+For an ongoing trip, coordinate a safe return. The requester or fleet admin can
+use **Return early**, or the assigned driver can complete the trip. Make a
+separate booking for the replacement vehicle. Splitting or reassigning an ongoing
+trip is not automated. Once the scheduled start time has passed, existing
+permissions prevent editing the Approved booking, even when departure is blocked;
+this currently requires manager coordination using the existing return/rebooking
+flow. Clearing maintenance restores the normal time-based display.
+
+For continuation by another developer/agent, start with [AGENTS.md](AGENTS.md),
+[docs/MAINTENANCE.md](docs/MAINTENANCE.md), and [docs/API.md](docs/API.md).
+
+## Verification
+
+```bash
+npm test            # Maintenance and departure-state regression tests
+npx tsc --noEmit    # Type checking
+npm run build       # Production build (stop dev first: both use .next)
+```
+
+The tests cover full interval overlap, touching boundaries, notification
+recipients, ongoing trips, manual maintenance estimates, legacy schedules,
+permissions, and the 07:59 → 08:00 blocked-departure transition.
+
+## Deployment
+
+The repository is hosted on GitHub and the application is linked to Vercel.
+After the checks above, commit the intended source/documentation changes and push
+them to `origin/main`. Verify the production deployment is Ready before reporting
+it as live. With an authenticated Vercel CLI and the correct project link in
+`.vercel/project.json`, `vercel --prod --yes` deploys the current source to
+production. Keep `.vercel`, `.env.local`, and other credentials out of Git.

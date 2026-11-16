@@ -4,7 +4,9 @@ import * as React from 'react';
 import { ArrowRight, CalendarClock, CalendarPlus, CarFront, ChevronRight, CheckCircle2, ClipboardCheck, Clock, FileText, Phone, RotateCcw, Route, UserRound, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { DateUtil } from '@/lib/date-utils';
-import { driverTrips, fleetStats, isLive, myTrips } from '@/lib/selectors';
+import { MaintenanceDetails } from '@/components/common/maintenance-details';
+import { hasMaintenanceConflict } from '@/lib/fleet-service';
+import { driverTrips, fleetStats, isDepartureBlocked, isLive, myTrips } from '@/lib/selectors';
 import { canCompleteTask, canReturnEarly, canStartTask } from '@/lib/permissions';
 import { Booking } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -122,11 +124,13 @@ function LiveProgress({ b, live }: { b: Booking; live: boolean }) {
 
 /* ── Booking card: light, compact summary of the booking that matters now ── */
 
-function BookingNowCard({ b }: { b: Booking }) {
+export function BookingNowCard({ b }: { b: Booking }) {
   const { cars, users, currentUser, t, lang, openSheet } = useApp();
   const car = cars.find(c => c.id === b.carId)!;
   const requester = users.find(u => u.id === b.requesterId) || currentUser;
-  const live = isLive(b);
+  const blocked = isDepartureBlocked(b, car);
+  const live = isLive(b) && !blocked;
+  const maintenanceConflict = (b.status === 'Approved' || b.status === 'Pending') && hasMaintenanceConflict(car, b);
   const now = useNow(1000);
   const start = toDate(b.startDate, b.startTime).getTime();
   const end = toDate(b.endDate || b.startDate, b.endTime).getTime();
@@ -142,21 +146,23 @@ function BookingNowCard({ b }: { b: Booking }) {
       onClick={open}
       onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), open())}
       className={cn(
-        'cursor-pointer rounded-2xl border p-3 transition-[transform,box-shadow] hover:shadow-card active:scale-[0.99]',
-        live ? 'border-success/35 bg-success-soft/40' : 'border-primary/25 bg-primary-soft/40'
+        'cursor-pointer rounded-2xl border p-3 transition-[transform,box-shadow] hover:shadow-card active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2',
+        blocked ? 'border-warning/35 bg-warning-soft/40' : live ? 'border-success/35 bg-success-soft/40' : 'border-primary/25 bg-primary-soft/40'
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <p className={cn('flex min-w-0 items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wide', live ? 'text-success' : 'text-primary')}>
-          {live ? (
-            <span className="relative flex size-2 shrink-0">
+      <div className="flex items-start justify-between gap-2">
+        <p className={cn('flex min-w-0 items-start gap-1.5 pt-0.5 text-[10.5px] font-bold uppercase leading-relaxed tracking-wide', blocked ? 'text-warning' : live ? 'text-success' : 'text-primary')}>
+          {blocked ? (
+            <Wrench className="mt-0.5 size-3 shrink-0" />
+          ) : live ? (
+            <span className="relative mt-1 flex size-2 shrink-0">
               <span className="absolute inset-0 animate-ping_soft rounded-full bg-success" />
               <span className="relative size-2 rounded-full bg-success" />
             </span>
           ) : (
-            <CalendarClock className="size-3 shrink-0" />
+            <CalendarClock className="mt-0.5 size-3 shrink-0" />
           )}
-          <span className="truncate">{live ? t('now_card_live') : t('now_card_next', { day: DateUtil.friendly(b.startDate, lang) })}</span>
+          <span>{blocked ? t('now_card_blocked') : live ? t('now_card_live') : t('now_card_next', { day: DateUtil.friendly(b.startDate, lang) })}</span>
         </p>
         {/* Green "In use" to match the card; other states use the usual badge */}
         {live ? (
@@ -164,7 +170,7 @@ function BookingNowCard({ b }: { b: Booking }) {
             {t('st_In Progress')}
           </Badge>
         ) : (
-          <BookingStatusBadge b={b} />
+          <span className="shrink-0"><BookingStatusBadge b={b} showMaintenanceConflict={false} /></span>
         )}
       </div>
 
@@ -220,6 +226,16 @@ function BookingNowCard({ b }: { b: Booking }) {
             <span className="block text-[10.5px] leading-tight text-white/85">{t('return_early_sub')}</span>
           </span>
         </button>
+      )}
+      {maintenanceConflict && (
+        <div className="mt-3 rounded-xl border border-warning/20 bg-warning-soft/70 px-3 py-2.5 text-[11.5px] leading-relaxed">
+          <p className="flex items-center gap-1.5 font-semibold text-warning">
+            <Wrench className="size-3.5 shrink-0" />
+            {t('maint_conflict_badge')}
+          </p>
+          {blocked && <p className="mt-1 text-warning">{t('maint_departure_hint')}</p>}
+          <MaintenanceDetails maintenance={car.maintenance} />
+        </div>
       )}
     </div>
   );

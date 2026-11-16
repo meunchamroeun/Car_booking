@@ -1,9 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarClock, CarFront, Check, CheckCircle2, ClipboardCheck, Copy, ExternalLink, FileText, Pencil, Phone, RotateCcw, Route, UserRound, X, XCircle } from 'lucide-react';
+import { CalendarClock, CarFront, Check, CheckCircle2, ClipboardCheck, Copy, ExternalLink, FileText, Pencil, Phone, RotateCcw, Route, UserRound, Wrench, X, XCircle } from 'lucide-react';
 import { useApp } from '@/lib/store';
-import { isLive } from '@/lib/selectors';
+import { MaintenanceDetails } from '@/components/common/maintenance-details';
+import { hasMaintenanceConflict } from '@/lib/fleet-service';
+import { isDepartureBlocked, isLive } from '@/lib/selectors';
 import { DateUtil } from '@/lib/date-utils';
 import { canCancel, canCompleteTask, canEdit, canReturnEarly, canReview, canStartTask } from '@/lib/permissions';
 import { Booking } from '@/types';
@@ -34,6 +36,7 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
   const approver = users.find(u => u.id === b.approverId);
   const isMine = b.requesterId === currentUser.id;
 
+  const maintenanceConflict = (b.status === 'Approved' || b.status === 'Pending') && hasMaintenanceConflict(car, b);
   const actions: React.ReactNode[] = [];
   if (canReview(currentUser, b))
     actions.push(
@@ -41,7 +44,7 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
         <ClipboardCheck /> {t('review')}
       </Button>
     );
-  if (canStartTask(currentUser, b))
+  if (canStartTask(currentUser, b) && !maintenanceConflict)
     actions.push(
       <Button key="start" className="flex-1" onClick={() => startTask(b.id)}>
         <Route /> {t('start_trip')}
@@ -139,6 +142,14 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
         </div>
       )}
 
+      {maintenanceConflict && (
+        <div role="alert" className="mt-3 rounded-xl border border-warning/30 bg-warning-soft p-3 text-[13px] text-warning">
+          <p className="font-semibold">{t('maint_booking_conflict')}</p>
+          <p className="mt-1">{t('maint_resolution_hint')}</p>
+          <MaintenanceDetails maintenance={car.maintenance} warning />
+        </div>
+      )}
+
       {/* Why it was rejected / cancelled: who and when, then the reason in plain readable text */}
       {(b.rejectReason || b.cancelReason) && (
         <div className="mt-3 rounded-xl border border-destructive/20 bg-destructive-soft/60 p-3">
@@ -211,14 +222,22 @@ export function BookingSheet({ open, id }: { open: boolean; id?: string }) {
  * Booking progress: steps appear one after another, a coloured line grows through
  * the finished steps, finished dots pop in with a check, and the current step pulses.
  */
-function Progress({ b, approverName, requesterName }: { b: Booking; approverName?: string; requesterName?: string }) {
-  const { t, lang, users, currentUser } = useApp();
+export function Progress({ b, approverName, requesterName }: { b: Booking; approverName?: string; requesterName?: string }) {
+  const { t, lang, users, cars, currentUser } = useApp();
+  const [, refresh] = React.useReducer(n => n + 1, 0);
+  React.useEffect(() => {
+    const timer = setInterval(refresh, 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const car = cars.find(c => c.id === b.carId);
+  const conflict = b.status === 'Approved' && b.taskStatus !== 'In Progress' && !b.startedAt && hasMaintenanceConflict(car, b);
+  const blocked = isDepartureBlocked(b, car);
   const rawReqName = requesterName ?? users.find(u => u.id === b.requesterId)?.name;
   const isMine = b.requesterId === currentUser?.id;
   const reqName = rawReqName || undefined;
   const rejected = b.status === 'Rejected';
   const cancelled = b.status === 'Cancelled';
-  const steps: { label: string; at?: string | null; done: boolean; bad?: boolean }[] = [
+  const steps: { label: string; at?: string | null; done: boolean; bad?: boolean; warning?: boolean }[] = [
     { label: reqName ? t('requested_by', { name: reqName }) : t('ev_requested'), at: b.createdAt, done: true },
     {
       label: rejected ? t('rejected_by', { name: approverName ?? '' }) : b.decisionAt ? t('approved_by', { name: approverName ?? '' }) : t('pending_review'),
@@ -231,28 +250,29 @@ function Progress({ b, approverName, requesterName }: { b: Booking; approverName
       : cancelled
         ? [{ label: t('st_Cancelled'), at: null, done: true, bad: true }]
         : [
-            { label: t('ev_started'), at: b.startedAt, done: !!b.startedAt || b.status === 'Completed' },
+            { label: conflict ? t(blocked ? 'now_card_blocked' : 'maint_action_required') : t('ev_started'), at: b.startedAt, done: !!b.startedAt || b.status === 'Completed', warning: conflict },
             { label: b.returnedEarly ? t('st_early') : t('ev_completed'), at: b.completedAt, done: b.status === 'Completed' },
           ]),
   ];
   const lastDone = steps.reduce((acc, s, i) => (s.done ? i : acc), 0);
   const current = steps.findIndex(s => !s.done); // -1 when everything is finished
-  const live = isLive(b);
+  const live = isLive(b) && !conflict;
   const STEP = 0.14; // seconds between steps
   // Row height is fixed so the growing line can stop exactly at the last finished dot
-  const ROW = 56;
+  const rowHeight = (index: number) => steps[index].warning ? 88 : 56;
+  const trackHeight = (count: number) => steps.slice(0, count).reduce((sum, _, index) => sum + rowHeight(index), 0);
 
   return (
     <div className="mt-4 rounded-2xl border bg-card p-4">
       <p className="mb-3 text-[13px] font-semibold text-muted-foreground">{t('timeline_title')}</p>
       <ol className="relative">
         {/* grey track */}
-        <span className="absolute left-[11px] top-3 w-0.5 rounded-full bg-border" style={{ height: (steps.length - 1) * ROW }} aria-hidden />
+        <span className="absolute left-[11px] top-3 w-0.5 rounded-full bg-border" style={{ height: trackHeight(steps.length - 1) }} aria-hidden />
         {/* coloured progress, grows from the top */}
         {lastDone > 0 && (
           <span
             className={cn('absolute left-[11px] top-3 w-0.5 origin-top animate-grow-y rounded-full', steps[lastDone].bad ? 'bg-destructive' : 'bg-success')}
-            style={{ height: lastDone * ROW, animationDelay: '0.15s' }}
+            style={{ height: trackHeight(lastDone), animationDelay: '0.15s' }}
             aria-hidden
           />
         )}
@@ -262,27 +282,27 @@ function Progress({ b, approverName, requesterName }: { b: Booking; approverName
             <li
               key={i}
               className="relative flex gap-3 animate-in fade-in-0 slide-in-from-left-2 duration-500 fill-mode-both"
-              style={{ height: i === steps.length - 1 ? undefined : ROW, animationDelay: `${i * STEP}s` }}
+              style={{ height: i === steps.length - 1 ? undefined : rowHeight(i), animationDelay: `${i * STEP}s` }}
             >
               <span className="relative z-10 mt-0.5 flex size-6 shrink-0 items-center justify-center">
-                {isCurrent && <span className="absolute inset-0 animate-ping_soft rounded-full bg-primary" />}
+                {isCurrent && !s.warning && <span className="absolute inset-0 animate-ping_soft rounded-full bg-primary" />}
                 <span
                   className={cn(
                     'relative flex size-6 items-center justify-center rounded-full border-2 border-card',
-                    s.bad ? 'bg-destructive text-white' : s.done ? 'bg-success text-white' : isCurrent ? 'bg-primary' : 'bg-muted',
+                    s.warning ? 'bg-warning-soft text-warning ring-1 ring-warning/30' : s.bad ? 'bg-destructive text-white' : s.done ? 'bg-success text-white' : isCurrent ? 'bg-primary' : 'bg-muted',
                     (s.done || s.bad) && 'animate-pop'
                   )}
                   style={{ animationDelay: `${0.15 + i * STEP}s` }}
                 >
-                  {s.bad ? <XCircle className="size-3.5" /> : s.done ? <Check className="size-3.5" strokeWidth={3} /> : isCurrent ? <span className="size-2 rounded-full bg-primary-foreground" /> : null}
+                  {s.warning ? <Wrench className="size-3.5" /> : s.bad ? <XCircle className="size-3.5" /> : s.done ? <Check className="size-3.5" strokeWidth={3} /> : isCurrent ? <span className="size-2 rounded-full bg-primary-foreground" /> : null}
                 </span>
               </span>
               <div className="min-w-0 pb-2">
-                <p className={cn('text-[14px] font-semibold leading-snug', !s.done && !isCurrent && 'text-muted-foreground', isCurrent && 'text-primary')}>{s.label}</p>
+                <p className={cn('text-[14px] font-semibold leading-snug', !s.done && !isCurrent && 'text-muted-foreground', isCurrent && (s.warning ? 'text-warning' : 'text-primary'))}>{s.label}</p>
                 {s.at ? (
                   <p className="text-[12px] tabular text-muted-foreground">{DateUtil.relative(s.at, lang)}</p>
                 ) : isCurrent ? (
-                  <p className="text-[12px] text-muted-foreground">{live ? t('ev_waiting') : t('ev_next')}</p>
+                  <p className="text-[12px] text-muted-foreground">{s.warning ? t('maint_progress_wait') : live ? t('ev_waiting') : t('ev_next')}</p>
                 ) : null}
               </div>
             </li>

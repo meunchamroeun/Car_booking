@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { AlertTriangle, CheckCircle2, Pencil, Wrench } from 'lucide-react';
 import { useApp } from '@/lib/store';
+import { affectedMaintenanceBookings } from '@/lib/fleet-service';
 import { DateUtil } from '@/lib/date-utils';
 import { Sheet } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -53,8 +54,10 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
   const markDay = (d: string) =>
     bookings.some(b => b.carId === car.id && (b.status === 'Approved' || b.status === 'Pending') && b.startDate <= d && d <= (b.endDate || b.startDate)) ? ('booked' as const) : undefined;
 
-  const range = mode === 'manual' ? [DateUtil.todayStr(), estimated || DateUtil.todayStr()] : [from, to];
-  const affected = bookings.filter(b => b.carId === car.id && (b.status === 'Approved' || b.status === 'Pending') && b.startDate >= range[0] && b.startDate <= range[1]);
+  const affected = affectedMaintenanceBookings({ bookings }, car.id,
+    mode === 'manual'
+      ? { mode, reason, estimatedDate: estimated, setAt: DateUtil.nowStamp() }
+      : { mode, reason, startDate: from, endDate: to, startTime: fromTime, endTime: toTime });
 
   const save = () =>
     setMaintenance(car.id, mode === 'manual' ? { mode, reason, estimatedDate: estimated || undefined } : { mode, reason, startDate: from, endDate: to, startTime: fromTime, endTime: toTime });
@@ -72,7 +75,7 @@ export function MaintenanceSheet({ open, carId, defaultMode }: { open: boolean; 
                 {t('back')}
               </Button>
             )}
-            <Button className="flex-[1.6]" disabled={!reason.trim()} onClick={save}>
+            <Button className="flex-[1.6]" disabled={!reason.trim() || (mode === 'scheduled' && DateUtil.stamp(to, toTime) <= DateUtil.stamp(from, fromTime))} onClick={save}>
               <Wrench /> {t('save_service')}
             </Button>
           </div>
