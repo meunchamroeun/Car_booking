@@ -445,6 +445,7 @@ const en = {
   auto_completed_note: 'Completed automatically at the booking end time.',
   maint_action_required: 'Change vehicle or time',
   maint_cannot_start: 'Cannot start',
+  maint_vehicle_unavailable: 'Vehicle unavailable',
   maint_progress_wait: 'Waiting for maintenance resolution or a replacement vehicle.',
   maint_time_unknown: 'Date and time not recorded',
   maint_until_available: 'Ongoing until marked available',
@@ -518,6 +519,7 @@ type Dict = Record<keyof typeof en, string>;
 const kh: Partial<Dict> = {
   maint_action_required: 'ត្រូវប្ដូររថយន្ត ឬពេលវេលា',
   maint_cannot_start: 'មិនអាចចាប់ផ្ដើម',
+  maint_vehicle_unavailable: 'មិនអាចប្រើរថយន្តបាន',
   maint_progress_wait: 'កំពុងរង់ចាំដោះស្រាយការថែទាំ ឬរៀបចំរថយន្តជំនួស។',
   maint_time_unknown: 'មិនបានកត់ត្រាថ្ងៃ និងម៉ោង',
   maint_until_available: 'បន្តរហូតដល់សម្គាល់ថាអាចប្រើបានវិញ',

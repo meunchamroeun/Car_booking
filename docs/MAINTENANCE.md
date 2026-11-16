@@ -96,3 +96,9 @@ the visible status badge reads **Change vehicle or time** before departure, then
 history. Progress retains the approval event and shows an amber maintenance step
 instead of implying the vehicle is in use; the return step stays unfinished.
 Explicitly started trips retain In use and their return/completion actions.
+
+When an unstarted booking has a maintenance conflict, its schedule line shows
+**Vehicle unavailable** (មិនអាចប្រើរថយន្តបាន) instead of **Starts in**, even before
+departure. The original booking time remains visible for reference. The normal
+countdown returns if the conflict is resolved; actually started trips retain
+their remaining-time display and return/completion actions.

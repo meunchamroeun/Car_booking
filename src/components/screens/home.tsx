@@ -131,6 +131,7 @@ export function BookingNowCard({ b }: { b: Booking }) {
   const blocked = isDepartureBlocked(b, car);
   const live = isLive(b) && !blocked;
   const maintenanceConflict = (b.status === 'Approved' || b.status === 'Pending') && hasMaintenanceConflict(car, b);
+  const unavailable = maintenanceConflict && b.taskStatus !== 'In Progress' && !b.startedAt;
   const now = useNow(1000);
   const start = toDate(b.startDate, b.startTime).getTime();
   const end = toDate(b.endDate || b.startDate, b.endTime).getTime();
@@ -184,7 +185,9 @@ export function BookingNowCard({ b }: { b: Booking }) {
       <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[12px] text-muted-foreground">
         <Clock className="size-3" />
         <span className="font-semibold tabular text-foreground/80">{multiDay ? DateUtil.window(b, lang) : `${b.startTime} – ${b.endTime}`}</span>
-        {live ? (
+        {unavailable ? (
+          <span className="font-semibold text-warning">· {t('maint_vehicle_unavailable')}</span>
+        ) : live ? (
           <span className="tabular">
             · <span className="font-semibold text-foreground/80">{clock(end - now)}</span> {t('time_left')}
           </span>

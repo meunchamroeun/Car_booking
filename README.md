@@ -170,3 +170,9 @@ them to `origin/main`. Verify the production deployment is Ready before reportin
 it as live. With an authenticated Vercel CLI and the correct project link in
 `.vercel/project.json`, `vercel --prod --yes` deploys the current source to
 production. Keep `.vercel`, `.env.local`, and other credentials out of Git.
+
+When an unstarted booking has a maintenance conflict, its schedule line shows
+**Vehicle unavailable** (មិនអាចប្រើរថយន្តបាន) instead of **Starts in**, even before
+departure. The original booking time remains visible for reference. The normal
+countdown returns if the conflict is resolved; actually started trips retain
+their remaining-time display and return/completion actions.
