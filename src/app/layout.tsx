@@ -4,8 +4,8 @@ import Script from 'next/script';
 import { AppProvider } from '@/lib/store';
 
 export const metadata: Metadata = {
-  title: 'OONE Fleet — Company Car Booking',
-  description: 'Book company vehicles, approve requests, dispatch drivers and manage the OONE fleet.',
+  title: 'Slotify — Company Car Booking',
+  description: 'Book company vehicles, approve requests, dispatch drivers and manage the company fleet with Slotify.',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     ],
     apple: { url: '/apple-touch-icon.png', sizes: '180x180' },
   },
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'OONE Fleet' },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Slotify' },
 };
 
 export const viewport: Viewport = {

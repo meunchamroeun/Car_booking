@@ -2,7 +2,7 @@ import { Language, MsgVar } from '@/types';
 import { DateUtil } from '@/lib/date-utils';
 
 const en = {
-  app_title: 'OONE Fleet',
+  app_title: 'Slotify',
   app_subtitle: 'Company car booking',
 
   // Navigation
@@ -534,7 +534,7 @@ const kh: Partial<Dict> = {
   maint_booking_conflict: 'ការកក់នេះជាន់ពេលជាមួយការថែទាំរថយន្ត។',
   maint_resolution_hint: 'សូមទាក់ទងអ្នកគ្រប់គ្រងដើម្បីរៀបចំរថយន្តជំនួស ឬកែពេលធ្វើដំណើរ។ ការអនុម័តនៅរក្សាទុក ប៉ុន្តែមិនអាចចាប់ផ្ដើមដំណើរបានទេ រហូតដល់ដោះស្រាយរួច។',
 
-  app_title: 'OONE Fleet',
+  app_title: 'Slotify',
   app_subtitle: 'ការកក់រថយន្តក្រុមហ៊ុន',
 
   nav_home: 'ទំព័រដើម',

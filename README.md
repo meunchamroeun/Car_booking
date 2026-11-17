@@ -1,4 +1,4 @@
-# OONE Fleet — Company Car Booking (mobile web app)
+# Slotify — Company Car Booking (mobile web app)
 
 Mobile-first Next.js app for booking company vehicles, approving requests,
 dispatching drivers and managing the fleet. Runs entirely on mock data so it

@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'OONE Fleet — Company Car Booking',
-    short_name: 'OONE Fleet',
+    name: 'Slotify — Company Car Booking',
+    short_name: 'Slotify',
     description: 'Book company vehicles, approve requests and dispatch drivers.',
     start_url: '/',
     display: 'standalone',

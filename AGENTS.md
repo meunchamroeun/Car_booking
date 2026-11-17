@@ -2,8 +2,9 @@
 
 ## Start here
 
-This is a Next.js 15 / React 19 / TypeScript fleet booking demo, with English and
-Khmer translations. Read README.md, docs/API.md, and docs/MAINTENANCE.md first.
+Slotify is a Next.js 15 / React 19 / TypeScript fleet booking app, with English and
+Khmer translations. Keep the existing `oone_fleet_*` localStorage keys compatible
+so a display-name change does not reset bookings, accounts or preferences. Read README.md, docs/API.md, and docs/MAINTENANCE.md first.
 
 - `npm run dev`: http://localhost:3000. Existing `.env.local` is loaded by Next.js.
 - `npm test`: maintenance regression tests using Node's built-in runner and the

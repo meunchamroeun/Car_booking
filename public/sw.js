@@ -1,4 +1,4 @@
-// Service Worker for OONE Fleet PWA & App Badging
+// Service Worker for Slotify PWA & App Badging
 const CACHE_NAME = 'oone-fleet-cache-v1';
 
 self.addEventListener('install', (event) => {
@@ -15,10 +15,10 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: 'OONE Fleet', body: event.data ? event.data.text() : 'New notification' };
+    data = { title: 'Slotify', body: event.data ? event.data.text() : 'New notification' };
   }
 
-  const title = data.title || 'OONE Fleet';
+  const title = data.title || 'Slotify';
   const options = {
     body: data.body || '',
     icon: '/icons/icon-192.png',

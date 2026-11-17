@@ -1,4 +1,4 @@
-# OONE Fleet — API contract (frontend ↔ backend)
+# Slotify — API contract (frontend ↔ backend)
 
 The frontend currently runs on mock data. Every write action lives in
 `src/lib/fleet-service.ts` as a pure function that maps 1:1 to an endpoint
